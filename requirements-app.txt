@@ -1,0 +1,35 @@
+# =====================================================================
+# AI Worker — dependency cho image mặc định
+#
+# CỐ TÌNH GỌN: không có torch / whisperx / demucs / pyannote / spacy.
+# §5.1.1 của KLTN chọn Groq Cloud API cho STT nên không cần GPU, image
+# chỉ ~400 MB thay vì ~8 GB.
+#
+# Cần chạy WhisperX local để đo đối chứng Chương 6 thì dùng
+# Dockerfile.whisperx — image đó cài thêm requirements.txt của VideoLingo.
+# =====================================================================
+
+# ── Web API (UC30 Socratic Tutor, UC49 Course Discovery) ──
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+
+# ── Job nền (UC19 pipeline lồng tiếng, UC25 sinh học liệu) ──
+celery==5.4.0
+redis==5.2.1
+
+# ── Gọi dịch vụ ngoài: Groq, Gemini, Edge-TTS, backend callback ──
+# Mỗi provider dùng một AsyncClient riêng (bulkhead) — xem app/providers/
+httpx==0.28.1
+
+# ── Xử lý media ──
+# ffmpeg-python chỉ để dựng câu lệnh; FFmpeg binary cài trong Dockerfile.
+ffmpeg-python==0.2.0
+
+# ── TTS (BR-DUB-03) ──
+edge-tts==7.0.0
+
+# ── Tiện ích ──
+python-multipart==0.0.20
+tenacity==9.0.0        # retry có exponential backoff (BR-CHUNK-04)
