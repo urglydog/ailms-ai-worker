@@ -1,0 +1,48 @@
+# Cache Python phải sinh lại trong container
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+runtime/
+installer_files/
+
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+# File trung gian & model cache — cực nặng, không đưa vào build context
+/output/
+/outputs/
+/history/
+temp/
+tmp/
+_model_cache/
+.cache/
+huggingface/
+torch_cache/
+*.wav
+*.mp3
+*.mp4
+*.mkv
+
+# Binary lớn
+/ffmpeg
+/ffmpeg.exe
+/ffprobe
+/ffprobe.exe
+
+# Tài liệu & test
+*.md
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+
+.idea/
+.vscode/
+*.log
+logs/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,128 @@
+# =====================================================================
+# AI-Powered LMS — AI Worker (FastAPI + Celery)
+# Kế thừa từ .gitignore của VideoLingo upstream, bỏ các mục trỏ tới
+# thư mục đã dọn (docs/, batch/) và bổ sung phần riêng của dự án.
+# =====================================================================
+
+# ── Byte-compiled / optimized ──────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# ── Distribution / packaging ───────────────────
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+*.manifest
+*.spec
+
+# ── Virtualenv / môi trường ────────────────────
+.venv
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+runtime/
+installer_files/
+__pypackages__/
+
+# ── SECRETS — TUYỆT ĐỐI KHÔNG COMMIT ───────────
+# .env chứa GROQ_API_KEY, GEMINI_API_KEY, SUPABASE_VECTOR_KEY, B2_APPLICATION_KEY
+.env
+.env.local
+.env.*.local
+*.pem
+config.local.yaml
+config.backup.yaml
+
+# ── File trung gian của pipeline (BR-STORAGE-01) ──
+# Phải xoá sau khi job kết thúc, tối đa 24 giờ. Không bao giờ commit.
+/output/
+/outputs/
+/history/
+temp/
+tmp/
+*.wav
+*.mp3
+*.mp4
+*.mkv
+*.webm
+*.srt
+*.vtt
+
+# ── Model cache của thư viện AI (rất nặng) ─────
+_model_cache/
+.cache/
+torch_cache/
+huggingface/
+nltk_data/
+
+# ── Binary lớn ─────────────────────────────────
+/ffmpeg
+/ffmpeg.exe
+/ffprobe
+/ffprobe.exe
+
+# ── Celery ─────────────────────────────────────
+celerybeat-schedule
+celerybeat-schedule.*
+celerybeat.pid
+*.pid
+
+# ── Test / lint / type check ────────────────────
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+cover/
+*.cover
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+cython_debug/
+
+# ── Log ────────────────────────────────────────
+*.log
+logs/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── Jupyter / IPython ──────────────────────────
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# ── IDE ────────────────────────────────────────
+.idea/
+.vscode/
+!.vscode/settings.json.example
+.spyderproject
+.spyproject
+.ropeproject
+
+# ── OS ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
