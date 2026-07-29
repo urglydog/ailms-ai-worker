@@ -1,0 +1,55 @@
+# =====================================================================
+# AI Worker — biến thể WhisperX LOCAL (chỉ dùng cho thực nghiệm Chương 6)
+#
+# KHÔNG dùng image này cho phát triển hằng ngày. Mặc định của dự án là
+# Groq Cloud API (xem Dockerfile) theo §5.1.1 — "triệt tiêu phụ thuộc
+# GPU đắt đỏ tại Local".
+#
+# Mục đích duy nhất: đo đối chứng độ chính xác mốc thời gian giữa
+#   (a) Groq whisper-large-v3-turbo  — timestamp do API trả về
+#   (b) WhisperX local               — Whisper Large-v3 + forced alignment wav2vec2
+# phục vụ §6.3.2 của KLTN. Kết quả quyết định BR-DUB-01 giữ nguyên hay
+# đổi sang Groq.
+#
+# CẢNH BÁO:
+#   · Image ~6–8 GB, build 20–40 phút, cần GPU NVIDIA + nvidia-container-toolkit
+#   · Chạy trên CPU được nhưng rất chậm (một video 15 phút có thể mất hàng giờ)
+#
+# Cách chạy:
+#   docker build -f Dockerfile.whisperx -t lms-ai-whisperx .
+#   docker run --rm --gpus all -e ASR_BACKEND=whisperx_local \
+#     -v "$PWD:/app" lms-ai-whisperx \
+#     python -m app.experiments.asr_benchmark
+# =====================================================================
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+WORKDIR /app
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       python3.11 python3.11-dev python3-pip ffmpeg curl git \
+    && ln -sf /usr/bin/python3.11 /usr/bin/python \
+    && rm -rf /var/lib/apt/lists/*
+
+# Deps của app trước
+COPY requirements-app.txt .
+RUN pip install --upgrade pip && pip install -r requirements-app.txt
+
+# requirements.txt là của VideoLingo upstream (torch, whisperx, demucs,
+# pyannote-audio, spacy…). Ghi chú trong file đó nói rõ demucs và whisperx
+# phải cài riêng để tránh xung đột phiên bản torchaudio.
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+# Cache model để không tải lại mỗi lần chạy container
+ENV HF_HOME=/app/_model_cache \
+    TORCH_HOME=/app/_model_cache
+RUN mkdir -p /app/_model_cache /tmp/lms-processing
+
+COPY . .
+
+CMD ["python", "-c", "print('Image doi chung WhisperX. Xem huong dan o dau file Dockerfile.whisperx.')"]
