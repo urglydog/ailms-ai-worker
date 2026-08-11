@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import redis_client
-from app.api import discovery, health, tutor
+from app.api import admin, discovery, health, instructor_ai, tutor
 from app.http import backend_client
 from app.providers import edge_tts, gemini, groq_asr
 from app.tasks.dubbing import run_pipeline
@@ -90,3 +90,5 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(tutor.router)
 app.include_router(discovery.router)
+app.include_router(admin.router)
+app.include_router(instructor_ai.router)

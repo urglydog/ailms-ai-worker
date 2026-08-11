@@ -39,60 +39,124 @@ _client: httpx.AsyncClient | None = None
 
 
 class KeyPoolManager:
-    """Xoay vòng nhiều Gemini API key (UC49/F8.2) — key bị 429/400/403 vào cooldown
-    thay vì làm cả pipeline dừng hẳn. `GEMINI_API_KEYS` (nhiều key, phân cách bằng dấu
-    phẩy) là tùy chọn; không đặt thì rơi về đúng 1 key `GEMINI_API_KEY`.
+    """Quản lý danh sách (API Key x Model) theo round-robin.
+
+    Mỗi "slot" là một cặp (key, model). Khi một slot bị 429 (quota hết),
+    hệ thống tự động chuyển sang slot tiếp theo — đổi đồng thời cả key lẫn model
+    nếu cần, không cần can thiệp thủ công.
+
+    Thứ tự thử: key1+model1 → key2+model1 → ... → key1+model2 → key2+model2 → ...
     """
 
-    def __init__(self, keys_str: str, single_key: str):
+    def __init__(
+        self,
+        keys_str: str,
+        single_key: str,
+        models_str: str = "",
+        primary_model: str = "gemini-2.5-flash",
+    ):
         keys = [k.strip() for k in keys_str.split(",") if k.strip()]
         if not keys and single_key.strip():
             keys = [single_key.strip()]
-        self.keys = [{"value": k, "status": "ACTIVE", "cool_down_until": 0, "failures": 0} for k in set(keys)]
-        self.cursor = 0
 
-    def get_key(self) -> str | None:
-        if not self.keys:
+        models = [m.strip() for m in models_str.split(",") if m.strip()]
+        if not models:
+            models = [primary_model.strip()] if primary_model.strip() else ["gemini-2.5-flash"]
+
+        # Tạo tổ hợp key x model (key trước, model sau)
+        self.slots: list[dict] = []
+        for key in dict.fromkeys(keys):   # dict.fromkeys = giữ thứ tự, loại trùng
+            for model in dict.fromkeys(models):
+                self.slots.append({
+                    "key": key,
+                    "model": model,
+                    "status": "ACTIVE",
+                    "cool_down_until": 0.0,
+                    "failures": 0,
+                })
+        self.cursor = 0
+        log.info("KeyPoolManager: %s slot(s) — %s key(s) x %s model(s)", len(self.slots), len(keys), len(models))
+
+    def get_slot(self) -> dict | None:
+        """Trả về slot (key + model) đang sẵn sàng, hoặc None nếu tất cả cooldown."""
+        if not self.slots:
             return None
         now = time.time()
-        start_cursor = self.cursor
+        start = self.cursor
         while True:
-            key_info = self.keys[self.cursor]
-            self.cursor = (self.cursor + 1) % len(self.keys)
-
-            if key_info["status"] == "ACTIVE":
-                return key_info["value"]
-            elif key_info["status"] == "COOL_DOWN":
-                if now > key_info["cool_down_until"]:
-                    key_info["status"] = "ACTIVE"
-                    key_info["failures"] = 0
-                    return key_info["value"]
-
-            if self.cursor == start_cursor:
+            slot = self.slots[self.cursor]
+            self.cursor = (self.cursor + 1) % len(self.slots)
+            if slot["status"] == "ACTIVE":
+                return slot
+            if slot["status"] == "COOL_DOWN" and now > slot["cool_down_until"]:
+                slot["status"] = "ACTIVE"
+                slot["failures"] = 0
+                log.info("Slot %s.../%s phuc hoi khoi cooldown.", slot["key"][:8], slot["model"])
+                return slot
+            if self.cursor == start:
                 break
         return None
 
-    def mark_cool_down(self, key: str, duration_sec: int = 60):
-        for k in self.keys:
-            if k["value"] == key:
-                k["status"] = "COOL_DOWN"
-                k["cool_down_until"] = time.time() + duration_sec
-                log.warning("Gemini API key rotated. Cooldown %ss.", duration_sec)
+    def mark_cool_down(self, key: str, model: str, duration_sec: int = 60) -> None:
+        for slot in self.slots:
+            if slot["key"] == key and slot["model"] == model:
+                slot["status"] = "COOL_DOWN"
+                slot["cool_down_until"] = time.time() + duration_sec
+                active = self._active_count()
+                log.warning(
+                    "Slot %s.../%s bi 429 → cooldown %ss. Con %s slot active.",
+                    key[:8],
+                    model,
+                    duration_sec,
+                    active,
+                )
                 break
 
-    def mark_failure(self, key: str):
-        for k in self.keys:
-            if k["value"] == key:
-                k["failures"] += 1
-                if k["failures"] >= 3:
-                    self.mark_cool_down(key, 30)
+    def mark_failure(self, key: str, model: str) -> None:
+        for slot in self.slots:
+            if slot["key"] == key and slot["model"] == model:
+                slot["failures"] += 1
+                if slot["failures"] >= 3:
+                    self.mark_cool_down(key, model, 30)
                 break
 
-    def reset_failure(self, key: str):
-        for k in self.keys:
-            if k["value"] == key:
-                k["failures"] = 0
+    def mark_invalid(self, key: str, model: str) -> None:
+        self.mark_cool_down(key, model, 3600)
+        log.error("Slot %s.../%s bi block (400/403) → cooldown 1h.", key[:8], model)
+
+    def reset_failure(self, key: str, model: str) -> None:
+        for slot in self.slots:
+            if slot["key"] == key and slot["model"] == model:
+                slot["failures"] = 0
                 break
+
+    def get_status(self) -> list[dict]:
+        """Snapshot trạng thái để Admin Dashboard hiển thị."""
+        now = time.time()
+        return [
+            {
+                "key_preview": s["key"][:8] + "...",
+                "model": s["model"],
+                "status": s["status"],
+                "in_cooldown": s["status"] == "COOL_DOWN" and s["cool_down_until"] > now,
+                "cooldown_remaining_sec": max(0, int(s["cool_down_until"] - now)) if s["status"] == "COOL_DOWN" else 0,
+                "failures": s["failures"],
+            }
+            for s in self.slots
+        ]
+
+    def _active_count(self) -> int:
+        now = time.time()
+        return sum(
+            1
+            for s in self.slots
+            if s["status"] == "ACTIVE" or (s["status"] == "COOL_DOWN" and s["cool_down_until"] <= now)
+        )
+
+    # Backward-compat: giữ .keys cho code cũ
+    @property
+    def keys(self) -> list[dict]:
+        return self.slots
 
 
 _key_pool: KeyPoolManager | None = None
@@ -101,7 +165,12 @@ _key_pool: KeyPoolManager | None = None
 def get_key_pool() -> KeyPoolManager:
     global _key_pool
     if _key_pool is None:
-        _key_pool = KeyPoolManager(settings.gemini_api_keys, settings.gemini_api_key)
+        _key_pool = KeyPoolManager(
+            settings.gemini_api_keys,
+            settings.gemini_api_key,
+            settings.gemini_models,
+            settings.gemini_model,
+        )
     return _key_pool
 
 
@@ -174,44 +243,50 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
     """
     client = get_client()
     pool = get_key_pool()
-    if not pool.keys:
-        raise ProviderInvalidResponse("No Gemini API keys configured.")
+    if not pool.slots:
+        raise ProviderInvalidResponse("No Gemini API keys/models configured.")
 
-    max_retries = max(len(pool.keys), _MAX_TRANSIENT_RETRIES)
+    max_retries = max(len(pool.slots), _MAX_TRANSIENT_RETRIES)
 
-    for _ in range(max_retries):
-        key = pool.get_key()
-        if not key:
-            raise ProviderInvalidResponse("No active Gemini API keys available (all in cooldown).")
+    for attempt in range(max_retries):
+        slot = pool.get_slot()
+        if not slot:
+            raise ProviderInvalidResponse("No active Gemini slot available (all in cooldown).")
 
+        key = slot["key"]
+        model = slot["model"]
         await _throttle_rpm()
-        url = f"{_BASE_URL}/models/{settings.gemini_model}:generateContent?key={key}"
+        url = f"{_BASE_URL}/models/{model}:generateContent?key={key}"
+
+        if attempt > 0:
+            log.info("Retry #%s: dang thu slot %s.../%s", attempt, key[:8], model)
+
         try:
-            resp = await client.post(url, json=payload)
+            resp = await client.post(url, json=payload, timeout=60.0)
 
             if resp.status_code == 200:
-                pool.reset_failure(key)
-                return _parse_response(resp.json())
+                pool.reset_failure(key, model)
+                return _parse_response(resp.json(), model)
 
             if resp.status_code == 429:
-                pool.mark_cool_down(key, 60)
+                log.warning("429 quota exceeded: %s.../%s → rotate sang slot tiep theo", key[:8], model)
+                pool.mark_cool_down(key, model, 60)
                 continue
 
             if resp.status_code in (400, 403):
-                # Nhiều khả năng key sai/bị chặn — cooldown dài hơn nhiều so với 429.
-                pool.mark_cool_down(key, 3600)
+                pool.mark_invalid(key, model)
                 continue
 
-            # Lỗi khác (vd. 500) — tính vào số lần thất bại của KEY, không cooldown ngay.
-            pool.mark_failure(key)
+            # 5xx hoặc lỗi khác
+            pool.mark_failure(key, model)
             continue
 
         except httpx.RequestError as exc:
-            log.error("Gemini API request error: %s", exc)
-            pool.mark_failure(key)
+            log.error("Gemini network error (%s.../%s): %s", key[:8], model, exc)
+            pool.mark_failure(key, model)
             continue
 
-    raise ProviderInvalidResponse("Max retries exceeded for Gemini API.")
+    raise ProviderInvalidResponse("Max retries exceeded for Gemini API — tat ca slot deu that bai.")
 
 
 async def generate(prompt: str, *, system_instruction: str | None = None) -> LlmResult:
@@ -237,7 +312,7 @@ async def generate_with_tools(prompt: str, tools: list[dict], *, system_instruct
     return await _execute_request(payload)
 
 
-def _parse_response(payload: dict) -> LlmResult | FunctionCall:
+def _parse_response(payload: dict, model: str) -> LlmResult | FunctionCall:
     """Chuyển JSON của Gemini thành dataclass; sai định dạng thì raise."""
     try:
         candidate = payload["candidates"][0]
@@ -254,7 +329,7 @@ def _parse_response(payload: dict) -> LlmResult | FunctionCall:
         usage = payload.get("usageMetadata", {})
         return LlmResult(
             text=text,
-            model=settings.gemini_model,
+            model=model,
             prompt_tokens=int(usage.get("promptTokenCount", 0)),
             completion_tokens=int(usage.get("candidatesTokenCount", 0)),
         )

@@ -39,6 +39,8 @@ def cleanup_temp_files() -> dict:
         try:
             if entry.stat().st_mtime >= cutoff:
                 continue
+            if entry.is_file() and entry.suffix.lower() == ".mp3":
+                continue
             if entry.is_dir():
                 shutil.rmtree(entry, ignore_errors=True)
             else:
@@ -46,7 +48,6 @@ def cleanup_temp_files() -> dict:
             removed += 1
         except OSError as exc:
             log.warning("Khong xoa duoc %s: %s", entry, exc)
-
     log.info("cleanup_temp_files: da xoa %s muc qua %sh", removed, settings.intermediate_file_ttl_hours)
     return {"removed": removed}
 

@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     gemini_api_keys: str = ""
     # BR-DUB-02: tên model đọc từ env, KHÔNG hardcode trong code
     gemini_model: str = "gemini-2.5-flash"
+    # Danh sách model fallback, phân cách bởi dấu phẩy. Khi model đầu bị 429/block,
+    # hệ thống tự chuyển sang model tiếp theo mà không cần restart.
+    # Ví dụ: gemini-2.5-flash,gemini-2.0-flash,gemini-1.5-flash
+    gemini_models: str = ""
     # Free Tier Gemini giới hạn ~15 RPM — tự giới hạn thấp hơn 1 chút để tránh 429
     # (doc/SETUP_GIAIDOAN5.md mục 3).
     gemini_rate_limit_rpm: int = 12
