@@ -1,0 +1,10 @@
+# =====================================================================
+# AI Worker — dependency chỉ dùng khi TEST/DEV, KHÔNG cài vào image production
+# (Dockerfile chỉ cài requirements-app.txt — xem comment ở đó).
+#
+# Chạy:  pip install -r requirements-dev.txt && pytest
+# =====================================================================
+-r requirements-app.txt
+
+pytest==8.3.4
+pytest-asyncio==0.25.2
