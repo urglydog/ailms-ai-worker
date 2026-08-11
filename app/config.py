@@ -30,6 +30,7 @@ class Settings(BaseSettings):
 
     # ── LLM ──────────────────────────────────────────────────
     gemini_api_key: str = ""
+    gemini_api_keys: str = ""
     # BR-DUB-02: tên model đọc từ env, KHÔNG hardcode trong code
     gemini_model: str = "gemini-2.0-flash"
 
