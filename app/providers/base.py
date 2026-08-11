@@ -81,6 +81,7 @@ def build_client(
             max_keepalive_connections=max_keepalive,
         ),
         headers=headers or {},
+        verify=False,
     )
 
 
