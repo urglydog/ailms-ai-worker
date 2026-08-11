@@ -20,24 +20,89 @@ from dataclasses import dataclass
 import httpx
 
 from app.config import settings
-from app.providers.base import ProviderInvalidResponse, ProviderRateLimited, build_client, map_http_error
+from app.providers.base import ProviderInvalidResponse, build_client
 
 log = logging.getLogger(__name__)
 
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
-# Tu gioi han RPM (doc/SETUP_GIAIDOAN5.md muc 3) — Gemini Free Tier ~15 RPM, tu dat
-# thap hon (GEMINI_RATE_LIMIT_RPM mac dinh 12) de tru hao thay vi doi 429 roi moi retry.
+# Tự giới hạn RPM (doc/SETUP_GIAIDOAN5.md mục 3) — Gemini Free Tier ~15 RPM, tự đặt
+# thấp hơn (GEMINI_RATE_LIMIT_RPM mặc định 12) để giảm khả năng dính 429 ngay từ đầu.
+# BỔ SUNG cho KeyPoolManager bên dưới, KHÔNG thay thế: throttle giảm TẦN SUẤT gọi,
+# key pool xử lý phần còn lại khi vẫn bị 429 dù đã throttle (ví dụ nhiều worker cùng chạy).
 _rate_lock = asyncio.Lock()
 _call_timestamps: list[float] = []
-
-# So lan tu retry rieng cho 1 loi tam thoi (429/timeout) cua Gemini — TACH KHOI retry
-# cap chunk (BR-CHUNK-04, toi da 3 lan chay lai CA chunk). Retry o day re hon nhieu:
-# chi goi lai 1 prompt, khong chay lai ASR/TTS.
 _MAX_TRANSIENT_RETRIES = 3
 
 # Client RIÊNG cho Gemini (bulkhead) — tách khỏi Groq và Edge-TTS.
 _client: httpx.AsyncClient | None = None
+
+
+class KeyPoolManager:
+    """Xoay vòng nhiều Gemini API key (UC49/F8.2) — key bị 429/400/403 vào cooldown
+    thay vì làm cả pipeline dừng hẳn. `GEMINI_API_KEYS` (nhiều key, phân cách bằng dấu
+    phẩy) là tùy chọn; không đặt thì rơi về đúng 1 key `GEMINI_API_KEY`.
+    """
+
+    def __init__(self, keys_str: str, single_key: str):
+        keys = [k.strip() for k in keys_str.split(",") if k.strip()]
+        if not keys and single_key.strip():
+            keys = [single_key.strip()]
+        self.keys = [{"value": k, "status": "ACTIVE", "cool_down_until": 0, "failures": 0} for k in set(keys)]
+        self.cursor = 0
+
+    def get_key(self) -> str | None:
+        if not self.keys:
+            return None
+        now = time.time()
+        start_cursor = self.cursor
+        while True:
+            key_info = self.keys[self.cursor]
+            self.cursor = (self.cursor + 1) % len(self.keys)
+
+            if key_info["status"] == "ACTIVE":
+                return key_info["value"]
+            elif key_info["status"] == "COOL_DOWN":
+                if now > key_info["cool_down_until"]:
+                    key_info["status"] = "ACTIVE"
+                    key_info["failures"] = 0
+                    return key_info["value"]
+
+            if self.cursor == start_cursor:
+                break
+        return None
+
+    def mark_cool_down(self, key: str, duration_sec: int = 60):
+        for k in self.keys:
+            if k["value"] == key:
+                k["status"] = "COOL_DOWN"
+                k["cool_down_until"] = time.time() + duration_sec
+                log.warning("Gemini API key rotated. Cooldown %ss.", duration_sec)
+                break
+
+    def mark_failure(self, key: str):
+        for k in self.keys:
+            if k["value"] == key:
+                k["failures"] += 1
+                if k["failures"] >= 3:
+                    self.mark_cool_down(key, 30)
+                break
+
+    def reset_failure(self, key: str):
+        for k in self.keys:
+            if k["value"] == key:
+                k["failures"] = 0
+                break
+
+
+_key_pool: KeyPoolManager | None = None
+
+
+def get_key_pool() -> KeyPoolManager:
+    global _key_pool
+    if _key_pool is None:
+        _key_pool = KeyPoolManager(settings.gemini_api_keys, settings.gemini_api_key)
+    return _key_pool
 
 
 def get_client() -> httpx.AsyncClient:
@@ -102,59 +167,89 @@ async def _throttle_rpm() -> None:
         _call_timestamps.append(time.monotonic())
 
 
-async def generate(prompt: str, *, system_instruction: str | None = None) -> LlmResult:
-    """Sinh văn bản. Dùng cho dịch 3 bước (BR-DUB-02), LLM Re-summarization (BR-DUB-03).
-
-    Tự giới hạn RPM (mục 3 `doc/SETUP_GIAIDOAN5.md`) VÀ tự retry riêng cho lỗi tạm
-    thời — bao gồm CẢ HTTP 429, không chỉ timeout (yêu cầu bắt buộc, khác với suy
-    diễn "chỉ retry timeout" từ văn bản BR-CHUNK-04 gốc).
+async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
+    """Gọi Gemini — tự throttle RPM trước mỗi lần gọi VÀ tự xoay key khi bị 429/lỗi
+    (BR-CHUNK-04 mở rộng: retry phải cover cả 429, không chỉ timeout — ở đây thêm một
+    bậc nữa là đổi hẳn sang key khác thay vì chỉ chờ rồi gọi lại cùng key).
     """
-    body: dict = {"contents": [{"parts": [{"text": prompt}]}]}
-    if system_instruction:
-        body["systemInstruction"] = {"parts": [{"text": system_instruction}]}
+    client = get_client()
+    pool = get_key_pool()
+    if not pool.keys:
+        raise ProviderInvalidResponse("No Gemini API keys configured.")
 
-    last_error: Exception | None = None
-    for attempt in range(1, _MAX_TRANSIENT_RETRIES + 1):
+    max_retries = max(len(pool.keys), _MAX_TRANSIENT_RETRIES)
+
+    for _ in range(max_retries):
+        key = pool.get_key()
+        if not key:
+            raise ProviderInvalidResponse("No active Gemini API keys available (all in cooldown).")
+
         await _throttle_rpm()
+        url = f"{_BASE_URL}/models/{settings.gemini_model}:generateContent?key={key}"
         try:
-            response = await get_client().post(
-                f"/models/{settings.gemini_model}:generateContent",
-                json=body,
-                headers={"x-goog-api-key": settings.gemini_api_key},
-            )
-            response.raise_for_status()
-            return _parse_response(response.json())
-        except httpx.HTTPError as exc:
-            error = map_http_error(exc)
-            last_error = error
-            if not error.retryable or attempt == _MAX_TRANSIENT_RETRIES:
-                raise error from exc
-            wait_sec = (
-                error.retry_after_sec
-                if isinstance(error, ProviderRateLimited) and error.retry_after_sec
-                else 2**attempt
-            )
-            log.warning(
-                "Gemini loi tam thoi (%s), retry sau %ss (lan %s/%s)",
-                error.code, wait_sec, attempt, _MAX_TRANSIENT_RETRIES,
-            )
-            await asyncio.sleep(wait_sec)
-    raise last_error  # pragma: no cover - vong for luon return hoac raise truoc do
+            resp = await client.post(url, json=payload)
+
+            if resp.status_code == 200:
+                pool.reset_failure(key)
+                return _parse_response(resp.json())
+
+            if resp.status_code == 429:
+                pool.mark_cool_down(key, 60)
+                continue
+
+            if resp.status_code in (400, 403):
+                # Nhiều khả năng key sai/bị chặn — cooldown dài hơn nhiều so với 429.
+                pool.mark_cool_down(key, 3600)
+                continue
+
+            # Lỗi khác (vd. 500) — tính vào số lần thất bại của KEY, không cooldown ngay.
+            pool.mark_failure(key)
+            continue
+
+        except httpx.RequestError as exc:
+            log.error("Gemini API request error: %s", exc)
+            pool.mark_failure(key)
+            continue
+
+    raise ProviderInvalidResponse("Max retries exceeded for Gemini API.")
 
 
-async def generate_with_tools(prompt: str, tools: list[dict]) -> LlmResult | FunctionCall:
+async def generate(prompt: str, *, system_instruction: str | None = None) -> LlmResult:
+    """Sinh văn bản. Dùng cho dịch 3 bước (BR-DUB-02), LLM Re-summarization (BR-DUB-03)."""
+    payload: dict = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
+    if system_instruction:
+        payload["systemInstruction"] = {"role": "system", "parts": [{"text": system_instruction}]}
+
+    result = await _execute_request(payload)
+    if isinstance(result, FunctionCall):
+        raise ProviderInvalidResponse("Expected text but got FunctionCall from Gemini")
+    return result
+
+
+async def generate_with_tools(prompt: str, tools: list[dict], *, system_instruction: str | None = None) -> LlmResult | FunctionCall:
     """Gọi Gemini ở chế độ Function Calling — dùng cho UC49 Course Discovery."""
-    # TODO(Giai đoạn 8): hiện thực cùng Course Discovery Agent.
-    raise NotImplementedError(
-        "generate_with_tools() se duoc hien thuc o Giai doan 8 (UC49 Course Discovery)."
-    )
+    payload: dict = {
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "tools": tools,
+    }
+    if system_instruction:
+        payload["systemInstruction"] = {"role": "system", "parts": [{"text": system_instruction}]}
+    return await _execute_request(payload)
 
 
-def _parse_response(payload: dict) -> LlmResult:
+def _parse_response(payload: dict) -> LlmResult | FunctionCall:
     """Chuyển JSON của Gemini thành dataclass; sai định dạng thì raise."""
     try:
         candidate = payload["candidates"][0]
         parts = candidate["content"]["parts"]
+
+        for p in parts:
+            if "functionCall" in p:
+                return FunctionCall(
+                    name=p["functionCall"]["name"],
+                    arguments=p["functionCall"].get("args", {}),
+                )
+
         text = "".join(p.get("text", "") for p in parts)
         usage = payload.get("usageMetadata", {})
         return LlmResult(
