@@ -12,10 +12,14 @@ tuyệt đối không hardcode danh sách ngôn ngữ ở đây.
 from __future__ import annotations
 
 import asyncio
+import re
 from dataclasses import dataclass
 from decimal import Decimal
+from pathlib import Path
 
-from app.config import settings
+import edge_tts as _edge_tts_lib
+
+from app.audio_utils import measure_duration_sec
 
 # Giới hạn phiên TTS đồng thời (bulkhead cho một provider không dùng HTTP pool).
 _semaphore = asyncio.Semaphore(4)
@@ -47,21 +51,39 @@ def compute_rate_flag(r: Decimal) -> str:
     return f"+{percent}%" if percent >= 0 else f"{percent}%"
 
 
+def _parse_rate_to_multiplier(rate: str | None) -> Decimal:
+    """`"+15%"` -> `Decimal("1.15")`, `"-5%"` -> `Decimal("0.95")`, `None` -> `Decimal("1.0")`."""
+    if not rate:
+        return Decimal("1.0")
+    match = re.fullmatch(r"([+-]?\d+)%", rate.strip())
+    if not match:
+        return Decimal("1.0")
+    return Decimal("1.0") + (Decimal(match.group(1)) / Decimal("100"))
+
+
 async def synthesize(text: str, voice_name: str, output_path: str, rate: str | None = None) -> SynthesisResult:
-    """Tổng hợp giọng đọc cho một câu thoại.
+    """Tổng hợp giọng đọc cho một câu thoại bằng `edge_tts.Communicate`.
 
     Args:
         voice_name: lấy từ `voice_mappings.voice_name`, ví dụ ``vi-VN-HoaiMyNeural``.
                     KHÔNG hardcode (BR-DUB-07).
         rate: kết quả của :func:`compute_rate_flag`, hoặc None để giữ tốc độ chuẩn.
+
+    `was_summarized` LUÔN trả `False` — hàm này không biết văn bản đã qua LLM
+    Re-summarization hay chưa, tầng gọi (`dubbing_service`) tự gắn cờ đó khi ghi
+    `TranscriptSegment` vì đó là quyết định ở tầng điều phối, không phải TTS.
     """
-    # TODO(Giai đoạn 5): hiện thực bằng edge_tts.Communicate.
-    # Giai đoạn 0 chỉ chốt hợp đồng để tầng gọi và test viết được trước.
     async with _semaphore:
-        raise NotImplementedError(
-            "synthesize() se duoc hien thuc o Giai doan 5. "
-            "Xem skill lms-dubbing-pipeline buoc 14."
-        )
+        communicate = _edge_tts_lib.Communicate(text, voice=voice_name, rate=rate or "+0%")
+        await communicate.save(output_path)
+
+    duration_sec = await measure_duration_sec(output_path)
+    return SynthesisResult(
+        file_path=output_path,
+        duration_sec=duration_sec,
+        applied_rate=_parse_rate_to_multiplier(rate),
+        was_summarized=False,
+    )
 
 
 async def aclose() -> None:

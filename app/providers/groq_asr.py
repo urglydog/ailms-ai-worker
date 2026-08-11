@@ -13,6 +13,7 @@ chứng với `whisperx_local` trên một video thật trước khi chốt.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import httpx
 
@@ -56,6 +57,20 @@ class WordTimestamp:
 
 
 @dataclass(frozen=True)
+class SttSegment:
+    """Một câu/đoạn thoại (đơn vị Whisper `segments`) — dùng làm `TranscriptSegment`.
+
+    Đây là đơn vị "câu" cho dịch thuật + TTS, thay cho spacy-based sentence
+    splitting của VideoLingo (`core/_3_1_split_nlp.py`) — Groq đã trả sẵn ranh giới
+    câu hợp lý qua `segments`, không cần thêm dependency NLP nặng.
+    """
+
+    start: float
+    end: float
+    text: str
+
+
+@dataclass(frozen=True)
 class TranscriptionResult:
     """Kết quả bóc băng đã chuẩn hoá — độc lập với nhà cung cấp.
 
@@ -66,6 +81,7 @@ class TranscriptionResult:
     language: str
     duration_sec: float
     words: list[WordTimestamp] = field(default_factory=list)
+    segments: list[SttSegment] = field(default_factory=list)
 
     @property
     def speech_duration_sec(self) -> float:
@@ -74,21 +90,36 @@ class TranscriptionResult:
         Nếu tỉ lệ so với thời lượng video dưới 10%, job phải bị đánh dấu SKIPPED
         và KHÔNG đưa vào retry.
         """
-        return sum(w.end - w.start for w in self.words)
+        return sum(s.end - s.start for s in self.segments)
 
 
 async def transcribe(audio_path: str) -> TranscriptionResult:
-    """Bóc băng một file audio, trả về mốc thời gian cấp độ từ (BR-DUB-01).
+    """Bóc băng một file audio, trả về mốc thời gian cấp độ từ VÀ cấp độ câu (BR-DUB-01).
+
+    Gọi Groq Whisper API (`whisper-large-v3-turbo` mặc định, đọc từ
+    `settings.groq_asr_model` — không hardcode) ở `response_format=verbose_json`
+    với cả 2 mức chi tiết `segment` (câu, dùng cho dịch + TTS) và `word` (dùng cho
+    trích dẫn nhấp được của Socratic Tutor — BR-TUTOR-02).
 
     Raises:
-        ProviderError: đã chuẩn hoá, có cờ ``retryable`` cho tầng retry.
+        ProviderError: đã chuẩn hoá, có cờ ``retryable`` cho tầng retry (BR-CHUNK-04).
     """
-    # TODO(Giai đoạn 5): hiện thực đầy đủ. Khung sườn Giai đoạn 0 chỉ định nghĩa
-    # hợp đồng (kiểu vào/ra) để tầng gọi và test viết được trước.
-    raise NotImplementedError(
-        "transcribe() se duoc hien thuc o Giai doan 5. "
-        "Xem skill lms-dubbing-pipeline de biet thu tu buoc."
-    )
+    path = Path(audio_path)
+    try:
+        with path.open("rb") as f:
+            response = await get_client().post(
+                "/audio/transcriptions",
+                data={
+                    "model": settings.groq_asr_model,
+                    "response_format": "verbose_json",
+                    "timestamp_granularities[]": ["segment", "word"],
+                },
+                files={"file": (path.name, f, "application/octet-stream")},
+            )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise map_http_error(exc) from exc
+    return _parse_response(response.json())
 
 
 def _parse_response(payload: dict) -> TranscriptionResult:
@@ -98,11 +129,17 @@ def _parse_response(payload: dict) -> TranscriptionResult:
             WordTimestamp(word=w["word"], start=float(w["start"]), end=float(w["end"]))
             for w in payload.get("words", [])
         ]
+        segments = [
+            SttSegment(start=float(s["start"]), end=float(s["end"]), text=s["text"].strip())
+            for s in payload.get("segments", [])
+            if s.get("text", "").strip()
+        ]
         return TranscriptionResult(
             text=payload["text"],
             language=payload.get("language", ""),
             duration_sec=float(payload.get("duration", 0.0)),
             words=words,
+            segments=segments,
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise ProviderInvalidResponse(f"Groq tra ve du lieu khong dung dinh dang: {exc}") from exc

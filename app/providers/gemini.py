@@ -12,21 +12,31 @@ TUYỆT ĐỐI không hardcode trong file này.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-import time
+import asyncio
 import logging
+import time
+from dataclasses import dataclass
 
 import httpx
 
 from app.config import settings
 from app.providers.base import ProviderInvalidResponse, build_client
 
+log = logging.getLogger(__name__)
+
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
-logger = logging.getLogger(__name__)
+# Tự giới hạn RPM (doc/SETUP_GIAIDOAN5.md mục 3) — Gemini Free Tier ~15 RPM, tự đặt
+# thấp hơn (GEMINI_RATE_LIMIT_RPM mặc định 12) để giảm khả năng dính 429 ngay từ đầu.
+# BỔ SUNG cho KeyPoolManager bên dưới, KHÔNG thay thế: throttle giảm TẦN SUẤT gọi,
+# key pool xử lý phần còn lại khi vẫn bị 429 dù đã throttle (ví dụ nhiều worker cùng chạy).
+_rate_lock = asyncio.Lock()
+_call_timestamps: list[float] = []
+_MAX_TRANSIENT_RETRIES = 3
 
 # Client RIÊNG cho Gemini (bulkhead) — tách khỏi Groq và Edge-TTS.
 _client: httpx.AsyncClient | None = None
+
 
 class KeyPoolManager:
     """Quản lý danh sách (API Key x Model) theo round-robin.
@@ -38,14 +48,20 @@ class KeyPoolManager:
     Thứ tự thử: key1+model1 → key2+model1 → ... → key1+model2 → key2+model2 → ...
     """
 
-    def __init__(self, keys_str: str, single_key: str, models_str: str = "", primary_model: str = "gemini-2.0-flash"):
+    def __init__(
+        self,
+        keys_str: str,
+        single_key: str,
+        models_str: str = "",
+        primary_model: str = "gemini-2.5-flash",
+    ):
         keys = [k.strip() for k in keys_str.split(",") if k.strip()]
         if not keys and single_key.strip():
             keys = [single_key.strip()]
 
         models = [m.strip() for m in models_str.split(",") if m.strip()]
         if not models:
-            models = [primary_model.strip()] if primary_model.strip() else ["gemini-2.0-flash"]
+            models = [primary_model.strip()] if primary_model.strip() else ["gemini-2.5-flash"]
 
         # Tạo tổ hợp key x model (key trước, model sau)
         self.slots: list[dict] = []
@@ -59,7 +75,7 @@ class KeyPoolManager:
                     "failures": 0,
                 })
         self.cursor = 0
-        logger.info(f"KeyPoolManager: {len(self.slots)} slot(s) — {len(keys)} key(s) x {len(models)} model(s)")
+        log.info("KeyPoolManager: %s slot(s) — %s key(s) x %s model(s)", len(self.slots), len(keys), len(models))
 
     def get_slot(self) -> dict | None:
         """Trả về slot (key + model) đang sẵn sàng, hoặc None nếu tất cả cooldown."""
@@ -75,7 +91,7 @@ class KeyPoolManager:
             if slot["status"] == "COOL_DOWN" and now > slot["cool_down_until"]:
                 slot["status"] = "ACTIVE"
                 slot["failures"] = 0
-                logger.info(f"Slot {slot['key'][:8]}.../{slot['model']} phuc hoi khoi cooldown.")
+                log.info("Slot %s.../%s phuc hoi khoi cooldown.", slot["key"][:8], slot["model"])
                 return slot
             if self.cursor == start:
                 break
@@ -87,7 +103,13 @@ class KeyPoolManager:
                 slot["status"] = "COOL_DOWN"
                 slot["cool_down_until"] = time.time() + duration_sec
                 active = self._active_count()
-                logger.warning(f"Slot {key[:8]}.../{model} bi 429 → cooldown {duration_sec}s. Con {active} slot active.")
+                log.warning(
+                    "Slot %s.../%s bi 429 → cooldown %ss. Con %s slot active.",
+                    key[:8],
+                    model,
+                    duration_sec,
+                    active,
+                )
                 break
 
     def mark_failure(self, key: str, model: str) -> None:
@@ -100,7 +122,7 @@ class KeyPoolManager:
 
     def mark_invalid(self, key: str, model: str) -> None:
         self.mark_cool_down(key, model, 3600)
-        logger.error(f"Slot {key[:8]}.../{model} bi block (400/403) → cooldown 1h.")
+        log.error("Slot %s.../%s bi block (400/403) → cooldown 1h.", key[:8], model)
 
     def reset_failure(self, key: str, model: str) -> None:
         for slot in self.slots:
@@ -125,7 +147,11 @@ class KeyPoolManager:
 
     def _active_count(self) -> int:
         now = time.time()
-        return sum(1 for s in self.slots if s["status"] == "ACTIVE" or (s["status"] == "COOL_DOWN" and s["cool_down_until"] <= now))
+        return sum(
+            1
+            for s in self.slots
+            if s["status"] == "ACTIVE" or (s["status"] == "COOL_DOWN" and s["cool_down_until"] <= now)
+        )
 
     # Backward-compat: giữ .keys cho code cũ
     @property
@@ -134,6 +160,7 @@ class KeyPoolManager:
 
 
 _key_pool: KeyPoolManager | None = None
+
 
 def get_key_pool() -> KeyPoolManager:
     global _key_pool
@@ -194,13 +221,32 @@ class FunctionCall:
     arguments: dict
 
 
+async def _throttle_rpm() -> None:
+    """Chờ nếu đã gọi đủ `GEMINI_RATE_LIMIT_RPM` lần trong 60 giây gần nhất."""
+    async with _rate_lock:
+        now = time.monotonic()
+        window_start = now - 60.0
+        while _call_timestamps and _call_timestamps[0] < window_start:
+            _call_timestamps.pop(0)
+        if len(_call_timestamps) >= settings.gemini_rate_limit_rpm:
+            wait_sec = 60.0 - (now - _call_timestamps[0])
+            if wait_sec > 0:
+                log.info("Gemini tu gioi han RPM: cho %.1fs truoc khi goi tiep", wait_sec)
+                await asyncio.sleep(wait_sec)
+        _call_timestamps.append(time.monotonic())
+
+
 async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
+    """Gọi Gemini — tự throttle RPM trước mỗi lần gọi VÀ tự xoay key khi bị 429/lỗi
+    (BR-CHUNK-04 mở rộng: retry phải cover cả 429, không chỉ timeout — ở đây thêm một
+    bậc nữa là đổi hẳn sang key khác thay vì chỉ chờ rồi gọi lại cùng key).
+    """
     client = get_client()
     pool = get_key_pool()
     if not pool.slots:
         raise ProviderInvalidResponse("No Gemini API keys/models configured.")
 
-    max_retries = max(len(pool.slots), 3)
+    max_retries = max(len(pool.slots), _MAX_TRANSIENT_RETRIES)
 
     for attempt in range(max_retries):
         slot = pool.get_slot()
@@ -209,10 +255,11 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
 
         key = slot["key"]
         model = slot["model"]
+        await _throttle_rpm()
         url = f"{_BASE_URL}/models/{model}:generateContent?key={key}"
 
         if attempt > 0:
-            logger.info(f"Retry #{attempt}: dang thu slot {key[:8]}.../{model}")
+            log.info("Retry #%s: dang thu slot %s.../%s", attempt, key[:8], model)
 
         try:
             resp = await client.post(url, json=payload, timeout=60.0)
@@ -222,7 +269,7 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
                 return _parse_response(resp.json(), model)
 
             if resp.status_code == 429:
-                logger.warning(f"429 quota exceeded: {key[:8]}.../{model} → rotate sang slot tiep theo")
+                log.warning("429 quota exceeded: %s.../%s → rotate sang slot tiep theo", key[:8], model)
                 pool.mark_cool_down(key, model, 60)
                 continue
 
@@ -235,41 +282,33 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
             continue
 
         except httpx.RequestError as exc:
-            logger.error(f"Gemini network error ({key[:8]}.../{model}): {exc}")
+            log.error("Gemini network error (%s.../%s): %s", key[:8], model, exc)
             pool.mark_failure(key, model)
             continue
 
     raise ProviderInvalidResponse("Max retries exceeded for Gemini API — tat ca slot deu that bai.")
 
 
-
 async def generate(prompt: str, *, system_instruction: str | None = None) -> LlmResult:
-    """Sinh văn bản. Dùng cho dịch 3 bước, re-summarization, sinh học liệu."""
-    payload = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-    }
+    """Sinh văn bản. Dùng cho dịch 3 bước (BR-DUB-02), LLM Re-summarization (BR-DUB-03)."""
+    payload: dict = {"contents": [{"role": "user", "parts": [{"text": prompt}]}]}
     if system_instruction:
-        payload["systemInstruction"] = {
-            "role": "system",
-            "parts": [{"text": system_instruction}],
-        }
-    res = await _execute_request(payload)
-    if isinstance(res, FunctionCall):
+        payload["systemInstruction"] = {"role": "system", "parts": [{"text": system_instruction}]}
+
+    result = await _execute_request(payload)
+    if isinstance(result, FunctionCall):
         raise ProviderInvalidResponse("Expected text but got FunctionCall from Gemini")
-    return res
+    return result
 
 
 async def generate_with_tools(prompt: str, tools: list[dict], *, system_instruction: str | None = None) -> LlmResult | FunctionCall:
     """Gọi Gemini ở chế độ Function Calling — dùng cho UC49 Course Discovery."""
-    payload = {
+    payload: dict = {
         "contents": [{"role": "user", "parts": [{"text": prompt}]}],
         "tools": tools,
     }
     if system_instruction:
-        payload["systemInstruction"] = {
-            "role": "system",
-            "parts": [{"text": system_instruction}],
-        }
+        payload["systemInstruction"] = {"role": "system", "parts": [{"text": system_instruction}]}
     return await _execute_request(payload)
 
 
@@ -278,14 +317,14 @@ def _parse_response(payload: dict, model: str) -> LlmResult | FunctionCall:
     try:
         candidate = payload["candidates"][0]
         parts = candidate["content"]["parts"]
-        
+
         for p in parts:
             if "functionCall" in p:
                 return FunctionCall(
                     name=p["functionCall"]["name"],
-                    arguments=p["functionCall"].get("args", {})
+                    arguments=p["functionCall"].get("args", {}),
                 )
-                
+
         text = "".join(p.get("text", "") for p in parts)
         usage = payload.get("usageMetadata", {})
         return LlmResult(
