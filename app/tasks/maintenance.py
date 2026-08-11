@@ -15,12 +15,34 @@ log = logging.getLogger(__name__)
 
 @celery_app.task(name="app.tasks.maintenance.cleanup_temp_files")
 def cleanup_temp_files() -> dict:
-    """BR-STORAGE-01: xoa file trung gian (.wav, chunk video) qua 24 gio.
-
-    File .mp3 long tieng thi luu VINH VIEN de tai su dung (BR-DUB-04) —
-    tuyet doi khong xoa trong task nay.
-    """
-    raise NotImplementedError("Se duoc hien thuc o Giai doan 5 (BR-STORAGE-01).")
+    import os
+    import time
+    
+    target_dir = "/tmp/lms-processing"
+    if not os.path.exists(target_dir):
+        return {"status": "skipped", "reason": "directory not found"}
+        
+    deleted_files = 0
+    now = time.time()
+    cutoff = now - (24 * 3600)  # 24 hours
+    
+    for root, _, files in os.walk(target_dir):
+        for f in files:
+            # BR-STORAGE-01: Không xoá file mp3 lồng tiếng (BR-DUB-04)
+            if f.endswith('.mp3'):
+                continue
+                
+            filepath = os.path.join(root, f)
+            try:
+                mtime = os.path.getmtime(filepath)
+                if mtime < cutoff:
+                    os.remove(filepath)
+                    deleted_files += 1
+            except OSError:
+                pass
+                
+    log.info(f"Cleaned up {deleted_files} old temp files from {target_dir}.")
+    return {"status": "success", "deleted_files": deleted_files}
 
 
 @celery_app.task(name="app.tasks.maintenance.cleanup_old_notifications")

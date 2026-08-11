@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     gemini_api_keys: str = ""
     # BR-DUB-02: tên model đọc từ env, KHÔNG hardcode trong code
     gemini_model: str = "gemini-2.0-flash"
+    # Danh sách model fallback, phân cách bởi dấu phẩy. Khi model đầu bị 429/block,
+    # hệ thống tự chuyển sang model tiếp theo mà không cần restart.
+    # Ví dụ: gemini-2.0-flash,gemini-1.5-flash,gemini-1.5-flash-8b
+    gemini_models: str = ""
 
     # ── TTS ──────────────────────────────────────────────────
     edge_tts_region: str = ""
