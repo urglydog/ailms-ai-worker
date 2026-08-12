@@ -100,6 +100,7 @@ async def run_dubbing_pipeline(
         reuse_source = ctx.source_transcript_available
         next_seq = 1
         chunk_audio_paths: list[Path] = []
+        fallback_count = 0
 
         for chunk in chunks:
             try:
@@ -117,6 +118,7 @@ async def run_dubbing_pipeline(
                 # BR-CHUNK-04: hết retry cho MỘT chunk — giữ audio GỐC riêng đoạn đó,
                 # các chunk khác vẫn phát bản lồng tiếng bình thường.
                 log.error("Chunk %s cua job %s that bai sau %s lan retry: %s", chunk.index, job_id, settings.max_retry, exc)
+                fallback_count += 1
                 fallback_audio = work_dir / f"chunk_{chunk.index}_original.mp3"
                 await audio_utils.extract_range(source_audio, chunk.start_sec, chunk.end_sec, fallback_audio)
                 chunk_audio_paths.append(fallback_audio)
@@ -126,6 +128,21 @@ async def run_dubbing_pipeline(
                 await redis_client.publish_progress(
                     job_id, lesson_id, chunkIndex=chunk.index, totalChunks=len(chunks), status="FAILED",
                 )
+
+        if chunks and fallback_count == len(chunks):
+            # Không một chunk nào lồng tiếng được thật — final.mp3 sẽ chỉ là audio gốc ghép
+            # lại, không khác gì "Xem tạm với âm thanh gốc" mà FE đã có sẵn. Báo FAILED thay
+            # vì COMPLETED để không đánh lừa là đã có bản dịch, tránh việc AiJob.status thành
+            # công giả trong khi transcripts/audio_chunks không có dòng nào (0 hàng thật).
+            error_message = (
+                f"Toan bo {len(chunks)}/{len(chunks)} doan long tieng that bai sau "
+                f"{settings.max_retry} lan retry moi doan — hoc vien van xem duoc video voi "
+                f"am thanh goc, chua co ban dich thuc su."
+            )
+            log.error("Job %s: %s", job_id, error_message)
+            await backend_client.finish_failed(job_id, error_message=error_message)
+            await redis_client.publish_progress(job_id, lesson_id, status="FAILED")
+            return {"status": "FAILED", "jobId": job_id, "reason": "ALL_CHUNKS_FALLBACK"}
 
         final_path = work_dir / "final.mp3"
         await audio_utils.concat_files(chunk_audio_paths, final_path)

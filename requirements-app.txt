@@ -31,7 +31,10 @@ ffmpeg-python==0.2.0
 pydub>=0.25.1
 
 # ── TTS (BR-DUB-03) ──
-edge-tts==7.0.0
+# KHÔNG ghim phiên bản: Microsoft đổi cơ chế xác thực WebSocket của Edge Read
+# Aloud định kỳ (token Sec-MS-GEC), ghim cứng dễ gãy hết mọi giọng đọc với lỗi
+# 403 ngay ở bước bắt tay — cùng lý do yt-dlp bên dưới cũng không ghim version.
+edge-tts
 
 # ── Tải video YouTube (BR-CHUNK-01) ──
 # KHÔNG ghim phiên bản: YouTube đổi cơ chế thường xuyên, ghim cứng dễ gãy tải.
@@ -43,3 +46,7 @@ boto3>=1.34
 # ── Tiện ích ──
 python-multipart==0.0.20
 tenacity==9.0.0        # retry có exponential backoff (BR-CHUNK-04)
+# langcodes: tra mã locale (vi-VN, en...) -> tên ngôn ngữ tự nhiên cho prompt Gemini
+# (services/translation.py) — dùng dữ liệu ISO 639 chuẩn, KHÔNG tự liệt kê bảng tên
+# ngôn ngữ (BR-DUB-07 cấm hardcode danh sách ngôn ngữ ở bất kỳ đâu).
+langcodes==3.4.1

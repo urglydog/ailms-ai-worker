@@ -12,6 +12,7 @@ TUYỆT ĐỐI không hardcode trong file này.
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 import time
 import logging
@@ -24,6 +25,14 @@ from app.providers.base import ProviderInvalidResponse, build_client
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 
 logger = logging.getLogger(__name__)
+
+# Tự giới hạn RPM (doc/SETUP_GIAIDOAN5.md mục 3) — Gemini Free Tier ~15 RPM, tự đặt
+# thấp hơn (GEMINI_RATE_LIMIT_RPM mặc định 12) để giảm khả năng dính 429 ngay từ đầu.
+# BỔ SUNG cho KeyPoolManager bên dưới, KHÔNG thay thế: throttle giảm TẦN SUẤT gọi,
+# key pool xử lý phần còn lại khi vẫn bị 429 dù đã throttle (ví dụ nhiều worker cùng chạy).
+_rate_lock = asyncio.Lock()
+_call_timestamps: list[float] = []
+_MAX_TRANSIENT_RETRIES = 3
 
 # Client RIÊNG cho Gemini (bulkhead) — tách khỏi Groq và Edge-TTS.
 _client: httpx.AsyncClient | None = None
@@ -194,13 +203,28 @@ class FunctionCall:
     arguments: dict
 
 
+async def _throttle_rpm() -> None:
+    """Chờ nếu đã gọi đủ `GEMINI_RATE_LIMIT_RPM` lần trong 60 giây gần nhất."""
+    async with _rate_lock:
+        now = time.monotonic()
+        window_start = now - 60.0
+        while _call_timestamps and _call_timestamps[0] < window_start:
+            _call_timestamps.pop(0)
+        if len(_call_timestamps) >= settings.gemini_rate_limit_rpm:
+            wait_sec = 60.0 - (now - _call_timestamps[0])
+            if wait_sec > 0:
+                logger.info(f"Gemini tu gioi han RPM: cho {wait_sec:.1f}s truoc khi goi tiep")
+                await asyncio.sleep(wait_sec)
+        _call_timestamps.append(time.monotonic())
+
+
 async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
     client = get_client()
     pool = get_key_pool()
     if not pool.slots:
         raise ProviderInvalidResponse("No Gemini API keys/models configured.")
 
-    max_retries = max(len(pool.slots), 3)
+    max_retries = max(len(pool.slots), _MAX_TRANSIENT_RETRIES)
 
     for attempt in range(max_retries):
         slot = pool.get_slot()
@@ -209,6 +233,7 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
 
         key = slot["key"]
         model = slot["model"]
+        await _throttle_rpm()
         url = f"{_BASE_URL}/models/{model}:generateContent?key={key}"
 
         if attempt > 0:
