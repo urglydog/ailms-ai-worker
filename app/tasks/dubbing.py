@@ -26,10 +26,37 @@ from __future__ import annotations
 import asyncio
 import logging
 
+from app import redis_client
 from app.celery_app import celery_app
+from app.http import backend_client
+from app.providers import edge_tts, gemini, groq_asr
 from app.services.dubbing_service import run_dubbing_pipeline
 
 log = logging.getLogger(__name__)
+
+
+async def _run_and_cleanup(
+    job_id: int, lesson_id: int, video_url: str, target_language: str, celery_task_id: str | None
+) -> dict:
+    try:
+        return await run_dubbing_pipeline(job_id, lesson_id, video_url, target_language, celery_task_id=celery_task_id)
+    finally:
+        # Celery prefork TÁI SỬ DỤNG process cho nhiều task, nhưng `asyncio.run()` ở
+        # `run_pipeline` bên dưới tạo vòng lặp MỚI cho MỖI task. Client httpx
+        # module-level của từng provider (dùng chung code với FastAPI `ai-api`,
+        # nơi 1 vòng lặp sống suốt process nên không cần đóng giữa chừng) nếu
+        # không đóng ở đây sẽ giữ tham chiếu kết nối buộc với vòng lặp VỪA ĐÓNG —
+        # job TIẾP THEO chạy trong CÙNG worker process sẽ lỗi "Event loop is
+        # closed" ngay ở request HTTP đầu tiên. `aclose()` reset lại `_client`
+        # về `None`, job sau sẽ tự tạo client mới gắn đúng vòng lặp mới của nó.
+        await asyncio.gather(
+            backend_client.aclose(),
+            gemini.aclose(),
+            groq_asr.aclose(),
+            edge_tts.aclose(),
+            redis_client.aclose(),
+            return_exceptions=True,
+        )
 
 
 @celery_app.task(bind=True, name="app.tasks.dubbing.run_pipeline")
@@ -44,5 +71,5 @@ def run_pipeline(self, job_id: int, lesson_id: int, video_url: str, target_langu
     """
     log.info("Bat dau pipeline long tieng: job=%s lesson=%s lang=%s", job_id, lesson_id, target_language)
     return asyncio.run(
-        run_dubbing_pipeline(job_id, lesson_id, video_url, target_language, celery_task_id=self.request.id)
+        _run_and_cleanup(job_id, lesson_id, video_url, target_language, celery_task_id=self.request.id)
     )

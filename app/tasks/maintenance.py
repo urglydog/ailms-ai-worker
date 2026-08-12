@@ -7,42 +7,49 @@ Cac task nay goi API noi bo cua backend, KHONG truy cap MySQL truc tiep.
 from __future__ import annotations
 
 import logging
+import shutil
+import time
+from pathlib import Path
 
 from app.celery_app import celery_app
+from app.config import settings
 
 log = logging.getLogger(__name__)
 
 
 @celery_app.task(name="app.tasks.maintenance.cleanup_temp_files")
 def cleanup_temp_files() -> dict:
-    import os
-    import time
-    
-    target_dir = "/tmp/lms-processing"
-    if not os.path.exists(target_dir):
-        return {"status": "skipped", "reason": "directory not found"}
-        
-    deleted_files = 0
-    now = time.time()
-    cutoff = now - (24 * 3600)  # 24 hours
-    
-    for root, _, files in os.walk(target_dir):
-        for f in files:
-            # BR-STORAGE-01: Không xoá file mp3 lồng tiếng (BR-DUB-04)
-            if f.endswith('.mp3'):
+    """BR-STORAGE-01: xoa file trung gian (.wav, chunk video) qua 24 gio.
+
+    File .mp3 lồng tiếng thì lưu VĨNH VIỄN để tái sử dụng (BR-DUB-04) — nhưng chỉ
+    SAU KHI đã upload lên B2; mọi thứ còn nằm trong `settings.temp_dir` đều là file
+    trung gian, tuyệt đối không có ngoại lệ nào cần giữ lại ở đây.
+
+    `dubbing_service.run_dubbing_pipeline` đã tự dọn thư mục job ngay khi kết thúc
+    (nhánh `finally`) — task này chỉ là LƯỚI AN TOÀN cho thư mục mồ côi khi worker
+    bị crash/OOM giữa chừng, chạy mỗi giờ theo `celery_app.py::beat_schedule`.
+    """
+    root = Path(settings.temp_dir)
+    if not root.exists():
+        return {"removed": 0}
+
+    cutoff = time.time() - settings.intermediate_file_ttl_hours * 3600
+    removed = 0
+    for entry in root.iterdir():
+        try:
+            if entry.stat().st_mtime >= cutoff:
                 continue
-                
-            filepath = os.path.join(root, f)
-            try:
-                mtime = os.path.getmtime(filepath)
-                if mtime < cutoff:
-                    os.remove(filepath)
-                    deleted_files += 1
-            except OSError:
-                pass
-                
-    log.info(f"Cleaned up {deleted_files} old temp files from {target_dir}.")
-    return {"status": "success", "deleted_files": deleted_files}
+            if entry.is_file() and entry.suffix.lower() == ".mp3":
+                continue
+            if entry.is_dir():
+                shutil.rmtree(entry, ignore_errors=True)
+            else:
+                entry.unlink(missing_ok=True)
+            removed += 1
+        except OSError as exc:
+            log.warning("Khong xoa duoc %s: %s", entry, exc)
+    log.info("cleanup_temp_files: da xoa %s muc qua %sh", removed, settings.intermediate_file_ttl_hours)
+    return {"removed": removed}
 
 
 @celery_app.task(name="app.tasks.maintenance.cleanup_old_notifications")
