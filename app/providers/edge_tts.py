@@ -12,6 +12,7 @@ tuyệt đối không hardcode danh sách ngôn ngữ ở đây.
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 from dataclasses import dataclass
 from decimal import Decimal
@@ -21,8 +22,17 @@ import edge_tts as _edge_tts_lib
 
 from app.audio_utils import measure_duration_sec
 
+log = logging.getLogger(__name__)
+
 # Giới hạn phiên TTS đồng thời (bulkhead cho một provider không dùng HTTP pool).
 _semaphore = asyncio.Semaphore(4)
+
+# Edge-TTS thỉnh thoảng trả "No audio was received" khi bị gọi dồn dập (nghẽn/rate-limit
+# phía Microsoft) dù key/voice/text đều hợp lệ — quan sát thực tế: 1 chunk có thể gọi TTS
+# 4-5 lần liên tiếp (câu gốc + tối đa 2 lần re-summarize BR-DUB-03 + rate cuối). Retry NGAY
+# TẠI ĐÂY (rẻ, chỉ tốn 1 lệnh TTS) thay vì để lỗi bubble lên buộc `_process_chunk_with_retry`
+# chạy lại TOÀN BỘ ASR + 2 lượt dịch Gemini của cả chunk chỉ vì TTS glitch thoáng qua.
+_MAX_TTS_RETRIES = 3
 
 
 @dataclass(frozen=True)
@@ -74,8 +84,25 @@ async def synthesize(text: str, voice_name: str, output_path: str, rate: str | N
     `TranscriptSegment` vì đó là quyết định ở tầng điều phối, không phải TTS.
     """
     async with _semaphore:
-        communicate = _edge_tts_lib.Communicate(text, voice=voice_name, rate=rate or "+0%")
-        await communicate.save(output_path)
+        last_error: Exception | None = None
+        for attempt in range(1, _MAX_TTS_RETRIES + 1):
+            try:
+                communicate = _edge_tts_lib.Communicate(text, voice=voice_name, rate=rate or "+0%")
+                await communicate.save(output_path)
+                last_error = None
+                break
+            except Exception as exc:
+                last_error = exc
+                if attempt == _MAX_TTS_RETRIES:
+                    break
+                wait_sec = 1.5 * attempt
+                log.warning(
+                    "Edge-TTS loi (lan %s/%s), giong=%s: %s — retry sau %.1fs",
+                    attempt, _MAX_TTS_RETRIES, voice_name, exc, wait_sec,
+                )
+                await asyncio.sleep(wait_sec)
+        if last_error is not None:
+            raise last_error
 
     duration_sec = await measure_duration_sec(output_path)
     return SynthesisResult(
