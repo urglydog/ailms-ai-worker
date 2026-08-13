@@ -14,6 +14,8 @@ Bon quy tac tuyet doi khong duoc lam sai:
 from fastapi import APIRouter, status
 from pydantic import BaseModel, Field
 
+from app.services import tutor_service
+
 router = APIRouter(prefix="/api/v1/tutor", tags=["tutor"])
 
 
@@ -33,5 +35,15 @@ class TutorAskResponse(BaseModel):
 
 @router.post("/ask", response_model=TutorAskResponse, status_code=status.HTTP_200_OK)
 async def ask(request: TutorAskRequest) -> TutorAskResponse:
-    """Handler mong: chi parse input, goi service, tra response."""
-    raise NotImplementedError("Se duoc hien thuc o Giai doan 8 (UC30).")
+    """Handler mong: chi parse input, goi service, tra response.
+
+    `session_id` nhan tu request nhung khong dung o day — AI Worker khong ghi MySQL,
+    BE moi la noi so huu ChatSession/ChatMessage (goi dong bo endpoint nay roi tu luu
+    lai ca cau hoi lan cau tra loi).
+    """
+    result = await tutor_service.answer(request.lesson_id, request.question)
+    return TutorAskResponse(
+        answer=result.answer,
+        cited_timestamps=result.cited_timestamps,
+        token_used=result.token_used,
+    )

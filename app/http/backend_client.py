@@ -191,6 +191,29 @@ async def finish_skipped(job_id: int, *, reason: str) -> None:
     )
 
 
+@dataclass(frozen=True)
+class TutorContext:
+    """Ngữ cảnh bài học cho prompt Socratic Tutor (UC30) — lấy qua endpoint nội bộ,
+    KHÔNG dùng client rời rạc như `discovery.py`/`instructor_ai.py` (2 file đó tự mở
+    `httpx.AsyncClient()` với header `Authorization: Bearer` sai quy ước — client
+    bulkhead + header `X-Internal-Token` của module này mới là chuẩn của dự án).
+    """
+
+    lesson_title: str
+    source_language: str | None
+    duration_sec: int
+
+
+async def get_tutor_context(lesson_id: int) -> TutorContext:
+    response = await _request("GET", f"/api/internal/tutor/lessons/{lesson_id}/context")
+    payload = response.json()
+    return TutorContext(
+        lesson_title=payload["lessonTitle"],
+        source_language=payload.get("sourceLanguage"),
+        duration_sec=payload["durationSec"],
+    )
+
+
 async def finish_source_unavailable(job_id: int, *, error_message: str) -> None:
     """BR-DUB-11: nguồn video không còn khả dụng — backend đánh dấu Lesson.status=UNAVAILABLE."""
     await _request(

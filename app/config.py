@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     # ── RAG cho Socratic Tutor (BR-TUTOR-03) ─────────────────
     supabase_vector_url: str = ""
     supabase_vector_key: str = ""
+    # BR-DUB-02 áp dụng tương tự cho model embedding: tên model đọc từ env.
+    gemini_embedding_model: str = ""
+    embedding_dimensions: int = 768
+    # BR-TUTOR-04: ngưỡng cosine similarity tối thiểu — giá trị cụ thể bị mất khi
+    # convert DOCX→Markdown (TODO(doc) trong business-rules.md), tạm dùng 0.7.
+    rag_min_similarity: float = 0.7
 
     # ── Cloud storage ────────────────────────────────────────
     b2_bucket_name: str = ""

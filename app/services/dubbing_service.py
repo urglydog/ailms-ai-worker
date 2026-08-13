@@ -32,7 +32,7 @@ from app.config import settings
 from app.http import backend_client
 from app.models import Segment
 from app.providers import edge_tts, groq_asr
-from app.services import translation
+from app.services import translation, tutor_indexing
 from app.storage import upload_file
 
 log = logging.getLogger(__name__)
@@ -274,6 +274,18 @@ async def _process_chunk_once(
             source_dtos.append(backend_client.segment_to_json(
                 seg.seq, Decimal(str(seg.start)), Decimal(str(seg.end)), seg.text,
             ))
+
+    if generate_source_dtos and source_dtos:
+        # Việc phát sinh của F8.1 (Socratic Tutor, UC30): đánh index embedding CÂU GỐC
+        # (chưa dịch) lên Supabase Vector để RAG truy xuất sau này. Chỉ chạy đúng 1 lần
+        # cho lần đầu bài học được lồng tiếng (generate_source_dtos chỉ True khi
+        # reuse_source=False) — các job dịch sang ngôn ngữ khác sau đó không lặp lại.
+        # Lỗi ở bước này KHÔNG được làm hỏng cả job lồng tiếng (BR-TUTOR-03 là tính năng
+        # phụ trợ, không phải luồng chính) nên bọc try/except riêng, chỉ log cảnh báo.
+        try:
+            await tutor_indexing.index_segments(ctx.lesson_id, detected_language, segments)
+        except Exception as exc:
+            log.warning("Danh index embedding cho lesson %s that bai (khong anh huong job long tieng): %s", ctx.lesson_id, exc)
 
     chunk_audio = work_dir / f"chunk_{chunk.index}_dub.mp3"
     await audio_utils.concat_with_leading_silence(sentence_paths, leading_silences, chunk_audio)
