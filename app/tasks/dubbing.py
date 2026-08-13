@@ -29,7 +29,7 @@ import logging
 from app import redis_client
 from app.celery_app import celery_app
 from app.http import backend_client
-from app.providers import edge_tts, gemini, groq_asr
+from app.providers import edge_tts, gemini, groq_asr, supabase_vector
 from app.services.dubbing_service import run_dubbing_pipeline
 
 log = logging.getLogger(__name__)
@@ -54,6 +54,7 @@ async def _run_and_cleanup(
             gemini.aclose(),
             groq_asr.aclose(),
             edge_tts.aclose(),
+            supabase_vector.aclose(),
             redis_client.aclose(),
             return_exceptions=True,
         )

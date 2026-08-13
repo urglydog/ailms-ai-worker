@@ -298,6 +298,54 @@ async def generate_with_tools(prompt: str, tools: list[dict], *, system_instruct
     return await _execute_request(payload)
 
 
+async def embed_content(text: str) -> list[float]:
+    """Sinh vector embedding cho RAG của Socratic Tutor (BR-TUTOR-03/04).
+
+    Dùng chung KeyPoolManager/throttle của `generate()` nhưng gọi endpoint
+    `embedContent` riêng (khác `generateContent`) và KHÔNG đi qua `_execute_request`
+    vì payload/response shape khác hẳn (không có `candidates`, không FunctionCall).
+    `outputDimensionality` cắt gọn vector theo `settings.embedding_dimensions` — đã xác
+    nhận Gemini hỗ trợ tham số này cho `settings.gemini_embedding_model`.
+    """
+    client = get_client()
+    pool = get_key_pool()
+    if not pool.slots:
+        raise ProviderInvalidResponse("No Gemini API keys/models configured.")
+
+    payload = {
+        "content": {"parts": [{"text": text}]},
+        "outputDimensionality": settings.embedding_dimensions,
+    }
+
+    for attempt in range(_MAX_TRANSIENT_RETRIES):
+        slot = pool.get_slot()
+        if not slot:
+            raise ProviderInvalidResponse("No active Gemini slot available (all in cooldown).")
+        key = slot["key"]
+        await _throttle_rpm()
+        url = f"{_BASE_URL}/models/{settings.gemini_embedding_model}:embedContent?key={key}"
+        try:
+            resp = await client.post(url, json=payload, timeout=30.0)
+            if resp.status_code == 200:
+                pool.reset_failure(key, slot["model"])
+                values = resp.json().get("embedding", {}).get("values")
+                if not values:
+                    raise ProviderInvalidResponse("Gemini embedContent tra ve rong.")
+                return values
+            if resp.status_code == 429:
+                pool.mark_cool_down(key, slot["model"], 60)
+                continue
+            if resp.status_code in (400, 403):
+                pool.mark_invalid(key, slot["model"])
+                continue
+            pool.mark_failure(key, slot["model"])
+        except httpx.RequestError as exc:
+            logger.error(f"Gemini embedContent network error: {exc}")
+            pool.mark_failure(key, slot["model"])
+
+    raise ProviderInvalidResponse("Max retries exceeded for Gemini embedContent.")
+
+
 def _parse_response(payload: dict, model: str) -> LlmResult | FunctionCall:
     """Chuyển JSON của Gemini thành dataclass; sai định dạng thì raise."""
     try:

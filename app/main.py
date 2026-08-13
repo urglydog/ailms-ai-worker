@@ -19,7 +19,7 @@ from fastapi import FastAPI
 from app import redis_client
 from app.api import admin, discovery, health, instructor_ai, tutor
 from app.http import backend_client
-from app.providers import edge_tts, gemini, groq_asr
+from app.providers import edge_tts, gemini, groq_asr, supabase_vector
 from app.tasks.dubbing import run_pipeline
 
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +62,7 @@ async def lifespan(app: FastAPI):
     await groq_asr.aclose()
     await gemini.aclose()
     await edge_tts.aclose()
+    await supabase_vector.aclose()
     await backend_client.aclose()
     await redis_client.aclose()
     log.info("AI Worker API da dung")
