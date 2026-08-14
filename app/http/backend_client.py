@@ -221,3 +221,42 @@ async def finish_source_unavailable(job_id: int, *, error_message: str) -> None:
         f"/api/internal/dubbing/jobs/{job_id}/finish",
         json_body={"outcome": "SOURCE_UNAVAILABLE", "errorMessage": error_message},
     )
+
+@dataclass(frozen=True)
+class MaterialContext:
+    generation_id: int
+    course_id: int
+    course_title: str
+    material_type: str
+    language: str
+    scope_type: str
+    scope_ref_id: int | None
+    quantity_level: str | None
+    difficulty_level: str | None
+    transcripts: list[dict]
+
+async def get_material_context(generation_id: int) -> MaterialContext:
+    response = await _request("GET", f"/api/internal/materials/{generation_id}/context")
+    payload = response.json()
+    return MaterialContext(
+        generation_id=payload["generationId"],
+        course_id=payload["courseId"],
+        course_title=payload["courseTitle"],
+        material_type=payload["materialType"],
+        language=payload["language"],
+        scope_type=payload["scopeType"],
+        scope_ref_id=payload.get("scopeRefId"),
+        quantity_level=payload.get("quantityLevel"),
+        difficulty_level=payload.get("difficultyLevel"),
+        transcripts=payload.get("transcripts") or [],
+    )
+
+async def finish_material_generation(generation_id: int, *, outcome: str, error_message: str | None = None, mermaid_code: str | None = None) -> None:
+    payload = {"outcome": outcome}
+    if error_message:
+        payload["errorMessage"] = error_message
+    if mermaid_code:
+        payload["mermaidCode"] = mermaid_code
+    
+    await _request("POST", f"/api/internal/materials/{generation_id}/finish", json_body=payload)
+
