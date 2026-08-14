@@ -38,16 +38,16 @@ async def aclose() -> None:
         _client = None
 
 
-async def brpop_job(timeout_sec: int = 5) -> dict | None:
+async def brpop_job(queue_key: str = QUEUE_KEY, timeout_sec: int = 5) -> dict | None:
     """Lấy 1 job từ hàng đợi `be/` LPUSH. None nếu hết timeout (hàng đợi rỗng)."""
-    result = await get_client().brpop(QUEUE_KEY, timeout=timeout_sec)
+    result = await get_client().brpop(queue_key, timeout=timeout_sec)
     if result is None:
         return None
     _key, raw_payload = result
     try:
         return json.loads(raw_payload)
     except json.JSONDecodeError:
-        log.error("Payload hang doi lms:dubbing:jobs khong phai JSON hop le: %r", raw_payload)
+        log.error("Payload hang doi %s khong phai JSON hop le: %r", queue_key, raw_payload)
         return None
 
 

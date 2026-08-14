@@ -51,12 +51,31 @@ async def _dubbing_queue_consumer() -> None:
             await asyncio.sleep(1)
 
 
+async def _material_queue_consumer() -> None:
+    log.info("Material queue consumer: bat dau lang nghe lms:material:jobs")
+    while True:
+        try:
+            job = await redis_client.brpop_job("lms:material:jobs", timeout_sec=5)
+            if job is None:
+                continue
+            log.info("Nhan job sinh hoc lieu tu hang doi: %s", job)
+            from app.tasks.material import generate_material
+            generate_material.delay(generation_id=job["generationId"])
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Loi khi xu ly hang doi lms:material:jobs, tiep tuc lang nghe")
+            await asyncio.sleep(1)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("AI Worker API khoi dong")
-    consumer_task = asyncio.create_task(_dubbing_queue_consumer())
+    dubbing_task = asyncio.create_task(_dubbing_queue_consumer())
+    material_task = asyncio.create_task(_material_queue_consumer())
     yield
-    consumer_task.cancel()
+    dubbing_task.cancel()
+    material_task.cancel()
     # Đóng client của TỪNG provider (mỗi provider một client riêng — bulkhead).
     log.info("Dang dong provider client...")
     await groq_asr.aclose()
