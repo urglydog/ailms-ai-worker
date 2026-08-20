@@ -16,6 +16,7 @@ KHONG sinh explanation, KHONG sinh moc thoi gian.
 
 import asyncio
 import logging
+import json
 
 from app import redis_client
 from app.celery_app import celery_app
@@ -42,6 +43,22 @@ async def _run_and_cleanup(generation_id: int) -> dict:
             else:
                 await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Mermaid hop le sau 2 lan thu")
                 return {"status": "FAILED", "reason": "Mermaid invalid"}
+        elif context.material_type == "FLASHCARD":
+            flashcards = await _generate_flashcards(full_text)
+            if flashcards:
+                await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", flashcards=flashcards)
+                return {"status": "COMPLETED"}
+            else:
+                await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Flashcard hop le sau 2 lan thu")
+                return {"status": "FAILED", "reason": "Flashcards invalid"}
+        elif context.material_type == "QUIZ":
+            quizzes = await _generate_quizzes(full_text)
+            if quizzes:
+                await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", quizzes=quizzes)
+                return {"status": "COMPLETED"}
+            else:
+                await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Quiz hop le sau 2 lan thu")
+                return {"status": "FAILED", "reason": "Quizzes invalid"}
         else:
             await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message=f"Chua ho tro {context.material_type}")
             return {"status": "FAILED"}
@@ -63,7 +80,7 @@ async def _generate_mindmap(text: str) -> str | None:
     Ban la mot chuyen gia giao duc. Hay tao mot so do tu duy (Mindmap) bang Mermaid.js cho noi dung bai hoc sau day.
     Yeu cau:
     1. Chi tra ve ma nguon Mermaid, khong giai thich gi them.
-    2. Su dung cu phap mindmap cua Mermaid (bat dau bang 'mindmap').
+    2. Su dung cu phap flowchart cua Mermaid (bat dau bang 'flowchart TD').
     3. Do sau toi da 4-5 cap.
     4. Noi dung phai ngan gon, suc tich.
     
@@ -86,11 +103,86 @@ async def _generate_mindmap(text: str) -> str | None:
         code = code.strip()
         
         # Simple validation
-        if code.startswith("mindmap"):
+        if code.startswith("flowchart") or code.startswith("graph"):
             return code
             
         log.warning(f"Mermaid code khong hop le lan {attempt + 1}, dang thu lai. Code: {code}")
-        prompt += "\nLuu y: Ban da tra ve sai cu phap trong lan truoc. Hay chac chan dung dung cu phap mindmap cua Mermaid!"
+        prompt += "\nLuu y: Ban da tra ve sai cu phap trong lan truoc. Hay chac chan dung dung cu phap flowchart TD cua Mermaid!"
+        
+    return None
+
+async def _generate_flashcards(text: str) -> list[dict] | None:
+    prompt = f"""
+    Ban la mot chuyen gia giao duc. Hay tao mot bo Flashcards (The ghi nho) cho noi dung bai hoc sau day.
+    Yeu cau:
+    1. Chi tra ve JSON Array, khong giai thich gi them.
+    2. Moi the co "front_text" (cau hoi/thuat ngu) va "back_text" (giai thich/dinh nghia).
+    3. Dinh dang JSON chinh xac: [{{"front_text": "...", "back_text": "..."}}, ...]
+    
+    Noi dung:
+    {text[:500000]}
+    """
+    
+    for attempt in range(2):
+        response = await gemini.generate_content(prompt)
+        content = response.text.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+        elif content.startswith("```"):
+            content = content[3:]
+            if content.endswith("```"):
+                content = content[:-3]
+        content = content.strip()
+        
+        try:
+            data = json.loads(content)
+            if isinstance(data, list) and len(data) > 0 and "front_text" in data[0] and "back_text" in data[0]:
+                return data
+        except json.JSONDecodeError:
+            pass
+            
+        log.warning(f"Flashcard JSON khong hop le lan {attempt + 1}, dang thu lai. Output: {content}")
+        prompt += "\nLuu y: Ban da tra ve sai dinh dang JSON trong lan truoc. Hay chac chan tra ve JSON array hop le!"
+        
+    return None
+
+async def _generate_quizzes(text: str) -> list[dict] | None:
+    prompt = f"""
+    Ban la mot chuyen gia giao duc. Hay tao mot bo cau hoi trac nghiem (Quiz) cho noi dung bai hoc sau day.
+    Yeu cau:
+    1. Chi tra ve JSON Array, khong giai thich gi them.
+    2. Moi cau hoi co "content" (noi dung cau hoi), "options" (mang DUNG 4 phuong an), va "correct_answer" (chuoi nguyen van 1 trong 4 phuong an).
+    3. KHONG sinh giai thich (explanation), KHONG sinh moc thoi gian (timestamp).
+    4. Dinh dang JSON chinh xac: [{{"content": "...", "options": ["A", "B", "C", "D"], "correct_answer": "..."}}, ...]
+    
+    Noi dung:
+    {text[:500000]}
+    """
+    
+    for attempt in range(2):
+        response = await gemini.generate_content(prompt)
+        content = response.text.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+            if content.endswith("```"):
+                content = content[:-3]
+        elif content.startswith("```"):
+            content = content[3:]
+            if content.endswith("```"):
+                content = content[:-3]
+        content = content.strip()
+        
+        try:
+            data = json.loads(content)
+            if isinstance(data, list) and len(data) > 0 and "content" in data[0] and "options" in data[0] and len(data[0]["options"]) == 4 and "correct_answer" in data[0]:
+                return data
+        except json.JSONDecodeError:
+            pass
+            
+        log.warning(f"Quiz JSON khong hop le lan {attempt + 1}, dang thu lai. Output: {content}")
+        prompt += "\nLuu y: Ban da tra ve sai dinh dang JSON trong lan truoc. Hay chac chan tra ve JSON array hop le va dung 4 options!"
         
     return None
 
