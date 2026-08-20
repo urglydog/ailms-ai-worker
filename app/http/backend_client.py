@@ -251,12 +251,24 @@ async def get_material_context(generation_id: int) -> MaterialContext:
         transcripts=payload.get("transcripts") or [],
     )
 
-async def finish_material_generation(generation_id: int, *, outcome: str, error_message: str | None = None, mermaid_code: str | None = None) -> None:
+async def finish_material_generation(
+    generation_id: int, 
+    *, 
+    outcome: str, 
+    error_message: str | None = None, 
+    mermaid_code: str | None = None,
+    flashcards: list[dict] | None = None,
+    quizzes: list[dict] | None = None
+) -> None:
     payload = {"outcome": outcome}
     if error_message:
         payload["errorMessage"] = error_message
     if mermaid_code:
         payload["mermaidCode"] = mermaid_code
+    if flashcards is not None:
+        payload["flashcards"] = flashcards
+    if quizzes is not None:
+        payload["quizzes"] = quizzes
     
     await _request("POST", f"/api/internal/materials/{generation_id}/finish", json_body=payload)
 

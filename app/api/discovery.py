@@ -53,6 +53,7 @@ You must extract the parameters (categorySlug, level, priceType, keyword) from t
 - level can be BEGINNER, INTERMEDIATE, ADVANCED.
 - priceType can be FREE, PAID.
 - keyword is a search term.
+Crucially, you MUST also provide a `replyText` argument containing a natural language, conversational response to the user. For example, if they don't know where to start learning web dev, explain what they should learn first and say you found some courses for them.
 """
 
 search_tool = {
@@ -78,6 +79,10 @@ search_tool = {
                     "keyword": {
                         "type": "STRING",
                         "description": "Search keyword for title or description."
+                    },
+                    "replyText": {
+                        "type": "STRING",
+                        "description": "A natural language conversational response to the user based on their query. Provide advice, recommendations, or a friendly greeting along with the search intent."
                     }
                 }
             }
@@ -144,7 +149,7 @@ async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
                         level_label=c.get("level", "ALL")
                     ))
                     
-                reply_text = f"Tôi đã tìm thấy {len(courses)} khóa học phù hợp với yêu cầu của bạn." if courses else "Rất tiếc, tôi không tìm thấy khóa học nào phù hợp với yêu cầu của bạn."
+                reply_text = args.get("replyText", f"Tôi đã tìm thấy {len(courses)} khóa học phù hợp với yêu cầu của bạn." if courses else "Rất tiếc, tôi không tìm thấy khóa học nào phù hợp với yêu cầu của bạn.")
                 return DiscoveryChatResponse(reply=reply_text, courses=courses)
     else:
         # LLM returned text (e.g. refused to answer or small talk)
