@@ -89,7 +89,7 @@ async def _generate_mindmap(text: str) -> str | None:
     """
     
     for attempt in range(2):
-        response = await gemini.generate_content(prompt)
+        response = await gemini.generate(prompt)
         # Extract markdown block if any
         code = response.text.strip()
         if code.startswith("```mermaid"):
