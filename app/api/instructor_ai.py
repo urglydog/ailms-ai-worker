@@ -154,7 +154,7 @@ async def _handle_function_call(
     """Thực thi function call từ Gemini và trả về dữ liệu thực."""
     if fn_name == "get_my_course_stats":
         data = await _fetch_backend(
-            f"/api/v1/dashboard/instructor?email={instructor_email}"
+            f"/api/internal/instructor-ai/dashboard?email={instructor_email}"
         )
         return {
             "function": "get_my_course_stats",
@@ -165,7 +165,7 @@ async def _handle_function_call(
     elif fn_name == "analyze_reviews":
         course_id = args.get("course_id")
         data = await _fetch_backend(
-            f"/api/v1/courses/{course_id}/reviews?size=100&includeHidden=false"
+            f"/api/internal/instructor-ai/courses/{course_id}/reviews?email={instructor_email}&size=100"
         )
         content = data.get("content", [])
         if not content:
