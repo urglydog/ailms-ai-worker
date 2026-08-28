@@ -52,8 +52,7 @@ Use the `search_courses` function to search for courses based on user queries.
 You must extract the parameters (categorySlug, level, priceType, keyword) from the user's message.
 - level can be BEGINNER, INTERMEDIATE, ADVANCED.
 - priceType can be FREE, PAID.
-- keyword is a search term.
-Crucially, you MUST also provide a `replyText` argument containing a natural language, conversational response to the user. For example, if they don't know where to start learning web dev, explain what they should learn first and say you found some courses for them.
+- keyword: MUST be a concise search term derived from the user's intent. For example, if the user wants to "build a website", use keywords like "web", "html", or "css". If they want to learn "english", use "tiếng anh" or "english". DO NOT use long phrases as keywords.
 """
 
 search_tool = {
@@ -78,11 +77,7 @@ search_tool = {
                     },
                     "keyword": {
                         "type": "STRING",
-                        "description": "Search keyword for title or description."
-                    },
-                    "replyText": {
-                        "type": "STRING",
-                        "description": "A natural language conversational response to the user based on their query. Provide advice, recommendations, or a friendly greeting along with the search intent."
+                        "description": "Search keyword for title or description. Extract this carefully from the user's implicit or explicit intent."
                     }
                 }
             }
@@ -93,15 +88,16 @@ search_tool = {
 
 @router.post("/chat", response_model=DiscoveryChatResponse, status_code=status.HTTP_200_OK)
 async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
-    """Handler mong: chi parse input, goi service, tra response."""
+    """Handler 2 bước: Bước 1 gọi AI trích xuất intent, Bước 2 lấy data thật gọi AI lần 2 để trả lời."""
     try:
+        # Bước 1: Trích xuất intent
         res = await gemini.generate_with_tools(
             prompt=request.message,
             tools=[search_tool],
             system_instruction=SYSTEM_INSTRUCTION
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"AI Request Failed: {e}")
         
     if isinstance(res, gemini.FunctionCall):
         if res.name == "search_courses":
@@ -148,8 +144,34 @@ async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
                         rating=float(c.get("avgRating", 0)),
                         level_label=c.get("level", "ALL")
                     ))
+                
+                # Bước 2: Sinh câu trả lời dựa trên kết quả thật
+                # Tóm tắt tối đa 5 khóa học để tránh quá tải payload (chỉ cần title và price để AI biết)
+                summary_data = [
+                    {"title": c.title, "price": c.price_label, "level": c.level_label}
+                    for c in courses[:5]
+                ]
+                
+                prompt2 = f"""Người dùng đã hỏi: "{request.message}"
+Dưới đây là kết quả tìm kiếm khóa học từ cơ sở dữ liệu dựa trên ý định của họ:
+{summary_data}
+(Tổng số khóa học tìm thấy: {len(courses)})
+
+Hãy đóng vai trợ lý tư vấn khóa học, viết một câu trả lời tự nhiên cho người dùng:
+- Nếu danh sách trống, hãy nhẹ nhàng xin lỗi và nói rằng hiện chưa có khóa học nào khớp chính xác, và đưa ra lời khuyên.
+- Nếu có khóa học, hãy giới thiệu sơ qua một cách thân thiện (không cần liệt kê chi tiết vì chúng đã được hiển thị trên giao diện, chỉ cần nói chung chung).
+Tuyệt đối KHÔNG tự bịa ra khóa học không có trong danh sách trên."""
+                
+                try:
+                    final_res = await gemini.generate(
+                        prompt=prompt2,
+                        system_instruction="Bạn là trợ lý tư vấn khóa học thân thiện, chuyên nghiệp."
+                    )
+                    reply_text = final_res.text
+                except Exception as e:
+                    # Fallback nếu AI lần 2 lỗi
+                    reply_text = f"Tôi đã tìm thấy {len(courses)} khóa học phù hợp với yêu cầu của bạn." if courses else "Rất tiếc, tôi không tìm thấy khóa học nào phù hợp với yêu cầu của bạn."
                     
-                reply_text = args.get("replyText", f"Tôi đã tìm thấy {len(courses)} khóa học phù hợp với yêu cầu của bạn." if courses else "Rất tiếc, tôi không tìm thấy khóa học nào phù hợp với yêu cầu của bạn.")
                 return DiscoveryChatResponse(reply=reply_text, courses=courses)
     else:
         # LLM returned text (e.g. refused to answer or small talk)
