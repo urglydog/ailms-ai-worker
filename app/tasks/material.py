@@ -124,7 +124,7 @@ async def _generate_flashcards(text: str) -> list[dict] | None:
     """
     
     for attempt in range(2):
-        response = await gemini.generate_content(prompt)
+        response = await gemini.generate(prompt)
         content = response.text.strip()
         if content.startswith("```json"):
             content = content[7:]
@@ -162,7 +162,7 @@ async def _generate_quizzes(text: str) -> list[dict] | None:
     """
     
     for attempt in range(2):
-        response = await gemini.generate_content(prompt)
+        response = await gemini.generate(prompt)
         content = response.text.strip()
         if content.startswith("```json"):
             content = content[7:]
