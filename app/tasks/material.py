@@ -36,7 +36,7 @@ async def _run_and_cleanup(generation_id: int) -> dict:
         full_text = " ".join([t["text"] for t in context.transcripts])
         
         if context.material_type == "MINDMAP":
-            mermaid_code = await _generate_mindmap(full_text)
+            mermaid_code = await _generate_mindmap(full_text, context.language)
             if mermaid_code:
                 await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", mermaid_code=mermaid_code)
                 return {"status": "COMPLETED"}
@@ -44,7 +44,7 @@ async def _run_and_cleanup(generation_id: int) -> dict:
                 await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Mermaid hop le sau 2 lan thu")
                 return {"status": "FAILED", "reason": "Mermaid invalid"}
         elif context.material_type == "FLASHCARD":
-            flashcards = await _generate_flashcards(full_text)
+            flashcards = await _generate_flashcards(full_text, context.language)
             if flashcards:
                 await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", flashcards=flashcards)
                 return {"status": "COMPLETED"}
@@ -52,7 +52,7 @@ async def _run_and_cleanup(generation_id: int) -> dict:
                 await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Flashcard hop le sau 2 lan thu")
                 return {"status": "FAILED", "reason": "Flashcards invalid"}
         elif context.material_type == "QUIZ":
-            quizzes = await _generate_quizzes(full_text)
+            quizzes = await _generate_quizzes(full_text, context.language)
             if quizzes:
                 await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", quizzes=quizzes)
                 return {"status": "COMPLETED"}
@@ -75,7 +75,7 @@ async def _run_and_cleanup(generation_id: int) -> dict:
             return_exceptions=True,
         )
 
-async def _generate_mindmap(text: str) -> str | None:
+async def _generate_mindmap(text: str, language: str) -> str | None:
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot so do tu duy (Mindmap) bang Mermaid.js cho noi dung bai hoc sau day.
     Yeu cau:
@@ -83,6 +83,8 @@ async def _generate_mindmap(text: str) -> str | None:
     2. Su dung cu phap flowchart cua Mermaid (bat dau bang 'flowchart TD').
     3. Do sau toi da 4-5 cap.
     4. Noi dung phai ngan gon, suc tich.
+    5. QUAN TRONG: TOAN BO NOI DUNG TRONG MINDMAP PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).
+    6. QUAN TRONG: KHONG DUOC phep su dung markdown lists (nhu - hay *) hoac the HTML ben trong cac node cua mindmap, chi dung plain text de tranh loi hien thi.
     
     Noi dung:
     {text[:500000]}
@@ -107,17 +109,18 @@ async def _generate_mindmap(text: str) -> str | None:
             return code
             
         log.warning(f"Mermaid code khong hop le lan {attempt + 1}, dang thu lai. Code: {code}")
-        prompt += "\nLuu y: Ban da tra ve sai cu phap trong lan truoc. Hay chac chan dung dung cu phap flowchart TD cua Mermaid!"
+        prompt += "\nLuu y: Ban da tra ve sai cu phap trong lan truoc. Hay chac chan dung dung cu phap flowchart TD cua Mermaid va khong dung markdown list trong text!"
         
     return None
 
-async def _generate_flashcards(text: str) -> list[dict] | None:
+async def _generate_flashcards(text: str, language: str) -> list[dict] | None:
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot bo Flashcards (The ghi nho) cho noi dung bai hoc sau day.
     Yeu cau:
     1. Chi tra ve JSON Array, khong giai thich gi them.
     2. Moi the co "front_text" (cau hoi/thuat ngu) va "back_text" (giai thich/dinh nghia).
     3. Dinh dang JSON chinh xac: [{{"front_text": "...", "back_text": "..."}}, ...]
+    4. QUAN TRONG: TOAN BO NOI DUNG FLASHCARDS PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).
     
     Noi dung:
     {text[:500000]}
@@ -148,7 +151,7 @@ async def _generate_flashcards(text: str) -> list[dict] | None:
         
     return None
 
-async def _generate_quizzes(text: str) -> list[dict] | None:
+async def _generate_quizzes(text: str, language: str) -> list[dict] | None:
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot bo cau hoi trac nghiem (Quiz) cho noi dung bai hoc sau day.
     Yeu cau:
@@ -156,6 +159,7 @@ async def _generate_quizzes(text: str) -> list[dict] | None:
     2. Moi cau hoi co "content" (noi dung cau hoi), "options" (mang DUNG 4 phuong an), va "correct_answer" (chuoi nguyen van 1 trong 4 phuong an).
     3. KHONG sinh giai thich (explanation), KHONG sinh moc thoi gian (timestamp).
     4. Dinh dang JSON chinh xac: [{{"content": "...", "options": ["A", "B", "C", "D"], "correct_answer": "..."}}, ...]
+    5. QUAN TRONG: TOAN BO NOI DUNG QUIZ PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).
     
     Noi dung:
     {text[:500000]}
