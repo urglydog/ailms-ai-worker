@@ -24,14 +24,27 @@ ENV PYTHONUNBUFFERED=1 \
 
 # ffmpeg: BẮT BUỘC — tách audio, cắt chunk 10 phút, ghép final.mp3
 #         (BR-CHUNK-02, BR-CHUNK-05)
-# curl:   healthcheck
+# curl:   healthcheck + cài Deno bên dưới
+# unzip:  script cài Deno cần để giải nén bản tải về
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg curl \
+    && apt-get install -y --no-install-recommends ffmpeg curl unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# Deno: yt-dlp cần một JS runtime để giải mã chữ ký (nsig) khi tải audio YouTube
+# (BR-CHUNK-01) — thiếu runtime này yt-dlp mất một số định dạng hoặc dễ bị 403 dù
+# bản thân yt-dlp đã mới nhất (xem app/media.py::download_youtube_audio). Tải thẳng
+# file nhị phân từ GitHub Releases (KHÔNG dùng script cài chính thức deno.land/install.sh
+# — bước phụ của nó tải cấu hình shell completion từ registry JSR riêng, hay lỗi 403
+# không liên quan gì tới YouTube, làm cả build thất bại dù bản thân deno đã tải xong).
+RUN curl -fsSL https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip -o /tmp/deno.zip \
+    && unzip -o /tmp/deno.zip -d /usr/local/bin \
+    && rm /tmp/deno.zip \
+    && chmod +x /usr/local/bin/deno \
+    && deno --version
 
 # Cài dependency trước để cache layer
 COPY requirements-app.txt .
-RUN pip install --upgrade pip && pip install -r requirements-app.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir --upgrade -r requirements-app.txt
 
 COPY . .
 

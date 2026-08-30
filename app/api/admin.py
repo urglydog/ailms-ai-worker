@@ -10,8 +10,10 @@ import logging
 
 import redis as redis_sync
 from fastapi import APIRouter, Depends, HTTPException, Header
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 
+from app.celery_app import celery_app
 from app.config import settings
 
 log = logging.getLogger(__name__)
@@ -23,6 +25,34 @@ def _verify_internal_token(x_internal_token: Optional[str] = Header(default=None
     """Bảo vệ endpoint — chỉ backend nội bộ mới có token này."""
     if x_internal_token != settings.internal_api_token:
         raise HTTPException(status_code=403, detail="Forbidden: invalid internal token")
+
+
+class CancelJobReq(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    # `be/` gửi JSON camelCase (khớp quy ước REST của cả dự án).
+    celery_task_id: Optional[str] = Field(default=None, alias="celeryTaskId")
+
+
+@router.post("/dubbing-jobs/{job_id}/cancel", dependencies=[Depends(_verify_internal_token)])
+async def cancel_dubbing_job(job_id: int, req: CancelJobReq) -> dict:
+    """UC20 — `be/` gọi khi học viên bấm huỷ. `be/` ĐÃ ghi `AiJob.status=CANCELLED` trước khi
+    gọi tới đây rồi (nguồn sự thật là DB) — việc ở đây chỉ là cố dừng tiến trình Celery đang
+    chạy THẬT SỚM, tránh tốn thêm request Gemini/Groq/Azure vô ích cho một job đã bị huỷ.
+
+    `terminate=True` gửi SIGTERM cho đúng process con (prefork pool) đang chạy task này —
+    Celery tự thay process con mới, KHÔNG ảnh hưởng các job khác đang chạy song song trong
+    cùng worker (khác hẳn cách chữa cháy thủ công trước đây: `docker restart` cả container,
+    giết luôn mọi job đang chạy chứ không chỉ job bị huỷ). `revoke()` cũng tự ghi nhớ
+    `celery_task_id` này vào danh sách "đã huỷ" trên mọi worker, nên nếu message vô tình được
+    phát lại (redelivery do `task_acks_late=True`) thì cũng không chạy lại nữa.
+    """
+    if not req.celery_task_id:
+        return {"cancelled": False, "reason": "job chua duoc AI Worker nhan (chua co celery_task_id)"}
+
+    celery_app.control.revoke(req.celery_task_id, terminate=True, signal="SIGTERM")
+    log.info("Job %s: da gui lenh huy Celery task %s", job_id, req.celery_task_id)
+    return {"cancelled": True}
 
 
 @router.get("/queue-stats", dependencies=[Depends(_verify_internal_token)])

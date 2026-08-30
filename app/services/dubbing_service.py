@@ -31,7 +31,7 @@ from app import audio_utils, media, redis_client
 from app.config import settings
 from app.http import backend_client
 from app.models import Segment
-from app.providers import edge_tts, groq_asr
+from app.providers import azure_tts, groq_asr
 from app.services import translation, tutor_indexing
 from app.storage import upload_file
 
@@ -83,6 +83,9 @@ async def run_dubbing_pipeline(
 
     try:
         ctx = await backend_client.get_context(job_id)
+        # F5.3 mở rộng — sự kiện "stage" chỉ để FE hiển thị nhãn cụ thể hơn (không phải chunk
+        # xong hay job xong), KHÔNG có tác dụng gì tới logic pipeline nếu publish thất bại.
+        await redis_client.publish_progress(job_id, lesson_id, stage="PREPARING")
 
         source_audio = work_dir / "source.wav"
         try:
@@ -105,7 +108,7 @@ async def run_dubbing_pipeline(
         for chunk in chunks:
             try:
                 chunk_audio, consumed_seq = await _process_chunk_with_retry(
-                    job_id, ctx, chunk, source_audio, work_dir, reuse_source, next_seq,
+                    job_id, lesson_id, ctx, chunk, len(chunks), source_audio, work_dir, reuse_source, next_seq,
                 )
                 next_seq += consumed_seq
                 chunk_audio_paths.append(chunk_audio)
@@ -144,6 +147,7 @@ async def run_dubbing_pipeline(
             await redis_client.publish_progress(job_id, lesson_id, status="FAILED")
             return {"status": "FAILED", "jobId": job_id, "reason": "ALL_CHUNKS_FALLBACK"}
 
+        await redis_client.publish_progress(job_id, lesson_id, stage="FINALIZING")
         final_path = work_dir / "final.mp3"
         await audio_utils.concat_files(chunk_audio_paths, final_path)
         final_duration = await audio_utils.measure_duration_sec(final_path)
@@ -179,7 +183,8 @@ async def run_dubbing_pipeline(
 
 
 async def _process_chunk_with_retry(
-    job_id: int, ctx, chunk: ChunkPlan, source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
+    job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
+    source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
 ) -> tuple[Path, int]:
     """BR-CHUNK-04 — retry tối đa `MAX_RETRY` lần, exponential backoff. `SKIPPED`
     (raise `SkippedPipelineError`) KHÔNG được retry — phải bubble lên ngay.
@@ -187,7 +192,9 @@ async def _process_chunk_with_retry(
     last_error: Exception | None = None
     for attempt in range(1, settings.max_retry + 1):
         try:
-            return await _process_chunk_once(job_id, ctx, chunk, source_audio, work_dir, reuse_source, next_seq)
+            return await _process_chunk_once(
+                job_id, lesson_id, ctx, chunk, total_chunks, source_audio, work_dir, reuse_source, next_seq,
+            )
         except SkippedPipelineError:
             raise
         except Exception as exc:
@@ -205,7 +212,8 @@ async def _process_chunk_with_retry(
 
 
 async def _process_chunk_once(
-    job_id: int, ctx, chunk: ChunkPlan, source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
+    job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
+    source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
 ) -> tuple[Path, int]:
     detected_language: str | None = None
     generate_source_dtos = False
@@ -217,6 +225,9 @@ async def _process_chunk_once(
             if chunk.start_sec <= float(s.start_sec) < chunk.end_sec
         ]
     else:
+        await redis_client.publish_progress(
+            job_id, lesson_id, stage="ASR", chunkIndex=chunk.index, totalChunks=total_chunks,
+        )
         chunk_wav = work_dir / f"chunk_{chunk.index}_src.wav"
         await audio_utils.extract_range(source_audio, chunk.start_sec, chunk.end_sec, chunk_wav)
         stt = await groq_asr.transcribe(str(chunk_wav))
@@ -246,10 +257,16 @@ async def _process_chunk_once(
         )
         return empty_audio, 0
 
+    await redis_client.publish_progress(
+        job_id, lesson_id, stage="TRANSLATE", chunkIndex=chunk.index, totalChunks=total_chunks,
+    )
     translated_texts = await translation.translate_batch(
         segments, ctx.source_language or detected_language or "unknown", ctx.target_language,
     )
 
+    await redis_client.publish_progress(
+        job_id, lesson_id, stage="TTS", chunkIndex=chunk.index, totalChunks=total_chunks,
+    )
     sentence_paths: list[Path] = []
     leading_silences: list[float] = []
     target_dtos: list[dict] = []
@@ -287,6 +304,9 @@ async def _process_chunk_once(
         except Exception as exc:
             log.warning("Danh index embedding cho lesson %s that bai (khong anh huong job long tieng): %s", ctx.lesson_id, exc)
 
+    await redis_client.publish_progress(
+        job_id, lesson_id, stage="UPLOADING", chunkIndex=chunk.index, totalChunks=total_chunks,
+    )
     chunk_audio = work_dir / f"chunk_{chunk.index}_dub.mp3"
     await audio_utils.concat_with_leading_silence(sentence_paths, leading_silences, chunk_audio)
     trailing_gap = max(0.0, chunk.end_sec - prev_end)
@@ -304,7 +324,7 @@ async def _process_chunk_once(
 
 async def _synthesize_with_adaptive_rate(
     segment: Segment, text: str, voice_name: str, out_path: Path, target_language: str,
-) -> tuple[edge_tts.SynthesisResult, str, bool]:
+) -> tuple[azure_tts.SynthesisResult, str, bool]:
     """BR-DUB-03 với trần an toàn `MAX_RESUMMARIZE_ATTEMPTS` (doc/SETUP_GIAIDOAN5.md
     mục 4 — văn bản BR gốc không có điều kiện dừng, nếu lặp y nguyên sẽ có nguy cơ vô
     hạn khi câu đã quá ngắn mà R vẫn > 1.3):
@@ -319,7 +339,7 @@ async def _synthesize_with_adaptive_rate(
     current_text = text
     was_summarized = False
 
-    result = await edge_tts.synthesize(current_text, voice_name, str(out_path))
+    result = await azure_tts.synthesize(current_text, voice_name, str(out_path))
     r = _speech_rate(t_orig, result.duration_sec)
     # LƯU Ý (đối chiếu với bản Word gốc trước khi bảo vệ): tài liệu (DEVELOPMENT_PLAN.md,
     # skill lms-dubbing-pipeline, business-rules.md) đều viết công thức "R = T_orig/T_exp"
@@ -334,7 +354,7 @@ async def _synthesize_with_adaptive_rate(
     while r > R_UPPER_BOUND and attempts < settings.max_resummarize_attempts:
         current_text = await translation.resummarize(current_text, target_language)
         was_summarized = True
-        result = await edge_tts.synthesize(current_text, voice_name, str(out_path))
+        result = await azure_tts.synthesize(current_text, voice_name, str(out_path))
         r = _speech_rate(t_orig, result.duration_sec)
         attempts += 1
 
@@ -344,9 +364,9 @@ async def _synthesize_with_adaptive_rate(
             "can Admin xem qua UC45/UC46",
             segment.seq, r, attempts, settings.max_resummarize_attempts, MAX_TTS_RATE,
         )
-        result = await edge_tts.synthesize(current_text, voice_name, str(out_path), rate=MAX_TTS_RATE)
+        result = await azure_tts.synthesize(current_text, voice_name, str(out_path), rate=MAX_TTS_RATE)
     elif r > R_LOWER_BOUND:
-        result = await edge_tts.synthesize(current_text, voice_name, str(out_path), rate=edge_tts.compute_rate_flag(r))
+        result = await azure_tts.synthesize(current_text, voice_name, str(out_path), rate=azure_tts.compute_rate_flag(r))
     else:
         pad_sec = float(t_orig) - result.duration_sec
         if pad_sec > 0.05:

@@ -19,8 +19,11 @@ pydantic-settings==2.7.1
 celery==5.4.0
 redis==5.2.1
 
-# ── Gọi dịch vụ ngoài: Groq, Gemini, Edge-TTS, backend callback ──
+# ── Gọi dịch vụ ngoài: Groq, Gemini, Azure Speech, backend callback ──
 # Mỗi provider dùng một AsyncClient riêng (bulkhead) — xem app/providers/
+# TTS (BR-DUB-03) dùng REST API chính thức của Azure Speech Service qua httpx,
+# không cần thêm SDK riêng (`azure-cognitiveservices-speech` nặng, cần thêm
+# native binding) — thay cho thư viện `edge-tts` không chính thức trước đây.
 httpx==0.28.1
 
 # ── Xử lý media ──
@@ -29,12 +32,6 @@ ffmpeg-python==0.2.0
 # pydub: nối/đệm khoảng lặng audio (BR-CHUNK-05, BR-DUB-03) — bọc bằng
 # asyncio.to_thread() khi gọi vì bản thân pydub chạy ffmpeg đồng bộ.
 pydub>=0.25.1
-
-# ── TTS (BR-DUB-03) ──
-# KHÔNG ghim phiên bản: Microsoft đổi cơ chế xác thực WebSocket của Edge Read
-# Aloud định kỳ (token Sec-MS-GEC), ghim cứng dễ gãy hết mọi giọng đọc với lỗi
-# 403 ngay ở bước bắt tay — cùng lý do yt-dlp bên dưới cũng không ghim version.
-edge-tts
 
 # ── Tải video YouTube (BR-CHUNK-01) ──
 # KHÔNG ghim phiên bản: YouTube đổi cơ chế thường xuyên, ghim cứng dễ gãy tải.

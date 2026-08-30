@@ -202,6 +202,10 @@ class TutorContext:
     lesson_title: str
     source_language: str | None
     duration_sec: int
+    #: UC30 mở rộng — ngữ cảnh cho system prompt fallback Google Search Grounding khi
+    #: transcript không có đoạn nào đủ liên quan (xem app/services/tutor_service.py).
+    course_title: str = ""
+    course_description: str = ""
 
 
 async def get_tutor_context(lesson_id: int) -> TutorContext:
@@ -211,6 +215,8 @@ async def get_tutor_context(lesson_id: int) -> TutorContext:
         lesson_title=payload["lessonTitle"],
         source_language=payload.get("sourceLanguage"),
         duration_sec=payload["durationSec"],
+        course_title=payload.get("courseTitle") or "",
+        course_description=payload.get("courseDescription") or "",
     )
 
 

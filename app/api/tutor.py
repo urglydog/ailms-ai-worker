@@ -6,23 +6,46 @@ Bon quy tac tuyet doi khong duoc lam sai:
     cua de tai, vi pham la pha vo muc tieu nghien cuu.
   · BR-TUTOR-02 — moi phan hoi ve kien thuc bai giang BAT BUOC kem it nhat
     mot moc thoi gian nhap duoc.
-  · BR-TUTOR-03 — chi tra loi trong pham vi transcript truy xuat tu Supabase
-    Vector; ngoai pham vi thi tu choi lich su.
+  · BR-TUTOR-03 (mo rong) — uu tien tra loi trong pham vi transcript truy xuat tu
+    Supabase Vector; KHONG tim thay doan nao du lien quan (duoi nguong
+    settings.rag_min_similarity) thi fallback Google Search Grounding, co guard-rail
+    chu de trong system prompt (xem app/services/tutor_service.py::answer).
   · BR-TUTOR-04 — toi da 30 tin nhan/hoc vien/ngay, RAG lay toi da 5 doan.
 """
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.services import tutor_service
 
 router = APIRouter(prefix="/api/v1/tutor", tags=["tutor"])
 
+#: UC30 mở rộng — trần số tệp/lượt hỏi, lớp phòng vệ cuối (be/ đã chặn trước ở tầng nhận
+#: upload) — không tin tưởng mù quáng dữ liệu từ service khác dù là nội bộ.
+_MAX_ATTACHMENTS_PER_TURN = 3
+
+
+class HistoryTurn(BaseModel):
+    sender: str  # "USER" hoac "AI" — khop ChatMessage.sender ben be/
+    content: str
+
+
+class AttachmentIn(BaseModel):
+    mime_type: str
+    #: Noi dung tep DA ma hoa base64 — be/ tu upload len B2 rieng, day chi la ban sao gui
+    #: cho Gemini phan tich, KHONG phai nguon luu tru.
+    data_base64: str = Field(min_length=1)
+
 
 class TutorAskRequest(BaseModel):
     lesson_id: int
     question: str = Field(min_length=1, max_length=2000)
     session_id: int | None = None
+    #: UC30 mở rộng — vài lượt gần nhất của phiên chat (cũ -> mới, KHÔNG gồm câu hỏi hiện
+    #: tại), để Gemini nhớ được ngữ cảnh câu hỏi nối tiếp kiểu "câu hỏi trên là gì?".
+    history: list[HistoryTurn] = Field(default_factory=list)
+    #: UC30 mở rộng — tệp học viên đính kèm cùng câu hỏi (ảnh/tài liệu/mã nguồn).
+    attachments: list[AttachmentIn] = Field(default_factory=list)
 
 
 class TutorAskResponse(BaseModel):
@@ -41,9 +64,34 @@ async def ask(request: TutorAskRequest) -> TutorAskResponse:
     BE moi la noi so huu ChatSession/ChatMessage (goi dong bo endpoint nay roi tu luu
     lai ca cau hoi lan cau tra loi).
     """
-    result = await tutor_service.answer(request.lesson_id, request.question)
+    if len(request.attachments) > _MAX_ATTACHMENTS_PER_TURN:
+        raise HTTPException(status_code=400, detail=f"Toi da {_MAX_ATTACHMENTS_PER_TURN} tep moi luot hoi")
+
+    result = await tutor_service.answer(
+        request.lesson_id,
+        request.question,
+        history=[t.model_dump() for t in request.history],
+        attachments=[tutor_service.Attachment(mime_type=a.mime_type, data_base64=a.data_base64) for a in request.attachments],
+    )
     return TutorAskResponse(
         answer=result.answer,
         cited_timestamps=result.cited_timestamps,
         token_used=result.token_used,
     )
+
+
+class TutorTitleRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=2000)
+    answer: str = Field(min_length=1, max_length=4000)
+
+
+class TutorTitleResponse(BaseModel):
+    title: str
+
+
+@router.post("/title", response_model=TutorTitleResponse, status_code=status.HTTP_200_OK)
+async def title(request: TutorTitleRequest) -> TutorTitleResponse:
+    """UC30 mở rộng — be/ gọi ĐÚNG 1 LẦN ngay sau lượt hỏi đầu tiên của 1 phiên chat mới, để
+    tự đặt tên cuộc trò chuyện (giống ChatGPT/Gemini) thay vì luôn rút gọn câu hỏi đầu."""
+    generated = await tutor_service.generate_title(request.question, request.answer)
+    return TutorTitleResponse(title=generated)

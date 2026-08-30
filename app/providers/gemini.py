@@ -268,17 +268,31 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
 
 
 
-async def generate(prompt: str, *, system_instruction: str | None = None) -> LlmResult:
-    """Sinh văn bản. Dùng cho dịch 3 bước, re-summarization, sinh học liệu."""
-    payload = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-    }
+async def generate_conversation(
+    contents: list[dict], *, system_instruction: str | None = None, tools: list[dict] | None = None,
+) -> LlmResult | FunctionCall:
+    """Lớp nền tảng cho mọi lệnh sinh văn bản — nhận thẳng `contents` đa lượt (multi-turn)
+    thay vì 1 chuỗi prompt đơn, dùng cho UC30 Socratic Tutor cần nhớ lịch sử hội thoại
+    (mỗi phần tử `{"role": "user"|"model", "parts": [{"text": ...}]}`). `generate()`/
+    `generate_with_tools()` bên dưới chỉ là 2 lớp phủ tiện dụng cho trường hợp 1 lượt duy nhất,
+    giữ nguyên chữ ký cũ để không phải sửa các nơi gọi khác (dịch, sinh học liệu, Discovery).
+    """
+    payload = {"contents": contents}
+    if tools:
+        payload["tools"] = tools
     if system_instruction:
         payload["systemInstruction"] = {
             "role": "system",
             "parts": [{"text": system_instruction}],
         }
-    res = await _execute_request(payload)
+    return await _execute_request(payload)
+
+
+async def generate(prompt: str, *, system_instruction: str | None = None) -> LlmResult:
+    """Sinh văn bản 1 lượt. Dùng cho dịch 3 bước, re-summarization, sinh học liệu."""
+    res = await generate_conversation(
+        [{"role": "user", "parts": [{"text": prompt}]}], system_instruction=system_instruction,
+    )
     if isinstance(res, FunctionCall):
         raise ProviderInvalidResponse("Expected text but got FunctionCall from Gemini")
     return res
@@ -286,16 +300,9 @@ async def generate(prompt: str, *, system_instruction: str | None = None) -> Llm
 
 async def generate_with_tools(prompt: str, tools: list[dict], *, system_instruction: str | None = None) -> LlmResult | FunctionCall:
     """Gọi Gemini ở chế độ Function Calling — dùng cho UC49 Course Discovery."""
-    payload = {
-        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-        "tools": tools,
-    }
-    if system_instruction:
-        payload["systemInstruction"] = {
-            "role": "system",
-            "parts": [{"text": system_instruction}],
-        }
-    return await _execute_request(payload)
+    return await generate_conversation(
+        [{"role": "user", "parts": [{"text": prompt}]}], system_instruction=system_instruction, tools=tools,
+    )
 
 
 async def embed_content(text: str) -> list[float]:

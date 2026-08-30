@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from app.providers.edge_tts import _parse_rate_to_multiplier, compute_rate_flag
+from app.providers.azure_tts import _parse_rate_to_multiplier, compute_rate_flag
 
 
 def test_compute_rate_flag_examples_from_skill():
