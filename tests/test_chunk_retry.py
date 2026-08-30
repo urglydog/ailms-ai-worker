@@ -19,7 +19,7 @@ async def test_gives_up_after_max_retry_attempts(monkeypatch):
          patch("asyncio.sleep", sleep_mock):
         with pytest.raises(RuntimeError, match="Groq tam thoi loi"):
             await _process_chunk_with_retry(
-                job_id=1, ctx=object(), chunk=ChunkPlan(0, 0, 600),
+                job_id=1, lesson_id=21, ctx=object(), chunk=ChunkPlan(0, 0, 600), total_chunks=1,
                 source_audio="src.wav", work_dir="/tmp/x", reuse_source=False, next_seq=1,
             )
 
@@ -35,7 +35,7 @@ async def test_succeeds_on_second_attempt_without_exhausting_retries(monkeypatch
     with patch("app.services.dubbing_service._process_chunk_once", chunk_once_mock), \
          patch("asyncio.sleep", sleep_mock):
         result = await _process_chunk_with_retry(
-            job_id=1, ctx=object(), chunk=ChunkPlan(0, 0, 600),
+            job_id=1, lesson_id=21, ctx=object(), chunk=ChunkPlan(0, 0, 600), total_chunks=1,
             source_audio="src.wav", work_dir="/tmp/x", reuse_source=False, next_seq=1,
         )
 
@@ -51,7 +51,7 @@ async def test_skipped_pipeline_error_bypasses_retry_entirely():
     with patch("app.services.dubbing_service._process_chunk_once", chunk_once_mock):
         with pytest.raises(SkippedPipelineError):
             await _process_chunk_with_retry(
-                job_id=1, ctx=object(), chunk=ChunkPlan(0, 0, 600),
+                job_id=1, lesson_id=21, ctx=object(), chunk=ChunkPlan(0, 0, 600), total_chunks=1,
                 source_audio="src.wav", work_dir="/tmp/x", reuse_source=False, next_seq=1,
             )
 

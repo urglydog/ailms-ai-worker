@@ -34,7 +34,9 @@ async def test_skipped_pipeline_publishes_job_level_skipped_event(tmp_path, monk
 
     assert result == {"status": "SKIPPED", "jobId": 1}
     finish_skipped_mock.assert_awaited_once()
-    publish_progress_mock.assert_awaited_once_with(1, 21, status="SKIPPED")
+    # 2 lan: stage="PREPARING" luc dau pipeline, roi status="SKIPPED" luc ket thuc — chi
+    # sự kien CUOI CUNG (cap-job) moi can kiem tra dung noi dung o day.
+    publish_progress_mock.assert_awaited_with(1, 21, status="SKIPPED")
     # Su kien cap-job KHONG duoc co chunkIndex (FE dung dieu nay de phan biet 2 loai su kien)
     assert "chunkIndex" not in publish_progress_mock.await_args.kwargs
 

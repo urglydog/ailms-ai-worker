@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, patch
 
 from app.config import settings
 from app.models import Segment
-from app.providers.edge_tts import SynthesisResult
+from app.providers.azure_tts import SynthesisResult
 from app.services import dubbing_service
 
 
@@ -33,7 +33,7 @@ async def test_r_at_or_below_1_keeps_normal_speed_and_pads_silence(tmp_path):
     resummarize_mock = AsyncMock()
     pad_silence_mock = AsyncMock()
 
-    with patch("app.providers.edge_tts.synthesize", synthesize_mock), \
+    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
          patch("app.services.translation.resummarize", resummarize_mock), \
          patch("app.audio_utils.pad_silence", pad_silence_mock):
         result, final_text, was_summarized = await dubbing_service._synthesize_with_adaptive_rate(
@@ -54,7 +54,7 @@ async def test_r_between_1_and_1_3_applies_rate_flag_without_resummarize(tmp_pat
     synthesize_mock = AsyncMock(return_value=_synth_result(11.0))
     resummarize_mock = AsyncMock()
 
-    with patch("app.providers.edge_tts.synthesize", synthesize_mock), \
+    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
          patch("app.services.translation.resummarize", resummarize_mock):
         await dubbing_service._synthesize_with_adaptive_rate(
             segment, "cau vua", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
@@ -75,7 +75,7 @@ async def test_r_above_1_3_stops_after_max_resummarize_attempts_and_applies_30_p
     synthesize_mock = AsyncMock(return_value=_synth_result(8.0))
     resummarize_mock = AsyncMock(side_effect=lambda text, lang: text + " (rut gon)")
 
-    with patch("app.providers.edge_tts.synthesize", synthesize_mock), \
+    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
          patch("app.services.translation.resummarize", resummarize_mock):
         result, final_text, was_summarized = await dubbing_service._synthesize_with_adaptive_rate(
             segment, "cau qua dai can rut gon", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
@@ -101,7 +101,7 @@ async def test_r_recovers_within_attempts_stops_resummarize_loop_early(tmp_path)
     synthesize_mock = AsyncMock(side_effect=lambda *a, **k: _synth_result(next(durations, 5.5)))
     resummarize_mock = AsyncMock(side_effect=lambda text, lang: text + " (rut gon)")
 
-    with patch("app.providers.edge_tts.synthesize", synthesize_mock), \
+    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
          patch("app.services.translation.resummarize", resummarize_mock):
         await dubbing_service._synthesize_with_adaptive_rate(
             segment, "cau dai", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",

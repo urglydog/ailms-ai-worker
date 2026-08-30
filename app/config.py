@@ -43,7 +43,10 @@ class Settings(BaseSettings):
     gemini_rate_limit_rpm: int = 12
 
     # ── TTS ──────────────────────────────────────────────────
-    edge_tts_region: str = ""
+    # Azure Speech Service — thay cho edge-tts free trước đây (không có SLA, dễ bị
+    # Microsoft chặn/thay đổi đột ngột vì không phải API chính thức).
+    azure_speech_key: str = ""
+    azure_speech_region: str = ""
 
     # ── RAG cho Socratic Tutor (BR-TUTOR-03) ─────────────────
     supabase_vector_url: str = ""
