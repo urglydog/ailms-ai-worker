@@ -21,10 +21,19 @@ redis==5.2.1
 
 # ── Gọi dịch vụ ngoài: Groq, Gemini, Azure Speech, backend callback ──
 # Mỗi provider dùng một AsyncClient riêng (bulkhead) — xem app/providers/
-# TTS (BR-DUB-03) dùng REST API chính thức của Azure Speech Service qua httpx,
-# không cần thêm SDK riêng (`azure-cognitiveservices-speech` nặng, cần thêm
-# native binding) — thay cho thư viện `edge-tts` không chính thức trước đây.
+# TTS THEO LÔ (BR-DUB-03, pipeline lồng tiếng video) dùng REST API chính thức của Azure Speech
+# Service qua httpx, không cần SDK riêng — thay cho thư viện `edge-tts` không chính thức trước đây.
 httpx==0.28.1
+
+# ── Giai đoạn 11 (F11.3) — Live Classroom: lồng tiếng THỜI GIAN THỰC ──
+# Khác TTS theo lô ở trên: cần streaming liên tục (PushAudioInputStream + TranslationRecognizer),
+# REST API không làm được việc này — bắt buộc dùng SDK native chính thức của Azure (đổi lại quyết
+# định "gọn, không SDK" ở trên, nhưng CHỈ áp dụng cho tính năng Live, không ảnh hưởng pipeline
+# lồng tiếng video theo lô sẵn có). `livekit`: SDK Python thuần (rtc) để join phòng LiveKit, đọc
+# track audio giảng viên, publish lại track đã dịch — dùng trực tiếp thay vì cả framework
+# `livekit-agents` (xem docstring app/live/translation_agent.py).
+azure-cognitiveservices-speech==1.51.2
+livekit==1.1.16
 
 # ── Xử lý media ──
 # ffmpeg-python chỉ để dựng câu lệnh; FFmpeg binary cài trong Dockerfile.
