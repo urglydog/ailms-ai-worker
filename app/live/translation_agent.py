@@ -139,6 +139,18 @@ class TranslationAgentSession:
                 log.info("Live track %s [t+%.1fs]: da subscribe duoc audio giang vien", cfg.track_id, self._elapsed())
                 self._pump_task = asyncio.create_task(self._pump_instructor_audio(track))
 
+        @self._room.on("disconnected")
+        def _on_room_disconnected(reason=None) -> None:
+            # Phòng vệ (31/08/2026): phòng có thể bị đóng TỪ NGOÀI — `be/` chủ động gọi
+            # `deleteRoom()` khi kết thúc phiên (chống phí LiveKit oan), hoặc đơn giản là mất
+            # mạng. Không tự dọn thì `run()` cứ treo mãi ở `await self._stop_event.wait()`,
+            # Azure recognizer vẫn sống dù chẳng còn audio nào tới nữa.
+            log.info(
+                "Live track %s [t+%.1fs]: phong LiveKit bi dong tu ben ngoai (%s), tu dung agent",
+                cfg.track_id, self._elapsed(), reason,
+            )
+            self.stop()
+
         try:
             await self._room.connect(cfg.server_url, cfg.agent_token)
             # source PHAI set tuong minh — mac dinh la SOURCE_UNKNOWN (proto enum index 0), FE
