@@ -26,8 +26,11 @@ ENV PYTHONUNBUFFERED=1 \
 #         (BR-CHUNK-02, BR-CHUNK-05)
 # curl:   healthcheck + cài Deno bên dưới
 # unzip:  script cài Deno cần để giải nén bản tải về
+# libasound2, libssl3, ca-certificates: Giai đoạn 11 (F11.3) — azure-cognitiveservices-speech
+#         là native binding (không thuần Python), cần các thư viện hệ thống này để import được
+#         (xác nhận theo tài liệu cài đặt chính thức của Azure Speech SDK cho Linux)
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg curl unzip \
+    && apt-get install -y --no-install-recommends ffmpeg curl unzip libasound2 libssl3 ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Deno: yt-dlp cần một JS runtime để giải mã chữ ký (nsig) khi tải audio YouTube
