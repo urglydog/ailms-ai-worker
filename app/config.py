@@ -80,6 +80,23 @@ class Settings(BaseSettings):
     temp_dir: str = "/tmp/lms-processing"
     intermediate_file_ttl_hours: int = 24
 
+    # ── Live Classroom (F11) ─────────────────────────────────
+    # F11.6 — chọn "ai đứng sau xử lý nhận diện/dịch giọng nói live" cho CẢ Translation Agent lẫn
+    # Transcription Agent (app/live/providers/). Mặc định "azure" giữ hành vi y hệt trước khi có
+    # provider Gemini (F11.7) — đổi qua "gemini" chỉ cần sửa biến môi trường này rồi restart
+    # ai-api, không cần build lại code.
+    live_translation_provider: Literal["azure", "gemini"] = "azure"
+    # F11.7 — BR-DUB-02 áp dụng tương tự: tên model Gemini Live đọc từ env, KHÔNG hardcode. Đã xác
+    # nhận CẢ 2 model dưới đây tồn tại thật và nhận (`bidiGenerateContent`) qua
+    # `client.models.list()`/`client.models.get()` thật (01/09/2026).
+    # - `gemini_live_transcribe_model`: model Live THUẦN transcription (không dịch, không tổng hợp
+    #   giọng) — dùng cho "Phụ đề gốc" ĐỘC LẬP (GeminiTranscriptionProvider), rẻ/nhanh hơn 1 model
+    #   đàm thoại chung vì không cần trả lời bằng audio.
+    # - `gemini_live_translate_model`: model Live CÓ `translation_config` — dùng cho
+    #   GeminiTranslationProvider (audio dịch + phụ đề gốc/dịch đồng bộ tuyệt đối trong 1 phiên).
+    gemini_live_transcribe_model: str = "gemini-3.5-transcribe-live"
+    gemini_live_translate_model: str = "gemini-3.5-live-translate-preview"
+
 
 @lru_cache
 def get_settings() -> Settings:

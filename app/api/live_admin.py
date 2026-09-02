@@ -1,4 +1,6 @@
-"""F11.3 (UC52) — `be/` gọi vào đây để bật/tắt Translation Agent của 1 LiveLanguageTrack.
+"""F11.3 (UC52) — `be/` gọi vào đây để bật/tắt Translation Agent của 1 LiveLanguageTrack. F11.5 mở
+rộng thêm `transcription_router` — bật/tắt Transcription Agent (phụ đề gốc, độc lập ngôn ngữ) của
+1 LiveSession.
 
 Không yêu cầu JWT (đã kiểm soát bởi INTERNAL_API_TOKEN header) — giống hệt mô hình
 `/admin/dubbing-jobs/{id}/cancel` đã có ở Giai đoạn 5, chỉ dùng trong mạng nội bộ Docker.
@@ -13,12 +15,14 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.config import settings
-from app.live import registry
+from app.live import registry, transcription_registry
+from app.live.transcription_agent import TranscriptionAgentConfig
 from app.live.translation_agent import TranslationAgentConfig
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/live-tracks", tags=["live"])
+transcription_router = APIRouter(prefix="/admin/live-transcription", tags=["live"])
 
 
 def _verify_internal_token(x_internal_token: Optional[str] = Header(default=None)):
@@ -69,4 +73,37 @@ async def stop_live_track(track_id: int) -> dict:
     giống hệt tinh thần `/admin/dubbing-jobs/{id}/cancel`."""
     stopped = registry.stop(track_id)
     log.info("Live track %s: da nhan lenh stop Translation Agent (tung chay: %s)", track_id, stopped)
+    return {"stopped": stopped}
+
+
+class StartTranscriptionReq(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    room_name: str = Field(alias="roomName")
+    server_url: str = Field(alias="serverUrl")
+    agent_token: str = Field(alias="agentToken")
+    instructor_identity: str = Field(alias="instructorIdentity")
+    source_language: str = Field(alias="sourceLanguage")
+
+
+@transcription_router.post("/{session_id}/start", dependencies=[Depends(_verify_internal_token)])
+async def start_live_transcription(session_id: int, req: StartTranscriptionReq) -> dict:
+    """F11.5 mở rộng — `be/` gọi khi có người ĐẦU TIÊN tích "Phụ đề gốc" cho phiên `session_id`.
+    Cùng mô hình best-effort/fire-and-forget như `start_live_track` ở trên."""
+    transcription_registry.start(TranscriptionAgentConfig(
+        session_id=session_id,
+        room_name=req.room_name,
+        server_url=req.server_url,
+        agent_token=req.agent_token,
+        instructor_identity=req.instructor_identity,
+        source_language=req.source_language,
+    ))
+    log.info("Live session %s: da nhan lenh start Transcription Agent", session_id)
+    return {"started": True}
+
+
+@transcription_router.post("/{session_id}/stop", dependencies=[Depends(_verify_internal_token)])
+async def stop_live_transcription(session_id: int) -> dict:
+    stopped = transcription_registry.stop(session_id)
+    log.info("Live session %s: da nhan lenh stop Transcription Agent (tung chay: %s)", session_id, stopped)
     return {"stopped": stopped}

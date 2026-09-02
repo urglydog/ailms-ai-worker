@@ -12,7 +12,10 @@
 # ── Web API (UC30 Socratic Tutor, UC49 Course Discovery) ──
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
-pydantic==2.10.4
+# F11.7 (01/09/2026): nâng từ 2.10.4 — `google-genai==2.21.0` (bên dưới) đòi pydantic>=2.12.5,
+# xung đột thật lúc build image (`pip install` báo ResolutionImpossible). 2.12.5 là bản THẤP NHẤT
+# thoả cả 2 phía (fastapi==0.115.6 chấp nhận <3.0.0, pydantic-settings==2.7.1 chấp nhận >=2.7.0).
+pydantic==2.12.5
 pydantic-settings==2.7.1
 
 # ── Job nền (UC19 pipeline lồng tiếng, UC25 sinh học liệu) ──
@@ -34,6 +37,11 @@ httpx==0.28.1
 # `livekit-agents` (xem docstring app/live/translation_agent.py).
 azure-cognitiveservices-speech==1.51.2
 livekit==1.1.16
+# F11.7 — provider Gemini thay thế (LIVE_TRANSLATION_PROVIDER=gemini, tắt mặc định). Live API của
+# Gemini là WebSocket 2 chiều (`client.aio.live.connect`) — không hợp lý tự viết tay như REST thuần
+# đang dùng cho các lời gọi Gemini khác (app/providers/gemini.py, pipeline lồng tiếng video theo
+# lô), nên dùng thẳng SDK chính thức `google-genai`.
+google-genai==2.21.0
 
 # ── Xử lý media ──
 # ffmpeg-python chỉ để dựng câu lệnh; FFmpeg binary cài trong Dockerfile.
