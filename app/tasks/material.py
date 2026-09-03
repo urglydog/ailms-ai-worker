@@ -87,7 +87,7 @@ async def _generate_mindmap(text: str, language: str) -> str | None:
     6. QUAN TRONG: KHONG DUOC phep su dung markdown syntax trong text cua node:
        - KHONG dung dau gach dau dong (- hay *)
        - KHONG bat dau text bang "so." (vi du "1. abc") vi Mermaid se hieu nham la ordered list
-       - Neu can danh so, dung "so)" thay vi "so." (vi du: "1) Dieu kien" thay vi "1. Dieu kien")
+       - Neu can danh so, dung "(so)" thay vi "so." (vi du: "(1) Dieu kien" thay vi "1. Dieu kien")
        - KHONG dung the HTML
     
     Noi dung:
