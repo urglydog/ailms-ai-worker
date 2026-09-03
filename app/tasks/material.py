@@ -36,25 +36,28 @@ async def _run_and_cleanup(generation_id: int) -> dict:
         full_text = " ".join([t["text"] for t in context.transcripts])
         
         if context.material_type == "MINDMAP":
-            mermaid_code = await _generate_mindmap(full_text, context.language)
-            if mermaid_code:
-                await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", mermaid_code=mermaid_code)
+            result = await _generate_mindmap(full_text, context.language)
+            if result:
+                mermaid_code, usage = result
+                await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", mermaid_code=mermaid_code, usage_metadata=usage)
                 return {"status": "COMPLETED"}
             else:
                 await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Mermaid hop le sau 2 lan thu")
                 return {"status": "FAILED", "reason": "Mermaid invalid"}
         elif context.material_type == "FLASHCARD":
-            flashcards = await _generate_flashcards(full_text, context.language)
-            if flashcards:
-                await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", flashcards=flashcards)
+            result = await _generate_flashcards(full_text, context.language)
+            if result:
+                flashcards, usage = result
+                await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", flashcards=flashcards, usage_metadata=usage)
                 return {"status": "COMPLETED"}
             else:
                 await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Flashcard hop le sau 2 lan thu")
                 return {"status": "FAILED", "reason": "Flashcards invalid"}
         elif context.material_type == "QUIZ":
-            quizzes = await _generate_quizzes(full_text, context.language)
-            if quizzes:
-                await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", quizzes=quizzes)
+            result = await _generate_quizzes(full_text, context.language)
+            if result:
+                quizzes, usage = result
+                await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", quizzes=quizzes, usage_metadata=usage)
                 return {"status": "COMPLETED"}
             else:
                 await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Quiz hop le sau 2 lan thu")
@@ -111,14 +114,15 @@ async def _generate_mindmap(text: str, language: str) -> str | None:
         
         # Simple validation
         if code.startswith("flowchart") or code.startswith("graph"):
-            return code
+            usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens}
+            return code, usage
             
         log.warning(f"Mermaid code khong hop le lan {attempt + 1}, dang thu lai. Code: {code}")
         prompt += "\nLuu y: Ban da tra ve sai cu phap trong lan truoc. Hay chac chan dung dung cu phap flowchart TD cua Mermaid va khong dung markdown list trong text!"
         
     return None
 
-async def _generate_flashcards(text: str, language: str) -> list[dict] | None:
+async def _generate_flashcards(text: str, language: str) -> tuple[list[dict], dict] | None:
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot bo Flashcards (The ghi nho) cho noi dung bai hoc sau day.
     Yeu cau:
@@ -147,7 +151,8 @@ async def _generate_flashcards(text: str, language: str) -> list[dict] | None:
         try:
             data = json.loads(content)
             if isinstance(data, list) and len(data) > 0 and "front_text" in data[0] and "back_text" in data[0]:
-                return data
+                usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens}
+                return data, usage
         except json.JSONDecodeError:
             pass
             
@@ -156,7 +161,7 @@ async def _generate_flashcards(text: str, language: str) -> list[dict] | None:
         
     return None
 
-async def _generate_quizzes(text: str, language: str) -> list[dict] | None:
+async def _generate_quizzes(text: str, language: str) -> tuple[list[dict], dict] | None:
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot bo cau hoi trac nghiem (Quiz) cho noi dung bai hoc sau day.
     Yeu cau:
@@ -186,7 +191,8 @@ async def _generate_quizzes(text: str, language: str) -> list[dict] | None:
         try:
             data = json.loads(content)
             if isinstance(data, list) and len(data) > 0 and "content" in data[0] and "options" in data[0] and len(data[0]["options"]) == 4 and "correct_answer" in data[0]:
-                return data
+                usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens}
+                return data, usage
         except json.JSONDecodeError:
             pass
             
