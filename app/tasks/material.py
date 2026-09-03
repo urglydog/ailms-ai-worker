@@ -84,7 +84,11 @@ async def _generate_mindmap(text: str, language: str) -> str | None:
     3. Do sau toi da 4-5 cap.
     4. Noi dung phai ngan gon, suc tich.
     5. QUAN TRONG: TOAN BO NOI DUNG TRONG MINDMAP PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).
-    6. QUAN TRONG: KHONG DUOC phep su dung markdown lists (nhu - hay *) hoac the HTML ben trong cac node cua mindmap, chi dung plain text de tranh loi hien thi.
+    6. QUAN TRONG: KHONG DUOC phep su dung markdown syntax trong text cua node:
+       - KHONG dung dau gach dau dong (- hay *)
+       - KHONG bat dau text bang "so." (vi du "1. abc") vi Mermaid se hieu nham la ordered list
+       - Neu can danh so, dung "so)" thay vi "so." (vi du: "1) Dieu kien" thay vi "1. Dieu kien")
+       - KHONG dung the HTML
     
     Noi dung:
     {text[:500000]}
