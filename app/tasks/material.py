@@ -89,6 +89,7 @@ async def _generate_mindmap(text: str, language: str) -> str | None:
        - KHONG bat dau text bang "so." (vi du "1. abc") vi Mermaid se hieu nham la ordered list
        - Neu can danh so, dung "(so)" thay vi "so." (vi du: "(1) Dieu kien" thay vi "1. Dieu kien")
        - KHONG dung the HTML
+    7. QUAN TRONG: LUON LUON bao quanh text cua node bang dau ngoac kep de tranh loi cu phap. Vi du: NodeID["(1) Noi dung"] thay vi NodeID[(1) Noi dung]
     
     Noi dung:
     {text[:500000]}
