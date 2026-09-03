@@ -264,7 +264,8 @@ async def finish_material_generation(
     error_message: str | None = None, 
     mermaid_code: str | None = None,
     flashcards: list[dict] | None = None,
-    quizzes: list[dict] | None = None
+    quizzes: list[dict] | None = None,
+    usage_metadata: dict | None = None
 ) -> None:
     payload = {"outcome": outcome}
     if error_message:
@@ -275,6 +276,8 @@ async def finish_material_generation(
         payload["flashcards"] = flashcards
     if quizzes is not None:
         payload["quizzes"] = quizzes
+    if usage_metadata is not None:
+        payload["usageMetadata"] = usage_metadata
     
     await _request("POST", f"/api/internal/materials/{generation_id}/finish", json_body=payload)
 
