@@ -46,6 +46,7 @@ class TutorAskRequest(BaseModel):
     history: list[HistoryTurn] = Field(default_factory=list)
     #: UC30 mở rộng — tệp học viên đính kèm cùng câu hỏi (ảnh/tài liệu/mã nguồn).
     attachments: list[AttachmentIn] = Field(default_factory=list)
+    language: str | None = None
 
 
 class TutorAskResponse(BaseModel):
@@ -72,6 +73,7 @@ async def ask(request: TutorAskRequest) -> TutorAskResponse:
         request.question,
         history=[t.model_dump() for t in request.history],
         attachments=[tutor_service.Attachment(mime_type=a.mime_type, data_base64=a.data_base64) for a in request.attachments],
+        language=request.language,
     )
     return TutorAskResponse(
         answer=result.answer,
