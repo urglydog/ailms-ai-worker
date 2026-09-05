@@ -75,10 +75,15 @@ def _build_history_contents(history: list[dict]) -> list[dict]:
     ]
 
 
-def _build_system_instruction(lesson_title: str, course_title: str, course_description: str) -> str:
+def _build_system_instruction(lesson_title: str, course_title: str, course_description: str, language: str | None = None) -> str:
     topic = course_description or course_title
+    
+    lang_rule = ""
+    if language:
+        lang_rule = f"\nCRITICAL INSTRUCTION: You MUST write your ENTIRE response in the language corresponding to the language code '{language}'. DO NOT use Vietnamese or English unless it is the requested language."
+
     return f"""Ban la Gia su AI theo phuong phap Socratic cho khoa hoc "{course_title}" (chu de:
-{topic}), dang ho tro bai giang "{lesson_title}".
+{topic}), dang ho tro bai giang "{lesson_title}".{lang_rule}
 
 Moi luot hoi, ban co the duoc cung cap:
 - NGU CANH BAI GIANG: cac doan transcript ma he thong tim thay LIEN QUAN CHU DE cau hoi —
@@ -151,6 +156,7 @@ class Attachment:
 
 async def answer(
     lesson_id: int, question: str, history: list[dict] | None = None, attachments: list[Attachment] | None = None,
+    language: str | None = None,
 ) -> TutorAnswer:
     context = await backend_client.get_tutor_context(lesson_id)
     history_contents = _build_history_contents(history or [])
@@ -167,7 +173,7 @@ async def answer(
     result = await gemini.generate_conversation(
         contents,
         system_instruction=_build_system_instruction(
-            context.lesson_title, context.course_title, context.course_description,
+            context.lesson_title, context.course_title, context.course_description, language
         ),
         # Luon bat san — Gemini tu quyet co can dung hay khong dua theo quy tac 1-3 trong
         # system prompt, khong con phan nhanh o tang Python theo nguong similarity.
