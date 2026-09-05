@@ -48,16 +48,13 @@ ffmpeg_gpu: false
 # BUG THẬT (05/09/2026): yt-dlp bị YouTube chặn theo dải IP datacenter/VPS ("Sign in to confirm
 # you're not a bot") khi TẢI nội dung video thật cho pipeline lồng tiếng (UC19) — xác nhận trên
 # server production. Metadata (kiểm video tồn tại/công khai + lấy thời lượng ở be/, UC34) đã đổi
-# sang YouTube Data API v3 chính thức, KHÔNG dùng yt-dlp nữa nên không bị ảnh hưởng — nhưng bước
-# TẢI này (core/_1_ytdlp.py) không có API chính thức thay thế được, bắt buộc dùng cookie phiên
-# đăng nhập YouTube thật để vượt qua chặn bot-detection. File cookie (định dạng Netscape, xuất
-# bằng extension "Get cookies.txt LOCALLY") đặt tại `secrets/youtube_cookies.txt` — thư mục
-# `secrets/` đã thêm vào `.gitignore`, KHÔNG BAO GIỜ commit file cookie thật lên git. Đường dẫn
-# tương đối theo WORKDIR `/app` trong container (khớp `../ai-worker:/app` bind-mount ở
-# `be/docker-compose.yml`) — dán file vào đúng thư mục này trên máy host là container thấy ngay,
-# không cần build lại/restart container (bind-mount, không phải COPY lúc build image).
+# sang YouTube Data API v3 chính thức nên không bị ảnh hưởng — bước TẢI này (core/_1_ytdlp.py)
+# không có API chính thức thay thế được.
+#   - `cookies_path`: ĐÃ THỬ, bỏ — cần refresh cookie định kỳ, đổi hướng trước khi hoàn thiện.
+#   - `proxy_list_path`: ĐANG DÙNG — proxy dân dụng (residential), xem `secrets/README.md`.
 youtube:
-  cookies_path: 'secrets/youtube_cookies.txt'
+  cookies_path: ''
+  proxy_list_path: 'secrets/youtube_proxies.txt'
 
 # *Default resolution for downloading YouTube videos [360, 1080, best]
 ytb_resolution: '1080'

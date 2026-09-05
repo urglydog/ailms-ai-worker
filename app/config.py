@@ -80,6 +80,16 @@ class Settings(BaseSettings):
     temp_dir: str = "/tmp/lms-processing"
     intermediate_file_ttl_hours: int = 24
 
+    # ── YouTube (UC18/UC19, app/media.py::download_youtube_audio) ────
+    # BUG THẬT (05/09/2026): yt-dlp bị YouTube chặn ("Sign in to confirm you're not a bot") khi
+    # tải audio nguồn từ IP datacenter/VPS thật của server production — xác nhận thật, không phải
+    # lỗi cấu hình. Đã thử cookie (bỏ, cần refresh định kỳ) và proxy MIỄN PHÍ dạng datacenter của
+    # Webshare (xác nhận thật KHÔNG giải quyết được — vẫn bị chặn y hệt trên 4/4 proxy đã thử).
+    # Chỉ proxy RESIDENTIAL thật (trả phí, IP trông như 1 kết nối Internet nhà dân) mới có tác
+    # dụng. File không tồn tại/rỗng -> không dùng proxy, tải thẳng như trước (không bắt buộc).
+    # Định dạng file: xem `secrets/README.md`.
+    youtube_proxy_list_path: str = "secrets/youtube_proxies.txt"
+
     # ── Live Classroom (F11) ─────────────────────────────────
     # F11.6 — chọn "ai đứng sau xử lý nhận diện/dịch giọng nói live" cho CẢ Translation Agent lẫn
     # Transcription Agent (app/live/providers/). Mặc định "azure" giữ hành vi y hệt trước khi có
