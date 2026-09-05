@@ -49,6 +49,9 @@ __pypackages__/
 *.pem
 config.local.yaml
 config.backup.yaml
+# Cookie phiên đăng nhập YouTube thật (05/09/2026) — youtube.cookies_path trong config.yaml,
+# dùng để yt-dlp vượt chặn bot-detection lúc tải video cho pipeline lồng tiếng (UC19).
+secrets/
 
 # ── File trung gian của pipeline (BR-STORAGE-01) ──
 # Phải xoá sau khi job kết thúc, tối đa 24 giờ. Không bao giờ commit.
