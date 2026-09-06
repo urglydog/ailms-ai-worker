@@ -220,6 +220,30 @@ async def get_tutor_context(lesson_id: int) -> TutorContext:
     )
 
 
+@dataclass(frozen=True)
+class CourseLesson:
+    """1 bài học trong danh sách bài học của khóa — UC30 mở rộng (06/09/2026): phiên chat dùng
+    chung cho cả khóa học, AI Worker cần danh sách này để tự phân loại bài học viên nhắc tới
+    trong câu hỏi (nếu có) khác bài đang mở, xem `app/services/tutor_service.py::resolve_target_lesson`.
+    """
+
+    lesson_id: int
+    lesson_title: str
+    display_order: int
+
+
+async def get_course_lessons(course_id: int) -> list[CourseLesson]:
+    response = await _request("GET", f"/api/internal/tutor/courses/{course_id}/lessons")
+    return [
+        CourseLesson(
+            lesson_id=row["lessonId"],
+            lesson_title=row["lessonTitle"],
+            display_order=row["displayOrder"],
+        )
+        for row in response.json()
+    ]
+
+
 async def finish_source_unavailable(job_id: int, *, error_message: str) -> None:
     """BR-DUB-11: nguồn video không còn khả dụng — backend đánh dấu Lesson.status=UNAVAILABLE."""
     await _request(

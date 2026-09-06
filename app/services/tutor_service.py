@@ -28,6 +28,16 @@
 Nhớ hội thoại (UC30 mở rộng): `answer()` nhận thêm `history` — vài lượt gần nhất của
 phiên chat (be/ tự cắt tối đa `HISTORY_LIMIT` lượt trước khi gửi sang) — dựng thành
 `contents` đa lượt cho Gemini, để trả lời được câu hỏi nối tiếp kiểu "câu hỏi trên là gì?".
+
+Phiên chat pham vi khoa hoc (06/09/2026, UC30 mo rong): truoc day 1 phien chat luon gan cung 1
+`lesson_id`. Gio be/ dung chung 1 danh sach lich su cho ca khoa hoc, bai hoc dang mo chi con la
+`current_lesson_id` truyen theo TUNG luot hoi — `answer()` tu goi `resolve_target_lesson()` de
+PHAN LOAI xem cau hoi dang hoi ve bai nao (mac dinh la bai dang mo, tru khi hoc vien noi ro ten/so
+1 bai KHAC trong khoa), roi moi chay dung pipeline RAG + Gemini cu cho DUNG bai do.
+
+`answer_single_lesson()` giu nguyen hanh vi CU (1 lesson_id co dinh, khong phan loai) — chi con
+dung cho luong giai thich cau hoi trac nghiem (`com.lms.material.service.QuizService`, goi thang
+`/api/v1/tutor/ask` voi `lesson_id=-1`, khong qua `TutorService.ask` cua Socratic Tutor).
 """
 
 from __future__ import annotations
@@ -47,6 +57,51 @@ class TutorAnswer:
     answer: str
     cited_timestamps: list[int]
     token_used: int
+    #: Bai hoc THAT SU duoc dung lam ngu canh — None cho luong cu (giai thich quiz, khong gan
+    #: bai hoc nao). FE dung gia tri nay de biet cited_timestamps thuoc video bai hoc nao.
+    context_lesson_id: int | None = None
+
+
+async def resolve_target_lesson(
+    course_lessons: list[backend_client.CourseLesson], current_lesson_id: int, question: str,
+) -> int:
+    """UC30 mo rong (06/09/2026) — hoc vien dang mo 1 bai nhung co the hoi ro ve 1 bai KHAC
+    trong cung khoa hoc (vi du "tom tat bai 1 giup minh" trong luc dang xem bai 2). Goi 1 luot
+    Gemini RIENG, RE (khong RAG/lich su) chi de PHAN LOAI — mac dinh tra ve `current_lesson_id`
+    neu cau hoi khong noi ro bai nao khac, hoac neu phan loai that bai vi ly do bat ky (an toan
+    hon la chan dung tinh nang chinh — luon co 1 gia tri hop le de dung tiep).
+    """
+    if len(course_lessons) <= 1:
+        return current_lesson_id
+
+    lesson_list = "\n".join(
+        f"- id={l.lesson_id}: {l.lesson_title}" + (" (BAI HOC VIEN DANG MO)" if l.lesson_id == current_lesson_id else "")
+        for l in course_lessons
+    )
+    prompt = f"""Danh sach bai hoc trong khoa hoc nay:
+{lesson_list}
+
+Cau hoi cua hoc vien: "{question}"
+
+Hoc vien dang mo bai co id={current_lesson_id}. Neu cau hoi KHONG noi ro ten/so thu tu cua 1 bai
+hoc KHAC trong danh sach tren, hay tra ve id={current_lesson_id}. Neu cau hoi CO noi ro ve 1 bai
+hoc KHAC (vi du nhac so thu tu nhu "bai 1", "bai 3", nhac dung ten bai, hoac noi ro y dinh hoi ve
+1 bai khac), hay tra ve DUNG id cua bai do trong danh sach tren.
+
+CHI tra ve DUY NHAT con so id, khong giai thich gi them, khong co chu nao khac."""
+
+    try:
+        result = await gemini.generate(prompt)
+    except Exception:
+        return current_lesson_id
+
+    match = re.search(r"\d+", result.text)
+    if not match:
+        return current_lesson_id
+
+    candidate = int(match.group())
+    valid_ids = {l.lesson_id for l in course_lessons}
+    return candidate if candidate in valid_ids else current_lesson_id
 
 
 def _format_mmss(seconds: float) -> str:
@@ -154,10 +209,13 @@ class Attachment:
     data_base64: str
 
 
-async def answer(
-    lesson_id: int, question: str, history: list[dict] | None = None, attachments: list[Attachment] | None = None,
-    language: str | None = None,
+async def _answer_for_lesson(
+    lesson_id: int, question: str, history: list[dict] | None, attachments: list[Attachment] | None,
+    language: str | None,
 ) -> TutorAnswer:
+    """Pipeline RAG + Gemini goc (khong doi tu truoc 06/09/2026), chay cho DUNG 1 lesson_id đã
+    được xác định — dùng chung bởi cả `answer()` (đã phân loại xong) lẫn `answer_single_lesson()`
+    (đường cũ, không cần phân loại)."""
     context = await backend_client.get_tutor_context(lesson_id)
     history_contents = _build_history_contents(history or [])
 
@@ -187,7 +245,29 @@ async def answer(
         answer=result.text.strip(),
         cited_timestamps=_extract_timestamps(result.text),
         token_used=result.total_tokens,
+        context_lesson_id=lesson_id,
     )
+
+
+async def answer(
+    course_id: int, current_lesson_id: int, question: str, history: list[dict] | None = None,
+    attachments: list[Attachment] | None = None, language: str | None = None,
+) -> TutorAnswer:
+    """UC30 mo rong (06/09/2026) — Socratic Tutor pham vi khoa hoc. Tu phan loai bai hoc dang
+    duoc hoi toi (mac dinh la `current_lesson_id`, tru khi cau hoi noi ro 1 bai khac trong khoa)
+    roi moi chay pipeline RAG + Gemini cho DUNG bai do — xem `resolve_target_lesson`."""
+    course_lessons = await backend_client.get_course_lessons(course_id)
+    target_lesson_id = await resolve_target_lesson(course_lessons, current_lesson_id, question)
+    return await _answer_for_lesson(target_lesson_id, question, history, attachments, language)
+
+
+async def answer_single_lesson(
+    lesson_id: int, question: str, history: list[dict] | None = None, attachments: list[Attachment] | None = None,
+    language: str | None = None,
+) -> TutorAnswer:
+    """Đường CŨ (không đổi hành vi) — 1 `lesson_id` cố định, không phân loại/không RAG toàn
+    khóa. Chỉ còn dùng cho luồng giải thích câu hỏi trắc nghiệm (xem docblock đầu file)."""
+    return await _answer_for_lesson(lesson_id, question, history, attachments, language)
 
 
 _FALLBACK_TITLE = "Cuộc trò chuyện mới"
