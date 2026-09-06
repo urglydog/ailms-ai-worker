@@ -6,6 +6,7 @@ thực tế ngưỡng similarity KHÔNG phân biệt được "trùng chủ đ�
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
+from app.http.backend_client import CourseLesson
 from app.providers.gemini import LlmResult
 from app.providers.supabase_vector import MatchedSegment
 from app.services import tutor_service
@@ -29,7 +30,7 @@ async def test_answer_always_enables_google_search_grounding():
          patch("app.providers.gemini.embed_content", AsyncMock(return_value=[0.1, 0.2])), \
          patch("app.providers.supabase_vector.match_segments", AsyncMock(return_value=segments)), \
          patch("app.providers.gemini.generate_conversation", generate_mock):
-        result = await tutor_service.answer(21, "Cai nay la gi?")
+        result = await tutor_service.answer_single_lesson(21,"Cai nay la gi?")
 
     assert result.cited_timestamps == [65]
     call = generate_mock.await_args
@@ -53,7 +54,7 @@ async def test_answer_includes_topically_similar_but_non_answering_segments_as_c
          patch("app.providers.gemini.embed_content", AsyncMock(return_value=[0.1, 0.2])), \
          patch("app.providers.supabase_vector.match_segments", AsyncMock(return_value=topically_similar_but_irrelevant)), \
          patch("app.providers.gemini.generate_conversation", generate_mock):
-        result = await tutor_service.answer(21, "Unity AI Assistant co free khong?")
+        result = await tutor_service.answer_single_lesson(21,"Unity AI Assistant co free khong?")
 
     # khong bia moc thoi gian cho cau tra loi tim tren web
     assert result.cited_timestamps == []
@@ -75,7 +76,7 @@ async def test_answer_without_any_matched_segments_still_calls_gemini_with_groun
          patch("app.providers.gemini.embed_content", AsyncMock(return_value=[0.1, 0.2])), \
          patch("app.providers.supabase_vector.match_segments", AsyncMock(return_value=[])), \
          patch("app.providers.gemini.generate_conversation", generate_mock):
-        result = await tutor_service.answer(21, "Cau hoan toan khong lien quan bai giang")
+        result = await tutor_service.answer_single_lesson(21,"Cau hoan toan khong lien quan bai giang")
 
     assert result.cited_timestamps == []
     call = generate_mock.await_args
@@ -96,7 +97,7 @@ async def test_answer_includes_prior_history_as_multiturn_contents():
          patch("app.providers.gemini.embed_content", AsyncMock(return_value=[0.1, 0.2])), \
          patch("app.providers.supabase_vector.match_segments", AsyncMock(return_value=[])), \
          patch("app.providers.gemini.generate_conversation", generate_mock):
-        await tutor_service.answer(21, "Cau hoi tren la gi?", history=history)
+        await tutor_service.answer_single_lesson(21, "Cau hoi tren la gi?", history=history)
 
     contents = generate_mock.await_args.args[0]
     assert contents[0] == {"role": "user", "parts": [{"text": "Unity AI Assistant co free khong?"}]}
@@ -113,7 +114,7 @@ async def test_answer_with_attachments_addsInlineDataPartsAfterText():
          patch("app.providers.gemini.embed_content", AsyncMock(return_value=[0.1, 0.2])), \
          patch("app.providers.supabase_vector.match_segments", AsyncMock(return_value=[])), \
          patch("app.providers.gemini.generate_conversation", generate_mock):
-        await tutor_service.answer(21, "Loi nay nghia la gi?", attachments=[attachment])
+        await tutor_service.answer_single_lesson(21, "Loi nay nghia la gi?", attachments=[attachment])
 
     contents = generate_mock.await_args.args[0]
     current_turn_parts = contents[-1]["parts"]
@@ -134,3 +135,73 @@ async def test_generate_title_falls_back_when_gemini_fails():
         result = await tutor_service.generate_title("Cau hoi", "Tra loi")
 
     assert result == "Cuộc trò chuyện mới"
+
+
+# ── UC30 mở rộng (06/09/2026) — phiên chat phạm vi khóa học, tự phân loại bài học ──
+
+_COURSE_LESSONS = [
+    CourseLesson(lesson_id=21, lesson_title="Bai 1", display_order=1),
+    CourseLesson(lesson_id=22, lesson_title="Bai 2", display_order=2),
+]
+
+
+async def test_resolve_target_lesson_defaults_to_current_when_question_doesnt_name_another_lesson():
+    with patch("app.providers.gemini.generate", AsyncMock(return_value=LlmResult(text="22", model="m"))):
+        result = await tutor_service.resolve_target_lesson(_COURSE_LESSONS, 22, "Video nay noi ve gi vay?")
+
+    assert result == 22
+
+
+async def test_resolve_target_lesson_switches_when_question_explicitly_names_another_lesson():
+    """'Tom tat bai 1' trong luc dang mo bai 2 -> phai tra ve id cua bai 1, khong phai bai dang mo."""
+    with patch("app.providers.gemini.generate", AsyncMock(return_value=LlmResult(text="21", model="m"))):
+        result = await tutor_service.resolve_target_lesson(_COURSE_LESSONS, 22, "Tom tat bai 1 giup minh")
+
+    assert result == 21
+
+
+async def test_resolve_target_lesson_singleLessonCourse_skipsGeminiCall():
+    generate_mock = AsyncMock()
+    with patch("app.providers.gemini.generate", generate_mock):
+        result = await tutor_service.resolve_target_lesson(
+            [CourseLesson(lesson_id=21, lesson_title="Bai 1", display_order=1)], 21, "Bat ky cau hoi gi",
+        )
+
+    assert result == 21
+    generate_mock.assert_not_called()
+
+
+async def test_resolve_target_lesson_geminiReturnsIdNotInCourse_fallsBackToCurrent():
+    """Phong Gemini phan loai sai/ao giac ra 1 id khong ton tai trong khoa — khong duoc dung id
+    do, phai roi ve bai dang mo de khong lam sai lech ngu canh."""
+    with patch("app.providers.gemini.generate", AsyncMock(return_value=LlmResult(text="999", model="m"))):
+        result = await tutor_service.resolve_target_lesson(_COURSE_LESSONS, 22, "Tom tat bai 5")
+
+    assert result == 22
+
+
+async def test_resolve_target_lesson_geminiCallFails_fallsBackToCurrent():
+    with patch("app.providers.gemini.generate", AsyncMock(side_effect=RuntimeError("boom"))):
+        result = await tutor_service.resolve_target_lesson(_COURSE_LESSONS, 21, "Cau hoi bat ky")
+
+    assert result == 21
+
+
+async def test_answer_courseScoped_resolvesLessonThenRunsExistingPipeline():
+    """`answer()` (khoa hoc) phai goi dung `resolve_target_lesson` roi chay pipeline RAG/Gemini
+    cu cho BAI DA PHAN LOAI (21), khong phai bai dang mo (22)."""
+    generate_mock = AsyncMock(return_value=LlmResult(text="Tom tat bai 1: ... [00:10]", model="m"))
+
+    with patch("app.http.backend_client.get_course_lessons", AsyncMock(return_value=_COURSE_LESSONS)), \
+         patch("app.services.tutor_service.resolve_target_lesson", AsyncMock(return_value=21)), \
+         patch("app.http.backend_client.get_tutor_context", AsyncMock(return_value=_CONTEXT)) as context_mock, \
+         patch("app.providers.gemini.embed_content", AsyncMock(return_value=[0.1, 0.2])), \
+         patch("app.providers.supabase_vector.match_segments", AsyncMock(return_value=[])) as match_mock, \
+         patch("app.providers.gemini.generate_conversation", generate_mock):
+        result = await tutor_service.answer(9, 22, "Tom tat bai 1 giup minh")
+
+    context_mock.assert_awaited_once_with(21)
+    match_mock.assert_awaited_once()
+    assert match_mock.await_args.args[0] == 21
+    assert result.context_lesson_id == 21
+    assert result.cited_timestamps == [10]

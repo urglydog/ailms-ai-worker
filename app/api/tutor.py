@@ -38,7 +38,6 @@ class AttachmentIn(BaseModel):
 
 
 class TutorAskRequest(BaseModel):
-    lesson_id: int
     question: str = Field(min_length=1, max_length=2000)
     session_id: int | None = None
     #: UC30 mở rộng — vài lượt gần nhất của phiên chat (cũ -> mới, KHÔNG gồm câu hỏi hiện
@@ -47,6 +46,14 @@ class TutorAskRequest(BaseModel):
     #: UC30 mở rộng — tệp học viên đính kèm cùng câu hỏi (ảnh/tài liệu/mã nguồn).
     attachments: list[AttachmentIn] = Field(default_factory=list)
     language: str | None = None
+    #: Đường CŨ (giữ nguyên tương thích ngược) — `com.lms.material.service.QuizService`
+    #: (giải thích câu hỏi trắc nghiệm) gọi thẳng endpoint này với `lesson_id=-1`, KHÔNG qua
+    #: `TutorService.ask` của Socratic Tutor nên KHÔNG có `course_id`/`current_lesson_id`.
+    lesson_id: int | None = None
+    #: UC30 mở rộng (06/09/2026) — Socratic Tutor phạm vi khóa học. Cả 2 field này CÙNG có
+    #: giá trị thì mới chạy nhánh phân loại bài học mới, xem `tutor_service.answer`.
+    course_id: int | None = None
+    current_lesson_id: int | None = None
 
 
 class TutorAskResponse(BaseModel):
@@ -55,6 +62,9 @@ class TutorAskResponse(BaseModel):
     #: lien quan kien thuc bai giang (BR-TUTOR-02).
     cited_timestamps: list[int]
     token_used: int
+    #: Bài học THẬT SỰ được dùng làm ngữ cảnh — None ở đường cũ (giải thích quiz, không gắn
+    #: bài học nào). FE dùng giá trị này để biết `cited_timestamps` thuộc video bài học nào.
+    context_lesson_id: int | None = None
 
 
 @router.post("/ask", response_model=TutorAskResponse, status_code=status.HTTP_200_OK)
@@ -68,17 +78,25 @@ async def ask(request: TutorAskRequest) -> TutorAskResponse:
     if len(request.attachments) > _MAX_ATTACHMENTS_PER_TURN:
         raise HTTPException(status_code=400, detail=f"Toi da {_MAX_ATTACHMENTS_PER_TURN} tep moi luot hoi")
 
-    result = await tutor_service.answer(
-        request.lesson_id,
-        request.question,
+    common_kwargs = dict(
+        question=request.question,
         history=[t.model_dump() for t in request.history],
         attachments=[tutor_service.Attachment(mime_type=a.mime_type, data_base64=a.data_base64) for a in request.attachments],
         language=request.language,
     )
+
+    if request.course_id is not None and request.current_lesson_id is not None:
+        result = await tutor_service.answer(request.course_id, request.current_lesson_id, **common_kwargs)
+    elif request.lesson_id is not None:
+        result = await tutor_service.answer_single_lesson(request.lesson_id, **common_kwargs)
+    else:
+        raise HTTPException(status_code=400, detail="Thieu course_id + current_lesson_id, hoac lesson_id")
+
     return TutorAskResponse(
         answer=result.answer,
         cited_timestamps=result.cited_timestamps,
         token_used=result.token_used,
+        context_lesson_id=result.context_lesson_id,
     )
 
 
