@@ -22,7 +22,7 @@ celery_app = Celery(
     "lms_ai_worker",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.tasks.dubbing", "app.tasks.material", "app.tasks.maintenance"],
+    include=["app.tasks.dubbing", "app.tasks.material", "app.tasks.maintenance", "app.tasks.transcript_extraction"],
 )
 
 celery_app.conf.update(
