@@ -9,6 +9,12 @@ ai xem bài học lúc vừa upload xong). Một chunk lỗi ASR thì bỏ qua �
 transcript thiếu vài câu vẫn còn hữu ích hơn không có gì; nếu bài học chưa có transcript gốc lúc
 có người bấm "Lồng tiếng AI", `InternalDubbingService.getContext` tự rơi về hành vi ASR-lại-từ-đầu
 quen thuộc (xem `dubbing_service.py` — job này chỉ là một bước tối ưu "chạy trước cho nhanh").
+
+UC30 mở rộng (13/09/2026) — cũng là nơi DUY NHẤT giờ đánh index embedding cho Gia sư AI
+(`tutor_indexing.index_segments`) trong đa số trường hợp: từ khi job này tồn tại, dubbing hầu như
+luôn `reuse_source=True` (transcript gốc đã có sẵn) nên nhánh đánh index cũ trong
+`dubbing_service.py` (chỉ chạy khi ASR THẬT xảy ra ở đó) gần như không còn cơ hội chạy nữa. Lỗi ở
+bước đánh index KHÔNG được làm hỏng việc lưu transcript đã ASR xong — bọc try/except riêng.
 """
 
 from __future__ import annotations
@@ -23,7 +29,9 @@ from app import audio_utils, media
 from app.celery_app import celery_app
 from app.config import settings
 from app.http import backend_client
-from app.providers import groq_asr
+from app.models import Segment
+from app.providers import gemini, groq_asr
+from app.services import tutor_indexing
 from app.services.dubbing_service import MIN_SPEECH_RATIO, split_into_chunks
 
 log = logging.getLogger(__name__)
@@ -49,7 +57,7 @@ async def _extract_source_transcript(lesson_id: int, video_source: str, video_ur
         actual_duration = duration_sec or int(await media.probe_duration_sec(source_audio))
         chunks = split_into_chunks(actual_duration, settings.chunk_minutes)
 
-        all_segments: list[dict] = []
+        all_segments: list[Segment] = []
         detected_language: str | None = None
         next_seq = 1
         for chunk in chunks:
@@ -67,11 +75,8 @@ async def _extract_source_transcript(lesson_id: int, video_source: str, video_ur
 
             detected_language = detected_language or stt.language
             for s in stt.segments:
-                all_segments.append(backend_client.segment_to_json(
-                    next_seq,
-                    Decimal(str(chunk.start_sec + s.start)),
-                    Decimal(str(chunk.start_sec + s.end)),
-                    s.text,
+                all_segments.append(Segment(
+                    seq=next_seq, start=chunk.start_sec + s.start, end=chunk.start_sec + s.end, text=s.text,
                 ))
                 next_seq += 1
 
@@ -80,8 +85,20 @@ async def _extract_source_transcript(lesson_id: int, video_source: str, video_ur
                 lesson_id, outcome="SKIPPED", error_message="Video khong co loi thoai dang ke (BR-DUB-10)")
             return {"status": "SKIPPED", "lessonId": lesson_id}
 
+        segment_dtos = [
+            backend_client.segment_to_json(seg.seq, Decimal(str(seg.start)), Decimal(str(seg.end)), seg.text)
+            for seg in all_segments
+        ]
         await backend_client.report_source_transcript(
-            lesson_id, outcome="COMPLETED", detected_language=detected_language, segments=all_segments)
+            lesson_id, outcome="COMPLETED", detected_language=detected_language, segments=segment_dtos)
+
+        try:
+            await tutor_indexing.index_segments(lesson_id, detected_language, all_segments)
+        except Exception as exc:
+            # UC30 — Gia sư AI chỉ mất khả năng tìm nội dung bài này, KHÔNG được làm mất transcript
+            # đã lưu thành công ở trên (dòng trước đã báo COMPLETED về be/ rồi).
+            log.warning("Danh index embedding cho lesson %s that bai (transcript van da luu): %s", lesson_id, exc)
+
         return {"status": "COMPLETED", "lessonId": lesson_id, "segments": len(all_segments)}
     except Exception as exc:
         log.exception("Trich script goc that bai cho lesson %s", lesson_id)
@@ -100,6 +117,7 @@ async def _run_and_cleanup(lesson_id: int, video_source: str, video_url: str, du
         await asyncio.gather(
             backend_client.aclose(),
             groq_asr.aclose(),
+            gemini.aclose(),
             return_exceptions=True,
         )
 
