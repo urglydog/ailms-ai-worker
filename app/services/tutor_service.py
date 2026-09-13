@@ -31,18 +31,55 @@ phiên chat (be/ tự cắt tối đa `HISTORY_LIMIT` lượt trước khi gửi
 
 Phiên chat pham vi khoa hoc (06/09/2026, UC30 mo rong): truoc day 1 phien chat luon gan cung 1
 `lesson_id`. Gio be/ dung chung 1 danh sach lich su cho ca khoa hoc, bai hoc dang mo chi con la
-`current_lesson_id` truyen theo TUNG luot hoi — `answer()` tu goi `resolve_target_lesson()` de
-PHAN LOAI xem cau hoi dang hoi ve bai nao (mac dinh la bai dang mo, tru khi hoc vien noi ro ten/so
-1 bai KHAC trong khoa), roi moi chay dung pipeline RAG + Gemini cu cho DUNG bai do.
+`current_lesson_id` truyen theo TUNG luot hoi.
 
-`answer_single_lesson()` giu nguyen hanh vi CU (1 lesson_id co dinh, khong phan loai) — chi con
-dung cho luong giai thich cau hoi trac nghiem (`com.lms.material.service.QuizService`, goi thang
-`/api/v1/tutor/ask` voi `lesson_id=-1`, khong qua `TutorService.ask` cua Socratic Tutor).
+Tim kiem XUYEN SUOT khoa hoc (13/09/2026, UC30 mo rong tiep): ban dau (06/09/2026) `answer()` goi
+1 luot Gemini RIENG chi de "doan" xem cau hoi dang hoi ve bai nao (dua vao TEN bai hoc) roi MOI tim
+noi dung trong DUNG 1 bai do (`resolve_target_lesson`) — bo HAN thiet ke nay vi qua mong manh: hoc
+vien hoi 1 cau CHUNG CHUNG (khong nhac ten/so bai nao) nhung dap an lai nam o 1 bai KHAC bai dang
+mo (vi du dang o Bai 10, hoi ve khai niem da giang o Bai 1 phut 1:30) se luon bi doan sai ve bai
+dang mo, khong bao gio voi toi duoc noi dung that su. Thay bang tim kiem vector THAT SU tren TOAN
+BO cac bai trong khoa CUNG LUC (`supabase_vector.match_segments_by_lessons`) — moi doan tra ve tu
+mang theo dung `lesson_id` cua no, khong can doan truoc nua. Re hon thiet ke cu: bot han 1 luot goi
+Gemini "phan loai" (giam tu 3 xuong 2 luot goi/cau hoi: embed cau hoi + sinh cau tra loi).
+
+He qua: 1 cau tra loi gio co the trich dan tu NHIEU bai khac nhau cung luc, nen khong the dung 1
+field `context_lesson_id` DUY NHAT cho ca cau tra loi nhu truoc (kieu cu chi ho tro dung 1 bai/cau
+tra loi). Giai phap: MOI moc thoi gian Gemini trich tu mang theo LUON id bai hoc cua no ngay trong
+van ban `[lessonId|MM:SS]` (thay vi `[MM:SS]` truoc day) — khong can doi kieu du lieu
+`cited_timestamps`/`context_lesson_id` gui ve be/ (be/ chi pass-through, khong doc dinh dang ben
+trong chuoi cau tra loi) — chi FE (`MarkdownRenderer.tsx`) can doc them id bai hoc tu dinh dang moi
+nay de tua dung video + tu dieu huong sang dung bai khi khac bai dang mo (xem `learn/[lessonId]/page.tsx`).
+`context_lesson_id` gui ve be/ gio la BAI DUOC TRICH DAN NHIEU NHAT (hoac bai dang mo neu khong
+trich dan bai nao) — chi con y nghia "tham khao/hien thi", KHONG con dung de dieu huong nua.
+
+`answer_single_lesson()` giu nguyen hanh vi CU (1 lesson_id co dinh, khong tim xuyen khoa, dinh
+dang trich dan van la `[MM:SS]` khong doi) — chi con dung cho luong giai thich cau hoi trac nghiem
+(`com.lms.material.service.QuizService`, goi thang `/api/v1/tutor/ask` voi `lesson_id=-1`, khong
+qua `TutorService.ask` cua Socratic Tutor — luon dung DUNG 1 bai, khong co gi de tim xuyen khoa).
+
+UU TIEN bai dang mo (13/09/2026, sua lan 2): ban dau tim xuyen khoa CUNG LUC (khong uu tien bai
+nao) co nhuoc diem — hoc vien dang o dung bai co cau tra loi van co the bi nhay sang bai KHAC chi
+vi 1 doan o bai do tinh co co diem similarity nhinh hon 1 chut, gay trai nghiem kho chiu (dang xem
+dung cho van bi keo di noi khac). Sua lai thanh 2 BUOC:
+  Buoc 1 — thu tra loi trong DUNG bai dang mo TRUOC (goi nguyen `_answer_for_lesson` cu, dinh dang
+  `[MM:SS]` khong doi). Neu Gemini THAT SU tra loi duoc tu bai do (ket qua co it nhat 1 moc trich
+  dan) — DUNG NGAY, tra ve luon, KHONG tim tiep sang bai khac. Tin hieu "tra loi duoc hay khong"
+  o day la CHINH GEMINI tu quyet dinh (co trich duoc moc thoi gian hay khong), KHONG phai nguong
+  similarity Python tu tinh — giu dung triet ly da kiem chung o BR-TUTOR-03 (nguong similarity
+  KHONG phan biet duoc "trung chu de" va "co dung cau tra loi", chi Gemini doc that su moi biet).
+  Buoc 2 — CHI khi Buoc 1 khong trich duoc moc nao (bai dang mo THAT SU khong lien quan) moi tim
+  tiep tren CAC BAI CON LAI trong khoa (khong gom lai bai dang mo — da xac nhan khong co gi o do)
+  bang `_answer_for_course`, dung dinh dang `[lessonId|MM:SS]` nhu truoc.
+Chi phi: truong hop pho bien (bai dang mo da du de tra loi) van chi ton 1 luot goi Gemini generate
+nhu cu; chi ton THEM 1 luot (embed + generate cho Buoc 2) khi bai dang mo that su khong co gi —
+dung luc can tim xuyen khoa nhat.
 """
 
 from __future__ import annotations
 
 import re
+from collections import Counter
 from dataclasses import dataclass
 
 from app.http import backend_client
@@ -50,6 +87,9 @@ from app.providers import gemini, supabase_vector
 from app.providers.base import ProviderInvalidResponse
 
 _TIMESTAMP_RE = re.compile(r"\[(\d{1,3}):([0-5]?\d)\]")
+#: Dinh dang moi (13/09/2026) — dung rieng cho `_answer_for_course` (tim xuyen khoa), mang them
+#: lessonId ngay trong van ban vi 1 cau tra loi gio co the trich dan nhieu bai khac nhau cung luc.
+_LESSON_TIMESTAMP_RE = re.compile(r"\[(\d+)\|(\d{1,3}):([0-5]?\d)\]")
 
 
 @dataclass(frozen=True)
@@ -57,51 +97,11 @@ class TutorAnswer:
     answer: str
     cited_timestamps: list[int]
     token_used: int
-    #: Bai hoc THAT SU duoc dung lam ngu canh — None cho luong cu (giai thich quiz, khong gan
-    #: bai hoc nao). FE dung gia tri nay de biet cited_timestamps thuoc video bai hoc nao.
+    #: Bai hoc duoc trich dan NHIEU NHAT trong cau tra loi (hoac bai dang mo neu khong trich dan
+    #: bai nao) — None chi cho luong cu (giai thich quiz, khong gan bai hoc nao). Chi con y nghia
+    #: "tham khao/hien thi mac dinh", KHONG con dung de dieu huong tua video (xem docblock dau
+    #: file) — FE doc lessonId truc tiep tu dinh dang `[lessonId|MM:SS]` trong van ban de tua.
     context_lesson_id: int | None = None
-
-
-async def resolve_target_lesson(
-    course_lessons: list[backend_client.CourseLesson], current_lesson_id: int, question: str,
-) -> int:
-    """UC30 mo rong (06/09/2026) — hoc vien dang mo 1 bai nhung co the hoi ro ve 1 bai KHAC
-    trong cung khoa hoc (vi du "tom tat bai 1 giup minh" trong luc dang xem bai 2). Goi 1 luot
-    Gemini RIENG, RE (khong RAG/lich su) chi de PHAN LOAI — mac dinh tra ve `current_lesson_id`
-    neu cau hoi khong noi ro bai nao khac, hoac neu phan loai that bai vi ly do bat ky (an toan
-    hon la chan dung tinh nang chinh — luon co 1 gia tri hop le de dung tiep).
-    """
-    if len(course_lessons) <= 1:
-        return current_lesson_id
-
-    lesson_list = "\n".join(
-        f"- id={l.lesson_id}: {l.lesson_title}" + (" (BAI HOC VIEN DANG MO)" if l.lesson_id == current_lesson_id else "")
-        for l in course_lessons
-    )
-    prompt = f"""Danh sach bai hoc trong khoa hoc nay:
-{lesson_list}
-
-Cau hoi cua hoc vien: "{question}"
-
-Hoc vien dang mo bai co id={current_lesson_id}. Neu cau hoi KHONG noi ro ten/so thu tu cua 1 bai
-hoc KHAC trong danh sach tren, hay tra ve id={current_lesson_id}. Neu cau hoi CO noi ro ve 1 bai
-hoc KHAC (vi du nhac so thu tu nhu "bai 1", "bai 3", nhac dung ten bai, hoac noi ro y dinh hoi ve
-1 bai khac), hay tra ve DUNG id cua bai do trong danh sach tren.
-
-CHI tra ve DUY NHAT con so id, khong giai thich gi them, khong co chu nao khac."""
-
-    try:
-        result = await gemini.generate(prompt)
-    except Exception:
-        return current_lesson_id
-
-    match = re.search(r"\d+", result.text)
-    if not match:
-        return current_lesson_id
-
-    candidate = int(match.group())
-    valid_ids = {l.lesson_id for l in course_lessons}
-    return candidate if candidate in valid_ids else current_lesson_id
 
 
 def _format_mmss(seconds: float) -> str:
@@ -130,12 +130,31 @@ def _build_history_contents(history: list[dict]) -> list[dict]:
     ]
 
 
-def _build_system_instruction(lesson_title: str, course_title: str, course_description: str, language: str | None = None) -> str:
+def _build_system_instruction(
+    lesson_title: str, course_title: str, course_description: str, language: str | None = None,
+    *, multi_lesson: bool = False,
+) -> str:
     topic = course_description or course_title
-    
+
     lang_rule = ""
     if language:
         lang_rule = f"\nCRITICAL INSTRUCTION: You MUST write your ENTIRE response in the language corresponding to the language code '{language}'. DO NOT use Vietnamese or English unless it is the requested language."
+
+    if multi_lesson:
+        # UC30 mo rong (13/09/2026) — ngu canh gio co the gom doan tu NHIEU bai hoc khac nhau
+        # trong cung khoa hoc, moi doan da duoc danh dau san [lessonId|MM:SS] (xem
+        # `_build_prompt_multi`) — Gemini CHI can copy nguyen dinh dang do, khong tu bia/doi id.
+        citation_rule = (
+            "BAT BUOC trich it nhat 1 moc thoi gian, COPY NGUYEN VAN dinh dang [lessonId|MM:SS] "
+            "DA CO SAN o dau moi doan ngu canh duoc cung cap (vi du doan ngu canh ghi \"[12|01:30] "
+            "...\" thi trich lai DUNG \"[12|01:30]\", KHONG duoc doi lessonId, KHONG duoc tu ghep "
+            "lessonId voi mot moc thoi gian khac, KHONG duoc bia moc khong co trong ngu canh."
+        )
+    else:
+        citation_rule = (
+            "BAT BUOC trich it nhat 1 moc thoi gian dung dinh dang [MM:SS] tu ngu canh duoc cung "
+            "cap, KHONG duoc bia moc khong co trong ngu canh."
+        )
 
     return f"""Ban la Gia su AI theo phuong phap Socratic cho khoa hoc "{course_title}" (chu de:
 {topic}), dang ho tro bai giang "{lesson_title}".{lang_rule}
@@ -151,9 +170,7 @@ QUY TAC BAT BUOC — xet theo dung thu tu:
 1. Neu NGU CANH BAI GIANG o tren THAT SU chua noi dung tra loi duoc cau hoi (khong chi
    nhac ten/chu de lien quan) -> tra loi theo phong cach Socratic: TUYET DOI KHONG dua
    dap an truc tiep, loi giai hoan chinh hay ma nguon day du (du hoc vien yeu cau thang
-   cung tu choi kieu nay) — chi dat lai 1-2 cau hoi goi mo de hoc vien tu suy luan. BAT
-   BUOC trich it nhat 1 moc thoi gian dung dinh dang [MM:SS] tu ngu canh duoc cung cap,
-   KHONG duoc bia moc khong co trong ngu canh.
+   cung tu choi kieu nay) — chi dat lai 1-2 cau hoi goi mo de hoc vien tu suy luan. {citation_rule}
 2. Neu NGU CANH BAI GIANG KHONG chua cau tra loi (du co nhac ten chu de, hoac khong co
    doan nao duoc cung cap), nhung cau hoi (hoac tep dinh kem) lien quan toi chu de khoa
    hoc, cong nghe/cong cu duoc nhac toi trong khoa hoc, hoac kien thuc nen tang huu ich
@@ -199,6 +216,43 @@ def _build_prompt(question: str, segments: list[supabase_vector.MatchedSegment],
 Tra loi theo dung 6 quy tac da neu, xet dung thu tu tu quy tac 1."""
 
 
+def _build_prompt_multi(
+    question: str, segments: list[supabase_vector.MatchedSegment], lesson_titles: dict[int, str],
+    has_attachments: bool,
+) -> str:
+    """UC30 mo rong (13/09/2026) — nhu `_build_prompt` nhung ngu canh gio co the gom nhieu bai hoc
+    khac nhau trong cung khoa hoc; moi doan danh dau san `[lessonId|MM:SS]` + ten bai de Gemini
+    COPY NGUYEN VAN khi trich dan (xem quy tac 1 trong `_build_system_instruction`)."""
+    if segments:
+        context = "\n".join(
+            f'- [{s.lesson_id}|{_format_mmss(s.start_sec)}] (Bai: "{lesson_titles.get(s.lesson_id, "?")}") {s.content}'
+            for s in segments
+        )
+    else:
+        context = "(He thong khong tim thay doan transcript nao lien quan chu de cau hoi nay trong ca khoa hoc.)"
+    attachment_note = (
+        "\n## Tep dinh kem\n(Hoc vien co gui kem tep — xem noi dung tep ngay trong luot nay de danh gia theo quy tac 2/3.)\n"
+        if has_attachments else ""
+    )
+    return f"""## Ngu canh bai giang (cac doan lien quan chu de nhat TRONG CA KHOA HOC, CO THE tu nhieu bai khac nhau, CO THE khong chua cau tra loi)
+{context}
+{attachment_note}
+## Cau hoi cua hoc vien
+{question}
+
+Tra loi theo dung 6 quy tac da neu, xet dung thu tu tu quy tac 1."""
+
+
+def _extract_lesson_citations(text: str) -> list[tuple[int, int]]:
+    """Trich cac moc `[lessonId|MM:SS]` thanh danh sach (lessonId, giay), KHONG trung lap, giu
+    dung thu tu xuat hien (ban `_answer_for_course` cua BR-TUTOR-02)."""
+    seen: dict[tuple[int, int], None] = {}
+    for lesson_id, m, s in _LESSON_TIMESTAMP_RE.findall(text):
+        key = (int(lesson_id), int(m) * 60 + int(s))
+        seen.setdefault(key, None)
+    return list(seen.keys())
+
+
 @dataclass(frozen=True)
 class Attachment:
     """1 tep hoc vien gui kem cau hoi — `data_base64` la noi dung tep DA ma hoa base64,
@@ -213,9 +267,10 @@ async def _answer_for_lesson(
     lesson_id: int, question: str, history: list[dict] | None, attachments: list[Attachment] | None,
     language: str | None,
 ) -> TutorAnswer:
-    """Pipeline RAG + Gemini goc (khong doi tu truoc 06/09/2026), chay cho DUNG 1 lesson_id đã
-    được xác định — dùng chung bởi cả `answer()` (đã phân loại xong) lẫn `answer_single_lesson()`
-    (đường cũ, không cần phân loại)."""
+    """Pipeline RAG + Gemini goc (khong doi tu truoc 06/09/2026), chay cho DUNG 1 lesson_id co
+    dinh, dinh dang trich dan van la `[MM:SS]` (khong co lessonId). Ke tu 13/09/2026, `answer()`
+    (Socratic Tutor chinh) khong con goi ham nay nua — chuyen sang `_answer_for_course` (tim xuyen
+    khoa). Chi con dung boi `answer_single_lesson()` (luong giai thich cau hoi trac nghiem)."""
     context = await backend_client.get_tutor_context(lesson_id)
     history_contents = _build_history_contents(history or [])
 
@@ -249,16 +304,78 @@ async def _answer_for_lesson(
     )
 
 
+async def _answer_for_course(
+    course_lessons: list[backend_client.CourseLesson], current_lesson_id: int, question: str,
+    history: list[dict] | None, attachments: list[Attachment] | None, language: str | None,
+) -> TutorAnswer:
+    """UC30 mo rong (13/09/2026) — tim kiem vector tren TOAN BO cac bai trong khoa CUNG LUC (xem
+    docblock dau file ve ly do thay the `resolve_target_lesson` + `_answer_for_lesson` cu)."""
+    current_lesson = next((l for l in course_lessons if l.lesson_id == current_lesson_id), None)
+    current_title = current_lesson.lesson_title if current_lesson else ""
+    context = await backend_client.get_tutor_context(current_lesson_id)
+    history_contents = _build_history_contents(history or [])
+
+    lesson_ids = [l.lesson_id for l in course_lessons] or [current_lesson_id]
+    lesson_titles = {l.lesson_id: l.lesson_title for l in course_lessons}
+    query_vector = await gemini.embed_content(question)
+    segments = await supabase_vector.match_segments_by_lessons(lesson_ids, query_vector)
+
+    attachments = attachments or []
+    current_parts: list[dict] = [{"text": _build_prompt_multi(question, segments, lesson_titles, bool(attachments))}]
+    for att in attachments:
+        current_parts.append({"inlineData": {"mimeType": att.mime_type, "data": att.data_base64}})
+
+    contents = history_contents + [{"role": "user", "parts": current_parts}]
+    result = await gemini.generate_conversation(
+        contents,
+        system_instruction=_build_system_instruction(
+            current_title or context.lesson_title, context.course_title, context.course_description,
+            language, multi_lesson=True,
+        ),
+        tools=[{"google_search": {}}],
+    )
+
+    if isinstance(result, gemini.FunctionCall):
+        raise ProviderInvalidResponse("Gemini tra ve FunctionCall ngoai du kien cho Tutor")
+
+    citations = _extract_lesson_citations(result.text)
+    # "Bai duoc trich dan nhieu nhat" — chi la gia tri tham khao/hien thi mac dinh gui ve be/, FE
+    # khong con dung field nay de dieu huong nua (xem docblock dau file va TutorAnswer).
+    if citations:
+        lesson_counts = Counter(lesson_id for lesson_id, _ in citations)
+        primary_lesson_id = lesson_counts.most_common(1)[0][0]
+    else:
+        primary_lesson_id = current_lesson_id
+
+    return TutorAnswer(
+        answer=result.text.strip(),
+        cited_timestamps=[seconds for _, seconds in citations],
+        token_used=result.total_tokens,
+        context_lesson_id=primary_lesson_id,
+    )
+
+
 async def answer(
     course_id: int, current_lesson_id: int, question: str, history: list[dict] | None = None,
     attachments: list[Attachment] | None = None, language: str | None = None,
 ) -> TutorAnswer:
-    """UC30 mo rong (06/09/2026) — Socratic Tutor pham vi khoa hoc. Tu phan loai bai hoc dang
-    duoc hoi toi (mac dinh la `current_lesson_id`, tru khi cau hoi noi ro 1 bai khac trong khoa)
-    roi moi chay pipeline RAG + Gemini cho DUNG bai do — xem `resolve_target_lesson`."""
+    """UC30 mo rong (13/09/2026, sua lan 2) — UU TIEN bai dang mo, xem docblock dau file.
+    Buoc 1: thu tra loi trong DUNG bai dang mo (`_answer_for_lesson` cu) — neu Gemini trich duoc
+    it nhat 1 moc thoi gian tu do (nghia la THAT SU tra loi duoc), dung ngay, KHONG tim tiep.
+    Buoc 2: chi khi Buoc 1 khong trich duoc moc nao moi tim tren CAC BAI CON LAI trong khoa
+    (`_answer_for_course`, khong gom lai bai dang mo — da xac nhan khong co gi o do).
+    """
     course_lessons = await backend_client.get_course_lessons(course_id)
-    target_lesson_id = await resolve_target_lesson(course_lessons, current_lesson_id, question)
-    return await _answer_for_lesson(target_lesson_id, question, history, attachments, language)
+
+    if len(course_lessons) > 1:
+        current_result = await _answer_for_lesson(current_lesson_id, question, history, attachments, language)
+        if current_result.cited_timestamps:
+            return current_result
+        other_lessons = [l for l in course_lessons if l.lesson_id != current_lesson_id]
+    else:
+        other_lessons = course_lessons
+
+    return await _answer_for_course(other_lessons, current_lesson_id, question, history, attachments, language)
 
 
 async def answer_single_lesson(

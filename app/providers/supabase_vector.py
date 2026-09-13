@@ -66,9 +66,15 @@ class EmbeddingRow:
 
 @dataclass(frozen=True)
 class MatchedSegment:
-    """Một đoạn transcript truy xuất được, dùng dựng ngữ cảnh RAG (BR-TUTOR-03/04)."""
+    """Một đoạn transcript truy xuất được, dùng dựng ngữ cảnh RAG (BR-TUTOR-03/04).
+
+    `lesson_id` — UC30 mở rộng (13/09/2026): tìm kiếm giờ chạy trên NHIỀU bài học cùng lúc
+    (`match_segments_by_lessons`), nên mỗi đoạn trả về phải tự mang theo nó thuộc bài nào, thay vì
+    suy ra từ đúng 1 `lesson_id` cố định của cả lượt gọi như hàm `match_segments` (1 bài) cũ.
+    """
 
     segment_id: int
+    lesson_id: int
     content: str
     start_sec: float
     end_sec: float
@@ -108,8 +114,10 @@ async def insert_embeddings(rows: list[EmbeddingRow]) -> None:
 async def match_segments(
     lesson_id: int, query_embedding: list[float], *, limit: int | None = None, min_similarity: float | None = None,
 ) -> list[MatchedSegment]:
-    """RAG retrieval — gọi hàm RPC `match_transcript_embeddings` (BR-TUTOR-04: tối đa
-    `settings.rag_top_k` đoạn, ngưỡng `settings.rag_min_similarity`).
+    """RAG retrieval cho DUNG 1 bai hoc — gọi hàm RPC `match_transcript_embeddings` (BR-TUTOR-04:
+    tối đa `settings.rag_top_k` đoạn, ngưỡng `settings.rag_min_similarity`). Chỉ còn dùng bởi
+    `tutor_service._answer_for_lesson` (luồng giải thích quiz) — Socratic Tutor chính giờ dùng
+    `match_segments_by_lessons` (tìm xuyên suốt khóa, xem hàm đó).
     """
     payload = {
         "query_embedding": query_embedding,
@@ -126,6 +134,45 @@ async def match_segments(
     return [
         MatchedSegment(
             segment_id=row["segment_id"],
+            # Hàm RPC 1-bài không trả lesson_id (chỉ tìm trong đúng 1 bài) — caller đã biết sẵn.
+            lesson_id=lesson_id,
+            content=row["content"],
+            start_sec=float(row["start_sec"]),
+            end_sec=float(row["end_sec"]),
+            similarity=float(row["similarity"]),
+        )
+        for row in resp.json()
+    ]
+
+
+async def match_segments_by_lessons(
+    lesson_ids: list[int], query_embedding: list[float], *, limit: int | None = None,
+    min_similarity: float | None = None,
+) -> list[MatchedSegment]:
+    """UC30 mở rộng (13/09/2026) — RAG retrieval trên NHIỀU bài học cùng lúc (toàn bộ khóa học),
+    gọi hàm RPC MỚI `match_transcript_embeddings_by_lessons` (khác `match_transcript_embeddings`
+    cũ — hàm cũ chỉ nhận đúng 1 `lesson_id`). Hàm RPC này cần được tạo thủ công trong Supabase SQL
+    Editor giống hàm cũ (xem `docs/`/tin nhắn bàn giao SQL) — trả về thêm cột `lesson_id` vì kết
+    quả giờ có thể thuộc bất kỳ bài nào trong danh sách truyền vào.
+    """
+    if not lesson_ids:
+        return []
+    payload = {
+        "query_embedding": query_embedding,
+        "match_lesson_ids": lesson_ids,
+        "match_count": limit or settings.rag_top_k,
+        "min_similarity": min_similarity if min_similarity is not None else settings.rag_min_similarity,
+    }
+    try:
+        resp = await get_client().post("rpc/match_transcript_embeddings_by_lessons", json=payload)
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise map_http_error(exc) from exc
+
+    return [
+        MatchedSegment(
+            segment_id=row["segment_id"],
+            lesson_id=row["lesson_id"],
             content=row["content"],
             start_sec=float(row["start_sec"]),
             end_sec=float(row["end_sec"]),
