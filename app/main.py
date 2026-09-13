@@ -68,14 +68,42 @@ async def _material_queue_consumer() -> None:
             await asyncio.sleep(1)
 
 
+async def _transcript_queue_consumer() -> None:
+    """UC34 mở rộng — `be/` LPUSH ngay sau khi nạp video xong (xem
+    `TranscriptExtractionService`), TÁCH khỏi `lms:dubbing:jobs` vì job này không có `jobId`
+    (không gắn với 1 `AiJob` nào — xem docblock `app/tasks/transcript_extraction.py`).
+    """
+    log.info("Transcript queue consumer: bat dau lang nghe lms:transcript:jobs")
+    while True:
+        try:
+            job = await redis_client.brpop_job("lms:transcript:jobs", timeout_sec=5)
+            if job is None:
+                continue
+            log.info("Nhan job trich script goc tu hang doi: %s", job)
+            from app.tasks.transcript_extraction import extract_source_transcript
+            extract_source_transcript.delay(
+                lesson_id=job["lessonId"],
+                video_source=job["videoSource"],
+                video_url=job["videoUrl"],
+                duration_sec=job.get("durationSec") or 0,
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Loi khi xu ly hang doi lms:transcript:jobs, tiep tuc lang nghe")
+            await asyncio.sleep(1)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("AI Worker API khoi dong")
     dubbing_task = asyncio.create_task(_dubbing_queue_consumer())
     material_task = asyncio.create_task(_material_queue_consumer())
+    transcript_task = asyncio.create_task(_transcript_queue_consumer())
     yield
     dubbing_task.cancel()
     material_task.cancel()
+    transcript_task.cancel()
     # Đóng client của TỪNG provider (mỗi provider một client riêng — bulkhead).
     log.info("Dang dong provider client...")
     await groq_asr.aclose()

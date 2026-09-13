@@ -17,24 +17,69 @@ KHONG sinh explanation, KHONG sinh moc thoi gian.
 import asyncio
 import logging
 import json
+from decimal import Decimal
 
 from app import redis_client
 from app.celery_app import celery_app
 from app.http import backend_client
+from app.models import Segment
 from app.providers import gemini, supabase_vector
+from app.services import translation
 
 log = logging.getLogger(__name__)
+
+
+async def _build_full_text(context) -> str:
+    """BR-MAT-01 — với MỖI bài trong phạm vi: dùng thẳng bản dịch nếu ngôn ngữ đích đã có sẵn (do
+    lồng tiếng hoặc lần sinh học liệu trước tạo ra); nếu chưa, tự dịch trực tiếp từ transcript gốc
+    (KHÔNG phụ thuộc bài đã lồng tiếng hay chưa) rồi LƯU LẠI để lần lồng tiếng ngôn ngữ này sau đó
+    bỏ qua được bước dịch Gemini (xem `InternalDubbingService.getContext`).
+    """
+    lesson_texts: list[str] = []
+    for lesson in context.lessons:
+        if lesson.target_transcript_available:
+            lesson_texts.append(" ".join(s.text for s in lesson.target_segments))
+            continue
+        if not lesson.source_segments:
+            continue
+
+        segments = [
+            Segment(seq=s.seq, start=float(s.start_sec), end=float(s.end_sec), text=s.text)
+            for s in lesson.source_segments
+        ]
+        translated_texts = await translation.translate_batch(
+            segments, lesson.source_language or "unknown", context.language,
+        )
+        lesson_texts.append(" ".join(translated_texts))
+
+        translated_dtos = [
+            backend_client.segment_to_json(seg.seq, Decimal(str(seg.start)), Decimal(str(seg.end)), text)
+            for seg, text in zip(segments, translated_texts)
+        ]
+        try:
+            await backend_client.save_material_translated_segments(
+                lesson.lesson_id, context.language, translated_dtos)
+        except Exception as exc:
+            # Lưu-để-tái-sử-dụng-sau chỉ là tối ưu — thất bại ở đây KHÔNG được chặn cả job sinh
+            # học liệu, `translated_texts` đã có sẵn trong bộ nhớ để dùng tiếp ngay bên dưới.
+            log.warning("Khong luu duoc ban dich de tai su dung cho lesson %s: %s", lesson.lesson_id, exc)
+
+    return " ".join(lesson_texts)
+
 
 async def _run_and_cleanup(generation_id: int) -> dict:
     try:
         # Fetch context
         context = await backend_client.get_material_context(generation_id)
-        if not context.transcripts:
+        if not context.lessons:
             await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong co transcript de sinh hoc lieu")
             return {"status": "FAILED", "reason": "No transcripts"}
-            
-        full_text = " ".join([t["text"] for t in context.transcripts])
-        
+
+        full_text = await _build_full_text(context)
+        if not full_text.strip():
+            await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong co transcript de sinh hoc lieu")
+            return {"status": "FAILED", "reason": "No transcripts"}
+
         if context.material_type == "MINDMAP":
             result = await _generate_mindmap(full_text, context.language)
             if result:

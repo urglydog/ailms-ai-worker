@@ -257,12 +257,19 @@ async def _process_chunk_once(
         )
         return empty_audio, 0
 
-    await redis_client.publish_progress(
-        job_id, lesson_id, stage="TRANSLATE", chunkIndex=chunk.index, totalChunks=total_chunks,
-    )
-    translated_texts = await translation.translate_batch(
-        segments, ctx.source_language or detected_language or "unknown", ctx.target_language,
-    )
+    if ctx.target_transcript_available:
+        # Bản dịch ngôn ngữ đích đã có sẵn (thường do UC24/25 sinh học liệu tạo trước khi ai bấm
+        # lồng tiếng) — bỏ qua HẲN bước dịch Gemini (BR-DUB-02), tiết kiệm 2 lượt gọi/chunk.
+        # `seq` khớp 1-1 với `segments` (cùng nguồn source_segments đã dịch nguyên vẹn câu-theo-câu).
+        target_by_seq = {s.seq: s.text for s in ctx.target_segments}
+        translated_texts = [target_by_seq.get(seg.seq, "") for seg in segments]
+    else:
+        await redis_client.publish_progress(
+            job_id, lesson_id, stage="TRANSLATE", chunkIndex=chunk.index, totalChunks=total_chunks,
+        )
+        translated_texts = await translation.translate_batch(
+            segments, ctx.source_language or detected_language or "unknown", ctx.target_language,
+        )
 
     await redis_client.publish_progress(
         job_id, lesson_id, stage="TTS", chunkIndex=chunk.index, totalChunks=total_chunks,

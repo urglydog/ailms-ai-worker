@@ -63,6 +63,10 @@ class JobContext:
     voice_name: str
     source_transcript_available: bool
     source_segments: list[SourceSegment] = field(default_factory=list)
+    #: True nếu ngôn ngữ đích ĐÃ có bản dịch sẵn (thường do UC24/25 sinh học liệu tạo trước khi
+    #: có ai bấm lồng tiếng) — bỏ qua hẳn `translation.translate_batch` (BR-DUB-02), TTS thẳng.
+    target_transcript_available: bool = False
+    target_segments: list[SourceSegment] = field(default_factory=list)
 
 
 def segment_to_json(
@@ -94,18 +98,21 @@ async def _request(method: str, path: str, *, json_body: dict | None = None) -> 
         raise map_http_error(exc) from exc
 
 
-async def get_context(job_id: int) -> JobContext:
-    response = await _request("GET", f"/api/internal/dubbing/jobs/{job_id}/context")
-    payload = response.json()
-    segments = [
+def _parse_segments(raw: list[dict] | None) -> list[SourceSegment]:
+    return [
         SourceSegment(
             seq=s["seq"],
             start_sec=Decimal(str(s["startSec"])),
             end_sec=Decimal(str(s["endSec"])),
             text=s["text"],
         )
-        for s in payload.get("sourceSegments") or []
+        for s in raw or []
     ]
+
+
+async def get_context(job_id: int) -> JobContext:
+    response = await _request("GET", f"/api/internal/dubbing/jobs/{job_id}/context")
+    payload = response.json()
     return JobContext(
         job_id=payload["jobId"],
         lesson_id=payload["lessonId"],
@@ -116,7 +123,9 @@ async def get_context(job_id: int) -> JobContext:
         target_language=payload["targetLanguage"],
         voice_name=payload["voiceName"],
         source_transcript_available=payload["sourceTranscriptAvailable"],
-        source_segments=segments,
+        source_segments=_parse_segments(payload.get("sourceSegments")),
+        target_transcript_available=payload.get("targetTranscriptAvailable", False),
+        target_segments=_parse_segments(payload.get("targetSegments")),
     )
 
 
@@ -244,6 +253,29 @@ async def get_course_lessons(course_id: int) -> list[CourseLesson]:
     ]
 
 
+async def report_source_transcript(
+    lesson_id: int,
+    *,
+    outcome: str,
+    detected_language: str | None = None,
+    segments: list[dict] | None = None,
+    error_message: str | None = None,
+) -> None:
+    """Callback của job trích script gốc lúc nạp video (UC34 mở rộng) — xem
+    `app/tasks/transcript_extraction.py`. `outcome`: COMPLETED | FAILED | SKIPPED (BR-DUB-10).
+    """
+    await _request(
+        "POST",
+        f"/api/internal/transcripts/lessons/{lesson_id}/source",
+        json_body={
+            "outcome": outcome,
+            "detectedLanguage": detected_language,
+            "segments": segments,
+            "errorMessage": error_message,
+        },
+    )
+
+
 async def finish_source_unavailable(job_id: int, *, error_message: str) -> None:
     """BR-DUB-11: nguồn video không còn khả dụng — backend đánh dấu Lesson.status=UNAVAILABLE."""
     await _request(
@@ -251,6 +283,21 @@ async def finish_source_unavailable(job_id: int, *, error_message: str) -> None:
         f"/api/internal/dubbing/jobs/{job_id}/finish",
         json_body={"outcome": "SOURCE_UNAVAILABLE", "errorMessage": error_message},
     )
+
+@dataclass(frozen=True)
+class MaterialLessonContext:
+    """1 bài trong phạm vi yêu cầu — BR-MAT-01: dịch trực tiếp từ transcript gốc, không phụ
+    thuộc bài đã lồng tiếng ngôn ngữ đích hay chưa. `target_transcript_available=False` nghĩa là
+    AI Worker phải tự dịch `source_segments` (xem `app/tasks/material.py`) rồi báo lại qua
+    `save_material_translated_segments` để LƯU TÁI SỬ DỤNG cho lần lồng tiếng ngôn ngữ đó sau này.
+    """
+
+    lesson_id: int
+    source_language: str | None
+    target_transcript_available: bool
+    source_segments: list[SourceSegment]
+    target_segments: list[SourceSegment]
+
 
 @dataclass(frozen=True)
 class MaterialContext:
@@ -263,11 +310,21 @@ class MaterialContext:
     scope_ref_id: int | None
     quantity_level: str | None
     difficulty_level: str | None
-    transcripts: list[dict]
+    lessons: list[MaterialLessonContext]
 
 async def get_material_context(generation_id: int) -> MaterialContext:
     response = await _request("GET", f"/api/internal/materials/{generation_id}/context")
     payload = response.json()
+    lessons = [
+        MaterialLessonContext(
+            lesson_id=lesson["lessonId"],
+            source_language=lesson.get("sourceLanguage"),
+            target_transcript_available=lesson["targetTranscriptAvailable"],
+            source_segments=_parse_segments(lesson.get("sourceSegments")),
+            target_segments=_parse_segments(lesson.get("targetSegments")),
+        )
+        for lesson in payload.get("lessons") or []
+    ]
     return MaterialContext(
         generation_id=payload["generationId"],
         course_id=payload["courseId"],
@@ -278,7 +335,17 @@ async def get_material_context(generation_id: int) -> MaterialContext:
         scope_ref_id=payload.get("scopeRefId"),
         quantity_level=payload.get("quantityLevel"),
         difficulty_level=payload.get("difficultyLevel"),
-        transcripts=payload.get("transcripts") or [],
+        lessons=lessons,
+    )
+
+
+async def save_material_translated_segments(lesson_id: int, language: str, segments: list[dict]) -> None:
+    """Báo bản dịch AI Worker vừa tự dịch (UC24/25, bài chưa có `target_transcript_available`)
+    để backend lưu — tái sử dụng được cho lần lồng tiếng ngôn ngữ này sau này."""
+    await _request(
+        "POST",
+        f"/api/internal/materials/lessons/{lesson_id}/translated-segments",
+        json_body={"language": language, "segments": segments},
     )
 
 async def finish_material_generation(
