@@ -1,0 +1,45 @@
+# ── Maven build ────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties.bak
+*.class
+*.jar
+*.war
+dependency-reduced-pom.xml
+
+# ── Secrets — KHÔNG BAO GIỜ commit ─────────────
+# .env chứa GROQ_API_KEY, GEMINI_API_KEY, JWT_SECRET, khoá cổng thanh toán
+.env
+.env.local
+.env.*.local
+*.pem
+*.p12
+*.jks
+
+# ── Log & runtime ──────────────────────────────
+logs/
+*.log
+hs_err_pid*
+replay_pid*
+
+# ── IDE ────────────────────────────────────────
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+!.vscode/settings.json.example
+.settings/
+.project
+.classpath
+.factorypath
+
+# ── OS ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Dữ liệu local phát sinh khi chạy Docker ────
+mysql_data/
+redis_data/
