@@ -160,13 +160,16 @@ async def _handle_function_call(
 ) -> dict:
     """Thực thi function call từ Gemini và trả về dữ liệu thực."""
     if fn_name == "get_my_course_stats":
+        period = args.get("period", "all_time")
+        # BUG THẬT (25/09/2026): "period" trước đây được trích xuất từ Gemini nhưng KHÔNG hề
+        # gửi cho BE — BE luôn trả đúng 1 bộ số liệu bất kể GV hỏi "tháng này" hay "cả năm".
         data = await _fetch_backend(
-            f"/api/internal/instructor-ai/dashboard?email={instructor_email}"
+            f"/api/internal/instructor-ai/dashboard?email={instructor_email}&period={period}"
         )
         return {
             "function": "get_my_course_stats",
             "data": data,
-            "period": args.get("period", "all_time"),
+            "period": period,
         }
 
     elif fn_name == "analyze_reviews":
