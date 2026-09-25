@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import redis_client
-from app.api import admin, discovery, health, instructor_ai, live_admin, tutor
+from app.api import admin, discovery, health, instructor_ai, live_admin, proctoring, tutor
 from app.http import backend_client
 from app.providers import azure_tts, gemini, groq_asr, supabase_vector
 from app.tasks.dubbing import run_pipeline
@@ -169,5 +169,6 @@ app.include_router(tutor.router)
 app.include_router(discovery.router)
 app.include_router(admin.router)
 app.include_router(instructor_ai.router)
+app.include_router(proctoring.router)
 app.include_router(live_admin.router)
 app.include_router(live_admin.transcription_router)
