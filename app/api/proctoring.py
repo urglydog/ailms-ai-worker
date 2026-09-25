@@ -57,15 +57,29 @@ class AnalyzeFrameRes(BaseModel):
     reasoning: str
 
 
+# BUG THẬT (26/09/2026): bản cũ gộp chung "faces/people" trong 1 câu hỏi — khi thí sinh quay
+# hẳn đầu sang 1 bên (mặt không thấy rõ) nhưng người vẫn ngồi đó, Gemini trả lời theo nghĩa
+# "face" nên person_count=0, sụp về NO_FACE thay vì đáng lẽ phải là GAZE_AWAY (BE đã đúng logic
+# person_count==0 → NO_FACE, còn lại xét gaze_direction — lỗi nằm ở chỗ prompt khiến model
+# không phân biệt được 2 khái niệm). Tách hẳn 2 câu hỏi: đếm SỰ HIỆN DIỆN của người (đầu/vai/
+# thân trong khung hình, không yêu cầu thấy rõ mặt) độc lập với hướng nhìn; "unknown" chỉ dùng
+# khi thật sự không xác định được (quá tối, camera bị che/mờ) — quay mặt đi vẫn xác định được
+# hướng là "away", không phải "unknown".
 _FRAME_PROMPT = """You are an exam proctoring assistant analyzing ONE webcam frame from a
-student taking an online exam. Look carefully at the image and answer:
+student taking an online exam. Look carefully at the image and answer TWO INDEPENDENT questions:
 
-1. How many distinct human faces/people are visible in the frame?
-2. Where is the person's gaze/head direction pointed? Choose exactly one:
-   - "screen": looking at their own screen/camera, normal exam posture
-   - "away": looking clearly to the side (possibly at another device/person)
+1. How many distinct people are PRESENT in the frame — counting anyone whose head, shoulders or
+   body is visible, even if their face is NOT visible (e.g. turned away, back of head only). Do
+   NOT require a visible face to count a person as present.
+2. Independently, where is the (primary) person's gaze/head direction pointed, based on whatever
+   is visible? Choose exactly one:
+   - "screen": facing/looking toward their own screen/camera, normal exam posture
+   - "away": head or body turned clearly to the side or away from the screen (including when the
+     face itself is no longer visible because they turned away — this is still "away", NOT
+     "unknown")
    - "down": looking down (possibly at a phone or notes on the desk)
-   - "unknown": cannot tell (no face visible, too dark, obstructed)
+   - "unknown": ONLY when direction genuinely cannot be judged at all — frame too dark, camera
+     blocked/obstructed, or no person present in the frame
 
 Respond with ONLY a JSON object, no markdown fences, no extra text:
 {"person_count": <int>, "gaze_direction": "<screen|away|down|unknown>", "reasoning": "<1 short sentence in Vietnamese>"}
