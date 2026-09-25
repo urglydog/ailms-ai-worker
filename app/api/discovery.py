@@ -25,6 +25,7 @@ from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, Field
 
 from app.providers import gemini, supabase_vector
+from app.http import backend_client
 from app.config import settings
 
 log = logging.getLogger(__name__)
@@ -157,84 +158,83 @@ async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
             if "priceType" in args:
                 params["priceType"] = args["priceType"]
 
-            # Backend call
-            async with httpx.AsyncClient() as client:
-                be_res = await client.get(
-                    f"{settings.internal_be_url}/api/v1/courses",
-                    params=params,
-                    # API này public nên không cần token, nhưng ta vẫn truyền
-                    headers={"Authorization": f"Bearer {settings.internal_api_token}"}
-                )
-                if be_res.status_code != 200:
-                    raise HTTPException(status_code=500, detail="Backend error")
-                
-                data = be_res.json()
-                content = data.get("content", [])
-                
-                courses = []
-                for c in content:
-                    price_val = c.get("price")
-                    if c.get("isFree"):
-                        price_label = "Miễn phí"
-                    else:
-                        price_label = f"{int(price_val):,} VND" if price_val else "Liên hệ"
-                        
-                    courses.append(CourseCardDto(
-                        id=c["id"],
-                        title=c["title"],
-                        slug=c["slug"],
-                        instructor_name=c.get("instructorName", ""),
-                        price_label=price_label,
-                        is_free=c.get("isFree", False),
-                        rating=float(c.get("avgRating", 0)),
-                        level_label=c.get("level", "ALL")
-                    ))
+            # Backend call — dùng `backend_client` dùng chung (đã có sẵn header
+            # `X-Internal-Token` đúng chuẩn dự án, xem docblock `instructor_ai.py::_fetch_backend`
+            # về bug thật do tự mở client với header `Authorization: Bearer` sai). API
+            # `/api/v1/courses` public nên trước đây header sai vẫn "chạy được" — vô hại NHƯNG
+            # chỉ vì tình cờ, sẽ vỡ y hệt instructor_ai.py nếu endpoint này từng chuyển vào
+            # `/api/internal/**`.
+            be_res = await backend_client.get_client().get("/api/v1/courses", params=params)
+            if be_res.status_code != 200:
+                raise HTTPException(status_code=500, detail="Backend error")
 
-                # UC49 nâng cấp — rerank tập ứng viên (đã lọc cứng ở BE) bằng cosine
-                # similarity để câu hỏi không trùng từ khóa với title/description vẫn ra
-                # đúng khóa liên quan. Fail-open: lỗi ở đây giữ nguyên `courses` gốc
-                # (filter-only), KHÔNG bao giờ làm kết quả tệ hơn hành vi cũ.
-                #
-                # BUG THẬT (25/09/2026, phát hiện lúc test câu hỏi hoàn toàn không liên quan
-                # như "nấu ăn"): khi KHÔNG có filter cứng nào (category/level/priceType đều
-                # rỗng), `courses` ở trên là TOÀN BỘ catalog (BE không lọc gì cả), không phải
-                # 1 tập đã được BE "vetted" theo đúng ý người dùng. Nếu không course nào đạt
-                # ngưỡng similarity mà vẫn fail-open giữ nguyên `courses`, kết quả là hiện HẾT
-                # catalog cho 1 câu hỏi hoàn toàn lạc đề — mâu thuẫn với câu trả lời text (nói
-                # "không có khóa nào phù hợp" nhưng card vẫn hiện đủ). Chỉ fail-open giữ
-                # `courses` gốc khi có ÍT NHẤT 1 filter cứng thật sự áp dụng (BE đã tự vetted
-                # theo đúng category/level/price người dùng nêu); không có filter nào cả +
-                # không similarity nào đạt ngưỡng → trả rỗng mới trung thực.
-                has_hard_filter = any(k in args for k in ("categorySlug", "level", "priceType"))
-                if courses:
-                    try:
-                        query_vector = await gemini.embed_content(request.message)
-                        matches = await supabase_vector.match_courses_by_ids(
-                            course_ids=[c.id for c in courses],
-                            query_embedding=query_vector,
+            data = be_res.json()
+            content = data.get("content", [])
+
+            courses = []
+            for c in content:
+                price_val = c.get("price")
+                if c.get("isFree"):
+                    price_label = "Miễn phí"
+                else:
+                    price_label = f"{int(price_val):,} VND" if price_val else "Liên hệ"
+
+                courses.append(CourseCardDto(
+                    id=c["id"],
+                    title=c["title"],
+                    slug=c["slug"],
+                    instructor_name=c.get("instructorName", ""),
+                    price_label=price_label,
+                    is_free=c.get("isFree", False),
+                    rating=float(c.get("avgRating", 0)),
+                    level_label=c.get("level", "ALL")
+                ))
+
+            # UC49 nâng cấp — rerank tập ứng viên (đã lọc cứng ở BE) bằng cosine
+            # similarity để câu hỏi không trùng từ khóa với title/description vẫn ra
+            # đúng khóa liên quan. Fail-open: lỗi ở đây giữ nguyên `courses` gốc
+            # (filter-only), KHÔNG bao giờ làm kết quả tệ hơn hành vi cũ.
+            #
+            # BUG THẬT (25/09/2026, phát hiện lúc test câu hỏi hoàn toàn không liên quan
+            # như "nấu ăn"): khi KHÔNG có filter cứng nào (category/level/priceType đều
+            # rỗng), `courses` ở trên là TOÀN BỘ catalog (BE không lọc gì cả), không phải
+            # 1 tập đã được BE "vetted" theo đúng ý người dùng. Nếu không course nào đạt
+            # ngưỡng similarity mà vẫn fail-open giữ nguyên `courses`, kết quả là hiện HẾT
+            # catalog cho 1 câu hỏi hoàn toàn lạc đề — mâu thuẫn với câu trả lời text (nói
+            # "không có khóa nào phù hợp" nhưng card vẫn hiện đủ). Chỉ fail-open giữ
+            # `courses` gốc khi có ÍT NHẤT 1 filter cứng thật sự áp dụng (BE đã tự vetted
+            # theo đúng category/level/price người dùng nêu); không có filter nào cả +
+            # không similarity nào đạt ngưỡng → trả rỗng mới trung thực.
+            has_hard_filter = any(k in args for k in ("categorySlug", "level", "priceType"))
+            if courses:
+                try:
+                    query_vector = await gemini.embed_content(request.message)
+                    matches = await supabase_vector.match_courses_by_ids(
+                        course_ids=[c.id for c in courses],
+                        query_embedding=query_vector,
+                    )
+                    similarity_by_id = {m.course_id: m.similarity for m in matches}
+                    if similarity_by_id:
+                        courses = sorted(
+                            (c for c in courses if c.id in similarity_by_id),
+                            key=lambda c: similarity_by_id[c.id],
+                            reverse=True,
                         )
-                        similarity_by_id = {m.course_id: m.similarity for m in matches}
-                        if similarity_by_id:
-                            courses = sorted(
-                                (c for c in courses if c.id in similarity_by_id),
-                                key=lambda c: similarity_by_id[c.id],
-                                reverse=True,
-                            )
-                        elif not has_hard_filter:
-                            courses = []
-                        # Có filter cứng nhưng không similarity nào đạt ngưỡng (vd course chưa
-                        # kịp embed) — giữ nguyên danh sách filter-only gốc, không trả về rỗng.
-                    except Exception as exc:
-                        log.warning("Rerank semantic that bai, dung ket qua filter goc: %s", exc)
+                    elif not has_hard_filter:
+                        courses = []
+                    # Có filter cứng nhưng không similarity nào đạt ngưỡng (vd course chưa
+                    # kịp embed) — giữ nguyên danh sách filter-only gốc, không trả về rỗng.
+                except Exception as exc:
+                    log.warning("Rerank semantic that bai, dung ket qua filter goc: %s", exc)
 
-                # Bước 2: Sinh câu trả lời dựa trên kết quả thật
-                # Tóm tắt tối đa 5 khóa học để tránh quá tải payload (chỉ cần title và price để AI biết)
-                summary_data = [
-                    {"title": c.title, "price": c.price_label, "level": c.level_label}
-                    for c in courses[:5]
-                ]
-                
-                prompt2 = f"""Người dùng đã hỏi: "{request.message}"
+            # Bước 2: Sinh câu trả lời dựa trên kết quả thật
+            # Tóm tắt tối đa 5 khóa học để tránh quá tải payload (chỉ cần title và price để AI biết)
+            summary_data = [
+                {"title": c.title, "price": c.price_label, "level": c.level_label}
+                for c in courses[:5]
+            ]
+
+            prompt2 = f"""Người dùng đã hỏi: "{request.message}"
 Dưới đây là kết quả tìm kiếm khóa học từ cơ sở dữ liệu dựa trên ý định của họ:
 {summary_data}
 (Tổng số khóa học tìm thấy: {len(courses)})
@@ -243,18 +243,18 @@ Hãy đóng vai trợ lý tư vấn khóa học, viết một câu trả lời t
 - Nếu danh sách trống, hãy nhẹ nhàng xin lỗi và nói rằng hiện chưa có khóa học nào khớp chính xác, và đưa ra lời khuyên.
 - Nếu có khóa học, hãy giới thiệu sơ qua một cách thân thiện (không cần liệt kê chi tiết vì chúng đã được hiển thị trên giao diện, chỉ cần nói chung chung).
 Tuyệt đối KHÔNG tự bịa ra khóa học không có trong danh sách trên."""
-                
-                try:
-                    final_res = await gemini.generate(
-                        prompt=prompt2,
-                        system_instruction="Bạn là trợ lý tư vấn khóa học thân thiện, chuyên nghiệp."
-                    )
-                    reply_text = final_res.text
-                except Exception as e:
-                    # Fallback nếu AI lần 2 lỗi
-                    reply_text = f"Tôi đã tìm thấy {len(courses)} khóa học phù hợp với yêu cầu của bạn." if courses else "Rất tiếc, tôi không tìm thấy khóa học nào phù hợp với yêu cầu của bạn."
-                    
-                return DiscoveryChatResponse(reply=reply_text, courses=courses)
+
+            try:
+                final_res = await gemini.generate(
+                    prompt=prompt2,
+                    system_instruction="Bạn là trợ lý tư vấn khóa học thân thiện, chuyên nghiệp."
+                )
+                reply_text = final_res.text
+            except Exception as e:
+                # Fallback nếu AI lần 2 lỗi
+                reply_text = f"Tôi đã tìm thấy {len(courses)} khóa học phù hợp với yêu cầu của bạn." if courses else "Rất tiếc, tôi không tìm thấy khóa học nào phù hợp với yêu cầu của bạn."
+
+            return DiscoveryChatResponse(reply=reply_text, courses=courses)
     else:
         # LLM returned text (e.g. refused to answer or small talk)
         return DiscoveryChatResponse(reply=res.text, courses=[])

@@ -15,13 +15,12 @@ KHÔNG expose ra ngoài — gọi từ InstructorAiController.java qua mạng Do
 from __future__ import annotations
 
 import logging
-import httpx
 
 from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, Field
 
 from app.providers import gemini
-from app.config import settings
+from app.http import backend_client
 
 log = logging.getLogger(__name__)
 
@@ -131,19 +130,27 @@ instructor_tools = [
 # ─────────────────────────────────────────────────────────────────────────────
 
 async def _fetch_backend(path: str) -> dict:
-    """Gọi nội bộ về Backend để lấy dữ liệu thật."""
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        try:
-            resp = await client.get(
-                f"{settings.internal_be_url}{path}",
-                headers={"Authorization": f"Bearer {settings.internal_api_token}"}
-            )
-            if resp.status_code == 200:
-                return resp.json()
-            return {"error": f"Backend returned {resp.status_code}"}
-        except Exception as e:
-            log.error(f"Backend fetch failed for {path}: {e}")
-            return {"error": str(e)}
+    """Gọi nội bộ về Backend để lấy dữ liệu thật.
+
+    BUG THẬT (25/09/2026, phát hiện khi GV hỏi tình trạng học viên khóa Unity): trước đây tự mở
+    `httpx.AsyncClient()` riêng với header `Authorization: Bearer` — SAI quy ước, BE
+    `InternalApiTokenFilter` chỉ đọc header `X-Internal-Token` (xem `common/security/
+    InternalApiTokenFilter.java`), nên MỌI request tới đây đều bị BE trả 401, bất kể token có
+    đúng hay không. Lỗi 401 đó bị nuốt vào `{"error": ...}` rồi đưa cho Gemini tóm tắt (bên dưới)
+    → Gemini tự bịa ra câu trả lời "lỗi 401, hãy đăng xuất đăng nhập lại" nghe rất thật nhưng SAI
+    hoàn toàn nguyên nhân (không liên quan JWT/phiên đăng nhập của giảng viên — HTTP 200 suốt từ
+    đầu tới cuối, lỗi nằm ở tầng AI-worker → BE nội bộ). Dùng lại đúng `backend_client` (client
+    dùng chung cho mọi callback AI-worker → BE, đã có sẵn `X-Internal-Token` đúng chuẩn) thay vì
+    tự mở client mới với header sai.
+    """
+    try:
+        resp = await backend_client.get_client().get(path)
+        if resp.status_code == 200:
+            return resp.json()
+        return {"error": f"Backend returned {resp.status_code}"}
+    except Exception as e:
+        log.error(f"Backend fetch failed for {path}: {e}")
+        return {"error": str(e)}
 
 
 async def _handle_function_call(
