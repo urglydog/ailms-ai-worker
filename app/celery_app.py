@@ -70,4 +70,10 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.maintenance.report_unused_audio",
         "schedule": crontab(day_of_week=1, hour=4, minute=0),
     },
+    # Auto-ban bằng AI (25/09/2026) — quét tín hiệu bất thường mỗi 6 giờ, chỉ tạo đề xuất khoá
+    # cho Admin duyệt (human-in-the-loop), không tự khoá.
+    "scan-ai-lock-proposals": {
+        "task": "app.tasks.maintenance.scan_ai_lock_proposals",
+        "schedule": crontab(minute=0, hour="*/6"),
+    },
 }

@@ -11,6 +11,8 @@ import shutil
 import time
 from pathlib import Path
 
+import httpx
+
 from app.celery_app import celery_app
 from app.config import settings
 
@@ -62,6 +64,29 @@ def cleanup_old_notifications() -> dict:
 def remind_flashcard_reviews() -> dict:
     """BR-NOTIFY-01: nhac hoc vien co the den han on tap hom nay (SM-2)."""
     raise NotImplementedError("Se duoc hien thuc o Giai doan 9 (BR-CARD-01 + BR-NOTIFY-01).")
+
+
+@celery_app.task(name="app.tasks.maintenance.scan_ai_lock_proposals")
+def scan_ai_lock_proposals() -> dict:
+    """Auto-ban bang AI (25/09/2026) — goi API noi bo BE quet tin hieu bat thuong (quota gan can
+    lien tuc nhieu ngay HOAC tan suat request bat thuong), chi tao DE XUAT khoa cho Admin duyet,
+    KHONG tu khoa. Toan bo logic/query nam o BE (AiLockScanService) dung quy uoc file nay: task
+    dinh ky chi goi API noi bo, khong truy cap MySQL truc tiep. Sync httpx (khong can asyncio) vi
+    day chi la 1 lenh POST don gian, khong co pipeline media nao ca.
+    """
+    try:
+        resp = httpx.post(
+            f"{settings.internal_be_url}/api/internal/ai-lock/scan",
+            headers={"X-Internal-Token": settings.internal_api_token},
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        result = resp.json()
+        log.info("scan_ai_lock_proposals: %s", result)
+        return result
+    except Exception as exc:
+        log.error("scan_ai_lock_proposals that bai: %s", exc)
+        return {"error": str(exc)}
 
 
 @celery_app.task(name="app.tasks.maintenance.report_unused_audio")
