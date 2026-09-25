@@ -9,14 +9,25 @@ Tu choi lich su voi chu de ngoai pham vi.
 
 Ky thuat: Gemini Function Calling dich cau hoi tu nhien thanh
 search_courses(category, level, price_type, keyword) roi truy van qua backend.
+
+UC49 nang cap (25/09/2026) — Hybrid semantic search: BE van la nguoi duy nhat quyet
+dinh course nao duoc phep hien (status/visibility), buoc loc cung category/level/
+priceType o duoi giu nguyen; sau do rerank tap ung vien do bang cosine similarity
+(pgvector, tai dung ha tang cua Socratic Tutor — xem `providers/supabase_vector.py`)
+de cau hoi KHONG trung tu khoa voi ten/mo ta khoa hoc van ra dung ket qua. Fail-open:
+loi embedding/Supabase khong duoc lam hong ket qua filter-only von da hoat dong.
 """
+
+import logging
 
 import httpx
 from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, Field
 
-from app.providers import gemini
+from app.providers import gemini, supabase_vector
 from app.config import settings
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/v1/discovery", tags=["discovery"])
 
@@ -50,50 +61,82 @@ If the user asks something completely unrelated, politely decline and steer the 
 
 Use the `search_courses` function to search for courses based on user queries.
 You must extract the parameters (categorySlug, level, priceType, keyword) from the user's message.
+- categorySlug: ONLY use one of the exact slug values listed in the tool schema's enum for this field
+  (mapped from the platform's real categories). If the user's intent does not clearly match any of
+  those exact categories, OMIT this parameter entirely — do NOT invent or guess a slug.
 - level can be BEGINNER, INTERMEDIATE, ADVANCED.
 - priceType can be FREE, PAID.
 - keyword: MUST be a concise search term derived from the user's intent. For example, if the user wants to "build a website", use keywords like "web", "html", or "css". If they want to learn "english", use "tiếng anh" or "english". DO NOT use long phrases as keywords.
 """
 
-search_tool = {
-    "functionDeclarations": [
-        {
-            "name": "search_courses",
-            "description": "Search for courses on the platform based on user preferences.",
-            "parameters": {
-                "type": "OBJECT",
-                "properties": {
-                    "categorySlug": {
-                        "type": "STRING",
-                        "description": "The slug of the category (e.g., it, language, business)."
-                    },
-                    "level": {
-                        "type": "STRING",
-                        "description": "Course difficulty. Allowed values: BEGINNER, INTERMEDIATE, ADVANCED."
-                    },
-                    "priceType": {
-                        "type": "STRING",
-                        "description": "Price type. Allowed values: FREE, PAID."
-                    },
-                    "keyword": {
-                        "type": "STRING",
-                        "description": "Search keyword for title or description. Extract this carefully from the user's implicit or explicit intent."
+
+async def _fetch_category_slugs() -> list[dict]:
+    """UC49 nâng cấp (25/09/2026) — BUG THẬT phát hiện lúc test: system prompt cũ đưa VÍ DỤ
+    categorySlug sai ("it, language, business", không khớp slug thật trong DB kiểu
+    "ngoai-ngu-chuyen-nganh"), khiến Gemini đoán bừa → BE lọc cứng theo slug KHÔNG TỒN TẠI →
+    luôn trả về 0 khóa học, che khuất luôn cả bước rerank semantic mới thêm (không có ứng viên
+    nào để rerank). Lấy đúng danh sách category THẬT từ BE, ép Gemini chỉ được chọn trong enum
+    này hoặc bỏ qua field — không còn tự bịa slug nữa.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(f"{settings.internal_be_url}/api/v1/categories")
+            if resp.status_code != 200:
+                return []
+            return resp.json()
+    except Exception as exc:
+        log.warning("Khong lay duoc danh sach category, bo qua enum categorySlug: %s", exc)
+        return []
+
+
+def _build_search_tool(categories: list[dict]) -> dict:
+    category_slug_property: dict = {
+        "type": "STRING",
+        "description": "The exact category slug matching user intent. Pick ONLY from the enum list below, or omit if none fit.",
+    }
+    if categories:
+        category_slug_property["enum"] = [c["slug"] for c in categories]
+        mapping = ", ".join(f"{c['name']} -> {c['slug']}" for c in categories)
+        category_slug_property["description"] += f" Categories: {mapping}."
+
+    return {
+        "functionDeclarations": [
+            {
+                "name": "search_courses",
+                "description": "Search for courses on the platform based on user preferences.",
+                "parameters": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "categorySlug": category_slug_property,
+                        "level": {
+                            "type": "STRING",
+                            "description": "Course difficulty. Allowed values: BEGINNER, INTERMEDIATE, ADVANCED."
+                        },
+                        "priceType": {
+                            "type": "STRING",
+                            "description": "Price type. Allowed values: FREE, PAID."
+                        },
+                        "keyword": {
+                            "type": "STRING",
+                            "description": "Search keyword for title or description. Extract this carefully from the user's implicit or explicit intent."
+                        }
                     }
                 }
             }
-        }
-    ]
-}
+        ]
+    }
 
 
 @router.post("/chat", response_model=DiscoveryChatResponse, status_code=status.HTTP_200_OK)
 async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
     """Handler 2 bước: Bước 1 gọi AI trích xuất intent, Bước 2 lấy data thật gọi AI lần 2 để trả lời."""
     try:
-        # Bước 1: Trích xuất intent
+        # Bước 1: Trích xuất intent — enum categorySlug lấy từ danh mục THẬT, tránh Gemini
+        # bịa slug không tồn tại (xem docblock `_fetch_category_slugs`).
+        categories = await _fetch_category_slugs()
         res = await gemini.generate_with_tools(
             prompt=request.message,
-            tools=[search_tool],
+            tools=[_build_search_tool(categories)],
             system_instruction=SYSTEM_INSTRUCTION
         )
     except Exception as e:
@@ -102,16 +145,18 @@ async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
     if isinstance(res, gemini.FunctionCall):
         if res.name == "search_courses":
             args = res.arguments
-            params = {}
+            # UC49 nang cap: KHONG gui "keyword" cho BE nua — BE chi con LIKE tren title,
+            # gioi han ket qua o dung cau chu trung khop. Giu filter cung
+            # (category/level/priceType) nhu cu, lay pool ung vien rong hon de rerank
+            # bang similarity ben duoi thay vi loc chu nghia den.
+            params = {"size": settings.discovery_candidate_pool_size}
             if "categorySlug" in args:
                 params["categorySlug"] = args["categorySlug"]
             if "level" in args:
                 params["level"] = args["level"]
             if "priceType" in args:
                 params["priceType"] = args["priceType"]
-            if "keyword" in args:
-                params["keyword"] = args["keyword"]
-                
+
             # Backend call
             async with httpx.AsyncClient() as client:
                 be_res = await client.get(
@@ -144,7 +189,44 @@ async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
                         rating=float(c.get("avgRating", 0)),
                         level_label=c.get("level", "ALL")
                     ))
-                
+
+                # UC49 nâng cấp — rerank tập ứng viên (đã lọc cứng ở BE) bằng cosine
+                # similarity để câu hỏi không trùng từ khóa với title/description vẫn ra
+                # đúng khóa liên quan. Fail-open: lỗi ở đây giữ nguyên `courses` gốc
+                # (filter-only), KHÔNG bao giờ làm kết quả tệ hơn hành vi cũ.
+                #
+                # BUG THẬT (25/09/2026, phát hiện lúc test câu hỏi hoàn toàn không liên quan
+                # như "nấu ăn"): khi KHÔNG có filter cứng nào (category/level/priceType đều
+                # rỗng), `courses` ở trên là TOÀN BỘ catalog (BE không lọc gì cả), không phải
+                # 1 tập đã được BE "vetted" theo đúng ý người dùng. Nếu không course nào đạt
+                # ngưỡng similarity mà vẫn fail-open giữ nguyên `courses`, kết quả là hiện HẾT
+                # catalog cho 1 câu hỏi hoàn toàn lạc đề — mâu thuẫn với câu trả lời text (nói
+                # "không có khóa nào phù hợp" nhưng card vẫn hiện đủ). Chỉ fail-open giữ
+                # `courses` gốc khi có ÍT NHẤT 1 filter cứng thật sự áp dụng (BE đã tự vetted
+                # theo đúng category/level/price người dùng nêu); không có filter nào cả +
+                # không similarity nào đạt ngưỡng → trả rỗng mới trung thực.
+                has_hard_filter = any(k in args for k in ("categorySlug", "level", "priceType"))
+                if courses:
+                    try:
+                        query_vector = await gemini.embed_content(request.message)
+                        matches = await supabase_vector.match_courses_by_ids(
+                            course_ids=[c.id for c in courses],
+                            query_embedding=query_vector,
+                        )
+                        similarity_by_id = {m.course_id: m.similarity for m in matches}
+                        if similarity_by_id:
+                            courses = sorted(
+                                (c for c in courses if c.id in similarity_by_id),
+                                key=lambda c: similarity_by_id[c.id],
+                                reverse=True,
+                            )
+                        elif not has_hard_filter:
+                            courses = []
+                        # Có filter cứng nhưng không similarity nào đạt ngưỡng (vd course chưa
+                        # kịp embed) — giữ nguyên danh sách filter-only gốc, không trả về rỗng.
+                    except Exception as exc:
+                        log.warning("Rerank semantic that bai, dung ket qua filter goc: %s", exc)
+
                 # Bước 2: Sinh câu trả lời dựa trên kết quả thật
                 # Tóm tắt tối đa 5 khóa học để tránh quá tải payload (chỉ cần title và price để AI biết)
                 summary_data = [

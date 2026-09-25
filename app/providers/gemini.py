@@ -169,11 +169,22 @@ def get_client() -> httpx.AsyncClient:
 
 
 async def aclose() -> None:
-    """Gọi trong FastAPI lifespan khi shutdown."""
-    global _client
+    """Gọi trong FastAPI lifespan khi shutdown, VÀ trong finally của mỗi task Celery
+    (`_run_and_cleanup` ở `tasks/*.py`) — prefork worker tái sử dụng process cho nhiều
+    task, mỗi task tự tạo event loop riêng qua `asyncio.run()`.
+
+    BUG THẬT (25/09/2026, phát hiện lúc backfill embedding hàng loạt cho Course): `_rate_lock`
+    là `asyncio.Lock()` module-level, tự bind vào event loop ĐẦU TIÊN dùng nó (Python 3.10+,
+    xem `Lock._get_loop()`). Task Celery đầu tiên trong 1 worker process chạy xong, loop của
+    nó đóng lại; task TIẾP THEO (loop mới) dùng lại đúng `_rate_lock` cũ vẫn còn trỏ về loop đã
+    đóng → `RuntimeError: Event loop is closed` ngay ở `_throttle_rpm`. Phải tạo lock MỚI mỗi
+    khi đóng client, giống hệt lý do `_client` phải reset về None.
+    """
+    global _client, _rate_lock
     if _client is not None:
         await _client.aclose()
         _client = None
+    _rate_lock = asyncio.Lock()
 
 
 @dataclass(frozen=True)
