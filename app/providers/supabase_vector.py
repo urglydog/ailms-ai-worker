@@ -180,3 +180,94 @@ async def match_segments_by_lessons(
         )
         for row in resp.json()
     ]
+
+
+@dataclass(frozen=True)
+class CourseEmbeddingRow:
+    """1 vector DUY NHẤT cho mỗi Course (khác Tutor: 1 vector/segment) — UC49 nâng cấp.
+    `content` là title + description + tên chương/bài đã ghép, dùng lại để debug/trace
+    xem embedding được sinh từ text gì.
+    """
+
+    course_id: int
+    content: str
+    embedding: list[float]
+
+
+@dataclass(frozen=True)
+class MatchedCourse:
+    course_id: int
+    similarity: float
+
+
+async def insert_course_embedding(row: CourseEmbeddingRow) -> None:
+    """Upsert theo `course_id` (PK) — job đánh index chạy lại (sửa khóa học) ghi đè,
+    không tạo dòng trùng.
+    """
+    payload = {
+        "course_id": row.course_id,
+        "content": row.content,
+        "embedding": row.embedding,
+    }
+    try:
+        resp = await get_client().post(
+            "course_embeddings",
+            params={"on_conflict": "course_id"},
+            headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+            json=payload,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise map_http_error(exc) from exc
+
+
+async def match_courses_by_ids(
+    course_ids: list[int], query_embedding: list[float], *, limit: int | None = None,
+    min_similarity: float | None = None,
+) -> list[MatchedCourse]:
+    """UC49 nâng cấp — rerank bằng similarity TRONG tập course_id đã lọc cứng
+    (category/level/priceType) ở BE. Gọi RPC `match_courses_by_ids` (tạo thủ công
+    trong Supabase SQL Editor, cùng đợt với bảng `course_embeddings`).
+    """
+    if not course_ids:
+        return []
+    payload = {
+        "query_embedding": query_embedding,
+        "match_course_ids": course_ids,
+        "match_count": limit or settings.discovery_similarity_top_k,
+        "min_similarity": min_similarity if min_similarity is not None else settings.discovery_min_similarity,
+    }
+    try:
+        resp = await get_client().post("rpc/match_courses_by_ids", json=payload)
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise map_http_error(exc) from exc
+
+    return [
+        MatchedCourse(course_id=row["course_id"], similarity=float(row["similarity"]))
+        for row in resp.json()
+    ]
+
+
+async def match_courses(
+    query_embedding: list[float], *, limit: int | None = None, min_similarity: float | None = None,
+) -> list[MatchedCourse]:
+    """Tìm kiếm KHÔNG lọc cứng, toàn bộ `course_embeddings` — dùng cho backfill/verify
+    thủ công, KHÔNG dùng ở luồng chat chính (luôn phải qua `match_courses_by_ids` để
+    tôn trọng bộ lọc status/visibility mà BE đã áp dụng).
+    """
+    payload = {
+        "query_embedding": query_embedding,
+        "match_count": limit or settings.discovery_similarity_top_k,
+        "min_similarity": min_similarity if min_similarity is not None else settings.discovery_min_similarity,
+    }
+    try:
+        resp = await get_client().post("rpc/match_courses", json=payload)
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise map_http_error(exc) from exc
+
+    return [
+        MatchedCourse(course_id=row["course_id"], similarity=float(row["similarity"]))
+        for row in resp.json()
+    ]

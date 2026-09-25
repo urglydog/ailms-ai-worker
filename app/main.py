@@ -94,16 +94,45 @@ async def _transcript_queue_consumer() -> None:
             await asyncio.sleep(1)
 
 
+async def _course_embedding_queue_consumer() -> None:
+    """UC49 nâng cấp — `be/` LPUSH ngay sau khi tạo/sửa course (tiêu đề/mô tả) hoặc sửa
+    tên chương/bài (xem `CourseEmbeddingService.requestEmbedding`), TÁCH khỏi các hàng
+    đợi khác vì job này không gắn `jobId`/`AiJob` nào.
+    """
+    log.info("Course embedding queue consumer: bat dau lang nghe lms:course-embedding:jobs")
+    while True:
+        try:
+            job = await redis_client.brpop_job("lms:course-embedding:jobs", timeout_sec=5)
+            if job is None:
+                continue
+            log.info("Nhan job danh index embedding course tu hang doi: %s", job)
+            from app.tasks.course_embedding import embed_course
+            embed_course.delay(
+                course_id=job["courseId"],
+                title=job["title"],
+                description=job.get("description"),
+                chapter_titles=job.get("chapterTitles") or [],
+                lesson_titles=job.get("lessonTitles") or [],
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Loi khi xu ly hang doi lms:course-embedding:jobs, tiep tuc lang nghe")
+            await asyncio.sleep(1)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("AI Worker API khoi dong")
     dubbing_task = asyncio.create_task(_dubbing_queue_consumer())
     material_task = asyncio.create_task(_material_queue_consumer())
     transcript_task = asyncio.create_task(_transcript_queue_consumer())
+    course_embedding_task = asyncio.create_task(_course_embedding_queue_consumer())
     yield
     dubbing_task.cancel()
     material_task.cancel()
     transcript_task.cancel()
+    course_embedding_task.cancel()
     # Đóng client của TỪNG provider (mỗi provider một client riêng — bulkhead).
     log.info("Dang dong provider client...")
     await groq_asr.aclose()

@@ -58,6 +58,17 @@ class Settings(BaseSettings):
     # convert DOCX→Markdown (TODO(doc) trong business-rules.md), tạm dùng 0.7.
     rag_min_similarity: float = 0.7
 
+    # ── UC49 nâng cấp — Hybrid semantic search cho Course Discovery ─────────
+    # Test thực tế (25/09/2026, sau khi gỡ ivfflat index gây lỗi ở quy mô catalog nhỏ —
+    # xem docblock `course_embeddings_embedding_idx`): khóa THẬT liên quan ra ~0.70-0.72,
+    # khóa KHÔNG liên quan vẫn có similarity nền ~0.55-0.63 (do model embedding cho văn
+    # bản tiếng Việt ngắn), nên 0.5 quá lỏng, gần như không lọc được gì. 0.65 tách rõ 2 nhóm.
+    discovery_min_similarity: float = 0.65
+    discovery_similarity_top_k: int = 6
+    # Kích thước pool ứng viên lấy từ BE (đã lọc category/level/priceType) để
+    # rerank bằng similarity — đủ dùng ở quy mô catalog hiện tại.
+    discovery_candidate_pool_size: int = 200
+
     # ── Cloud storage ────────────────────────────────────────
     b2_bucket_name: str = ""
     b2_key_id: str = ""

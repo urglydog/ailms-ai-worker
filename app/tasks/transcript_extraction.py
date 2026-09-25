@@ -30,7 +30,7 @@ from app.celery_app import celery_app
 from app.config import settings
 from app.http import backend_client
 from app.models import Segment
-from app.providers import gemini, groq_asr
+from app.providers import gemini, groq_asr, supabase_vector
 from app.services import tutor_indexing
 from app.services.dubbing_service import MIN_SPEECH_RATIO, split_into_chunks
 
@@ -114,10 +114,17 @@ async def _run_and_cleanup(lesson_id: int, video_source: str, video_url: str, du
     finally:
         # Xem `app/tasks/dubbing.py::_run_and_cleanup` — client httpx module-level phải đóng ở
         # cuối MỖI task Celery (prefork tái sử dụng process, mỗi task có vòng loop asyncio riêng).
+        # BUG THẬT (25/09/2026, phát hiện lúc debug `tasks/course_embedding.py`): thiếu đóng
+        # `supabase_vector` ở đây (job này gọi `tutor_indexing.index_segments` phía trên, dùng
+        # đúng client này) khiến job kế tiếp trong CÙNG worker process dính
+        # `RuntimeError: Event loop is closed` khi đánh index — lỗi bị nuốt bởi try/except quanh
+        # `tutor_indexing.index_segments` nên transcript vẫn lưu thành công, chỉ ÂM THẦM mất
+        # index Gia sư AI cho lesson đó.
         await asyncio.gather(
             backend_client.aclose(),
             groq_asr.aclose(),
             gemini.aclose(),
+            supabase_vector.aclose(),
             return_exceptions=True,
         )
 
