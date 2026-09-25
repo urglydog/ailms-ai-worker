@@ -14,6 +14,8 @@ lệnh gọi cần phản hồi nhanh, không phải pipeline media dài).
 
 from __future__ import annotations
 
+import base64
+import binascii
 import json
 import logging
 import re
@@ -88,6 +90,15 @@ Respond with ONLY a JSON object, no markdown fences, no extra text:
 
 @router.post("/analyze-frame", response_model=AnalyzeFrameRes, status_code=status.HTTP_200_OK)
 async def analyze_frame(request: AnalyzeFrameReq) -> AnalyzeFrameRes:
+    # BUG THẬT (26/09/2026): payload ảnh không hợp lệ trước đây đi thẳng tới Gemini, bị Google từ
+    # chối với 400 — nhưng do gemini.py trước đó coi MỌI 400 là "key có vấn đề" nên đã khoá oan 1
+    # key khoẻ mạnh 1 tiếng (xem fix ở gemini.py::_execute_request). Chặn payload sai NGAY TỪ ĐÂY
+    # vừa tránh tốn 1 lượt gọi API vô ích, vừa không phụ thuộc vào việc gemini.py phân loại đúng.
+    try:
+        base64.b64decode(request.image_base64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=f"image_base64 khong hop le: {exc}")
+
     contents = [
         {
             "role": "user",

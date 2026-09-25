@@ -90,13 +90,13 @@ class KeyPoolManager:
                 break
         return None
 
-    def mark_cool_down(self, key: str, model: str, duration_sec: int = 60) -> None:
+    def mark_cool_down(self, key: str, model: str, duration_sec: int = 60, reason: str = "429") -> None:
         for slot in self.slots:
             if slot["key"] == key and slot["model"] == model:
                 slot["status"] = "COOL_DOWN"
                 slot["cool_down_until"] = time.time() + duration_sec
                 active = self._active_count()
-                logger.warning(f"Slot {key[:8]}.../{model} bi 429 → cooldown {duration_sec}s. Con {active} slot active.")
+                logger.warning(f"Slot {key[:8]}.../{model} bi {reason} → cooldown {duration_sec}s. Con {active} slot active.")
                 break
 
     def mark_failure(self, key: str, model: str) -> None:
@@ -104,11 +104,11 @@ class KeyPoolManager:
             if slot["key"] == key and slot["model"] == model:
                 slot["failures"] += 1
                 if slot["failures"] >= 3:
-                    self.mark_cool_down(key, model, 30)
+                    self.mark_cool_down(key, model, 30, reason="loi lien tiep (5xx)")
                 break
 
     def mark_invalid(self, key: str, model: str) -> None:
-        self.mark_cool_down(key, model, 3600)
+        self.mark_cool_down(key, model, 3600, reason="key loi (400/403)")
         logger.error(f"Slot {key[:8]}.../{model} bi block (400/403) → cooldown 1h.")
 
     def reset_failure(self, key: str, model: str) -> None:
@@ -259,12 +259,41 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
 
             if resp.status_code == 429:
                 logger.warning(f"429 quota exceeded: {key[:8]}.../{model} → rotate sang slot tiep theo")
-                pool.mark_cool_down(key, model, 60)
+                pool.mark_cool_down(key, model, 60, reason="429")
                 continue
 
             if resp.status_code in (400, 403):
-                pool.mark_invalid(key, model)
-                continue
+                # BUG THẬT (26/09/2026, phát hiện lúc test proctoring với ảnh giả): trước đây
+                # MỌI 400/403 đều bị coi là "key có vấn đề" và khoá 1h qua mark_invalid() — nhưng
+                # 400 cũng là mã Google trả cho payload SAI của 1 request cụ thể (vd ảnh base64
+                # hỏng), không liên quan gì tới sức khoẻ của key. 1 request test hỏng đã khoá oan
+                # 1 key hoàn toàn khoẻ mạnh (quota còn dư theo dashboard) mất 1 tiếng. Đọc body lỗi
+                # để phân biệt: chỉ khoá key khi Google thật sự báo lỗi liên quan tới auth/key.
+                error_status = ""
+                error_message = ""
+                try:
+                    error_body = resp.json().get("error", {})
+                    error_status = str(error_body.get("status", ""))
+                    error_message = str(error_body.get("message", ""))
+                except Exception:
+                    pass
+
+                is_key_problem = (
+                    resp.status_code == 403
+                    or error_status in ("PERMISSION_DENIED", "UNAUTHENTICATED")
+                    or "API_KEY_INVALID" in error_message
+                    or "API key not valid" in error_message
+                )
+                if is_key_problem:
+                    pool.mark_invalid(key, model)
+                    continue
+
+                # 400 do payload của request này sai (vd ảnh không hợp lệ) — không phải lỗi key,
+                # đổi sang slot khác cũng vô ích vì payload vẫn sai. Trả lỗi thẳng cho caller.
+                logger.warning(
+                    f"Gemini tu choi request (400 {error_status or 'khong ro'}): {error_message or resp.text[:200]}"
+                )
+                raise ProviderInvalidResponse(f"Gemini tu choi request: {error_message or resp.text[:200]}")
 
             # 5xx hoặc lỗi khác
             pool.mark_failure(key, model)
