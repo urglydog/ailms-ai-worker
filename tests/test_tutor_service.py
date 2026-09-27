@@ -109,7 +109,9 @@ async def test_answer_includes_prior_history_as_multiturn_contents():
         await tutor_service.answer_single_lesson(21, "Cau hoi tren la gi?", history=history)
 
     contents = generate_mock.await_args.args[0]
-    assert contents[0] == {"role": "user", "parts": [{"text": "Unity AI Assistant co free khong?"}]}
+    # BR-TUTOR-SEC-04 — luot USER trong lich su cung bi boc <student_message> giong luot hien
+    # tai (khong chi tin nhan dau tien), luot AI (model) giu nguyen khong boc.
+    assert contents[0] == {"role": "user", "parts": [{"text": tutor_service._wrap_student_message("Unity AI Assistant co free khong?")}]}
     assert contents[1] == {"role": "model", "parts": [{"text": "Video khong de cap, minh da tim tren mang: co ban mien phi."}]}
     assert contents[-1]["role"] == "user"
     assert "Cau hoi tren la gi?" in contents[-1]["parts"][0]["text"]
