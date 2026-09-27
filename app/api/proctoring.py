@@ -83,6 +83,13 @@ student taking an online exam. Look carefully at the image and answer TWO INDEPE
    - "unknown": ONLY when direction genuinely cannot be judged at all — frame too dark, camera
      blocked/obstructed, or no person present in the frame
 
+For "reasoning", write EXACTLY ONE short Vietnamese sentence in a concise, professional monitoring-
+report tone — state the observed behavior directly, do NOT narrate ("Có một người trong hình đang
+...", "Tôi thấy ..."), do NOT hedge, do NOT restate person_count/gaze_direction as raw labels.
+- Good: "Học viên quay đầu nhìn sang trái, rời khỏi hướng màn hình."
+- Good: "Không phát hiện học viên trong khung hình."
+- Bad: "Có một người trong hình đang quay đầu và nhìn sang phía bên trái."
+
 Respond with ONLY a JSON object, no markdown fences, no extra text:
 {"person_count": <int>, "gaze_direction": "<screen|away|down|unknown>", "reasoning": "<1 short sentence in Vietnamese>"}
 """
