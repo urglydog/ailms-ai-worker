@@ -27,6 +27,7 @@ from pydantic import BaseModel, Field
 from app.providers import gemini, supabase_vector
 from app.http import backend_client
 from app.config import settings
+from app.services import security_heuristics
 
 log = logging.getLogger(__name__)
 
@@ -131,6 +132,13 @@ def _build_search_tool(categories: list[dict]) -> dict:
 @router.post("/chat", response_model=DiscoveryChatResponse, status_code=status.HTTP_200_OK)
 async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
     """Handler 2 bước: Bước 1 gọi AI trích xuất intent, Bước 2 lấy data thật gọi AI lần 2 để trả lời."""
+    matched_pattern = security_heuristics.scan(request.message)
+    if matched_pattern:
+        await backend_client.report_prompt_security_flag(
+            source="DISCOVERY", user_email=None, matched_pattern=matched_pattern,
+            message_snapshot=request.message,
+        )
+
     try:
         # Bước 1: Trích xuất intent — enum categorySlug lấy từ danh mục THẬT, tránh Gemini
         # bịa slug không tồn tại (xem docblock `_fetch_category_slugs`).
@@ -228,10 +236,12 @@ async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
                     log.warning("Rerank semantic that bai, dung ket qua filter goc: %s", exc)
 
             # Bước 2: Sinh câu trả lời dựa trên kết quả thật
-            # Tóm tắt tối đa 5 khóa học để tránh quá tải payload (chỉ cần title và price để AI biết)
+            # Tóm tắt tối đa 3 khóa học (Defense-in-Depth chống DoW qua prompt injection — xem
+            # UpComming_Plan.md mục "Nâng cấp Auto-Ban") để tránh nhồi quá nhiều text vào Gemini
+            # (chỉ cần title và price để AI biết).
             summary_data = [
                 {"title": c.title, "price": c.price_label, "level": c.level_label}
-                for c in courses[:5]
+                for c in courses[:3]
             ]
 
             prompt2 = f"""Người dùng đã hỏi: "{request.message}"

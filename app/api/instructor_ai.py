@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 from app.providers import gemini
 from app.http import backend_client
+from app.services import security_heuristics
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ router = APIRouter(prefix="/api/v1/instructor", tags=["instructor-ai"])
 # ─────────────────────────────────────────────────────────────────────────────
 
 class InstructorChatRequest(BaseModel):
-    message: str = Field(min_length=1, max_length=2000)
+    message: str = Field(min_length=1, max_length=1000)
     caller_role: str = "INSTRUCTOR"          # Bắt buộc phải là INSTRUCTOR
     instructor_email: str = ""               # Dùng để fetch data từ backend
 
@@ -218,6 +219,13 @@ async def instructor_chat(request: InstructorChatRequest) -> InstructorChatRespo
     # Guard: chỉ chấp nhận request từ backend proxy (caller_role phải là INSTRUCTOR)
     if request.caller_role != "INSTRUCTOR":
         raise HTTPException(status_code=403, detail="This endpoint is for INSTRUCTOR only.")
+
+    matched_pattern = security_heuristics.scan(request.message)
+    if matched_pattern:
+        await backend_client.report_prompt_security_flag(
+            source="INSTRUCTOR_AI", user_email=request.instructor_email or None,
+            matched_pattern=matched_pattern, message_snapshot=request.message,
+        )
 
     try:
         res = await gemini.generate_with_tools(
