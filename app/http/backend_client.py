@@ -372,3 +372,24 @@ async def finish_material_generation(
     
     await _request("POST", f"/api/internal/materials/{generation_id}/finish", json_body=payload)
 
+
+async def report_prompt_security_flag(
+    *, source: str, user_email: str | None, matched_pattern: str, message_snapshot: str
+) -> None:
+    """Lớp 2b chống Prompt Injection/DoW (UpComming_Plan.md, 27/09/2026) — ghi log CHỈ ĐỂ ADMIN
+    xem lại, KHÔNG chặn câu trả lời của AI Discovery/Instructor AI Assistant (fail-open: lỗi ghi
+    log không được làm hỏng trải nghiệm chat của người dùng)."""
+    try:
+        await _request(
+            "POST",
+            "/api/internal/ai-security/flag",
+            json_body={
+                "source": source,
+                "userEmail": user_email,
+                "matchedPattern": matched_pattern,
+                "messageSnapshot": message_snapshot,
+            },
+        )
+    except Exception:
+        pass
+

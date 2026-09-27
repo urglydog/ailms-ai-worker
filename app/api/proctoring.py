@@ -148,8 +148,11 @@ cheating (e.g. using a second device via remote control) than the same total cou
 harmless one-off events.
 
 IMPORTANT: you cannot directly detect remote-desktop tools — only reason from the signals given.
-Respond with ONLY a JSON object, no markdown fences:
-{"risk_level": "<LOW|MEDIUM|HIGH>", "explanation": "<2-4 câu tiếng Việt giải thích lý do, nêu cụ thể tín hiệu nào đáng chú ý nhất>"}
+Respond with ONLY a JSON object, no markdown fences. The "explanation" field MUST be formatted as
+a Vietnamese Markdown bullet list — one signal worth noting per line, each line starting with
+"- " and separated by a real "\\n" newline character inside the JSON string. Do NOT write it as a
+single flowing paragraph. Example:
+{"risk_level": "<LOW|MEDIUM|HIGH>", "explanation": "- Tín hiệu 1: ...\\n- Tín hiệu 2: ..."}
 """
 
 
