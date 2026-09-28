@@ -223,11 +223,21 @@ async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
                     )
                     similarity_by_id = {m.course_id: m.similarity for m in matches}
                     if similarity_by_id:
-                        courses = sorted(
+                        matched = sorted(
                             (c for c in courses if c.id in similarity_by_id),
                             key=lambda c: similarity_by_id[c.id],
                             reverse=True,
                         )
+                        if has_hard_filter:
+                            # BUG THẬT (28/09/2026): trước đây rerank LOẠI BỎ luôn mọi khoá học
+                            # không lọt top similarity, kể cả khi đã qua filter cứng của BE (vd
+                            # chọn category "Lập trình" rồi hỏi 1 câu chung chung → mất phần lớn
+                            # khoá học hợp lệ). Khi ĐÃ có filter cứng, similarity chỉ dùng để SẮP
+                            # XẾP LẠI theo độ liên quan, không được loại bỏ khoá nào BE đã vetted.
+                            unmatched = [c for c in courses if c.id not in similarity_by_id]
+                            courses = matched + unmatched
+                        else:
+                            courses = matched
                     elif not has_hard_filter:
                         courses = []
                     # Có filter cứng nhưng không similarity nào đạt ngưỡng (vd course chưa

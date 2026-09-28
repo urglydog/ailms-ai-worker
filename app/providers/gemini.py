@@ -229,6 +229,28 @@ async def _throttle_rpm() -> None:
         _call_timestamps.append(time.monotonic())
 
 
+def _parse_gemini_error_body(resp: httpx.Response) -> tuple[str, str]:
+    """Đọc `error.status`/`error.message` từ response lỗi của Gemini, rỗng nếu parse thất bại."""
+    try:
+        error_body = resp.json().get("error", {})
+        return str(error_body.get("status", "")), str(error_body.get("message", ""))
+    except Exception:
+        return "", ""
+
+
+def _is_key_error(status_code: int, error_status: str, error_message: str) -> bool:
+    """Phân biệt lỗi THẬT SỰ liên quan tới key (nên khoá) với lỗi payload của 1 request cụ thể
+    (không liên quan tới sức khoẻ key, khoá oan sẽ giảm capacity cả pool). Dùng chung cho mọi
+    endpoint Gemini (generateContent, embedContent...) — xem lịch sử bug 26/09/2026 ở
+    `_execute_request`."""
+    return (
+        status_code == 403
+        or error_status in ("PERMISSION_DENIED", "UNAUTHENTICATED")
+        or "API_KEY_INVALID" in error_message
+        or "API key not valid" in error_message
+    )
+
+
 async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
     client = get_client()
     pool = get_key_pool()
@@ -269,22 +291,8 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
                 # hỏng), không liên quan gì tới sức khoẻ của key. 1 request test hỏng đã khoá oan
                 # 1 key hoàn toàn khoẻ mạnh (quota còn dư theo dashboard) mất 1 tiếng. Đọc body lỗi
                 # để phân biệt: chỉ khoá key khi Google thật sự báo lỗi liên quan tới auth/key.
-                error_status = ""
-                error_message = ""
-                try:
-                    error_body = resp.json().get("error", {})
-                    error_status = str(error_body.get("status", ""))
-                    error_message = str(error_body.get("message", ""))
-                except Exception:
-                    pass
-
-                is_key_problem = (
-                    resp.status_code == 403
-                    or error_status in ("PERMISSION_DENIED", "UNAUTHENTICATED")
-                    or "API_KEY_INVALID" in error_message
-                    or "API key not valid" in error_message
-                )
-                if is_key_problem:
+                error_status, error_message = _parse_gemini_error_body(resp)
+                if _is_key_error(resp.status_code, error_status, error_message):
                     pool.mark_invalid(key, model)
                     continue
 
@@ -383,8 +391,20 @@ async def embed_content(text: str) -> list[float]:
                 pool.mark_cool_down(key, slot["model"], 60)
                 continue
             if resp.status_code in (400, 403):
-                pool.mark_invalid(key, slot["model"])
-                continue
+                # Cùng bug đã fix ở _execute_request (26/09/2026): 400 cũng là mã Google trả cho
+                # payload SAI của request cụ thể (vd text rỗng/quá dài), không liên quan sức khoẻ
+                # key — chỉ mark_invalid khi thật sự là lỗi key, tránh khoá oan 1h.
+                error_status, error_message = _parse_gemini_error_body(resp)
+                if _is_key_error(resp.status_code, error_status, error_message):
+                    pool.mark_invalid(key, slot["model"])
+                    continue
+                logger.warning(
+                    f"Gemini embedContent tu choi request (400 {error_status or 'khong ro'}): "
+                    f"{error_message or resp.text[:200]}"
+                )
+                raise ProviderInvalidResponse(
+                    f"Gemini embedContent tu choi request: {error_message or resp.text[:200]}"
+                )
             pool.mark_failure(key, slot["model"])
         except httpx.RequestError as exc:
             logger.error(f"Gemini embedContent network error: {exc}")
