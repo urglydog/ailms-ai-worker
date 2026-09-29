@@ -25,6 +25,7 @@ celery_app = Celery(
     include=[
         "app.tasks.dubbing", "app.tasks.material", "app.tasks.maintenance",
         "app.tasks.transcript_extraction", "app.tasks.course_embedding",
+        "app.tasks.review_moderation",
     ],
 )
 
