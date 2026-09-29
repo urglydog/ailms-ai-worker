@@ -120,6 +120,25 @@ async def _course_embedding_queue_consumer() -> None:
             log.exception("Loi khi xu ly hang doi lms:course-embedding:jobs, tiep tuc lang nghe")
             await asyncio.sleep(1)
 
+async def _review_moderation_queue_consumer() -> None:
+    log.info("Review moderation queue consumer: bat dau lang nghe lms:course-review:jobs")
+    while True:
+        try:
+            job = await redis_client.brpop_job("lms:course-review:jobs", timeout_sec=5)
+            if job is None:
+                continue
+            log.info("Nhan job phan tich review tu hang doi: %s", job)
+            from app.tasks.review_moderation import moderate_review
+            moderate_review.delay(
+                review_id=job["reviewId"],
+                text=job["text"],
+            )
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Loi khi xu ly hang doi lms:course-review:jobs, tiep tuc lang nghe")
+            await asyncio.sleep(1)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -128,11 +147,13 @@ async def lifespan(app: FastAPI):
     material_task = asyncio.create_task(_material_queue_consumer())
     transcript_task = asyncio.create_task(_transcript_queue_consumer())
     course_embedding_task = asyncio.create_task(_course_embedding_queue_consumer())
+    review_moderation_task = asyncio.create_task(_review_moderation_queue_consumer())
     yield
     dubbing_task.cancel()
     material_task.cancel()
     transcript_task.cancel()
     course_embedding_task.cancel()
+    review_moderation_task.cancel()
     # Đóng client của TỪNG provider (mỗi provider một client riêng — bulkhead).
     log.info("Dang dong provider client...")
     await groq_asr.aclose()

@@ -318,6 +318,7 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
 
 async def generate_conversation(
     contents: list[dict], *, system_instruction: str | None = None, tools: list[dict] | None = None,
+    response_mime_type: str | None = None, response_schema: dict | None = None,
 ) -> LlmResult | FunctionCall:
     """Lớp nền tảng cho mọi lệnh sinh văn bản — nhận thẳng `contents` đa lượt (multi-turn)
     thay vì 1 chuỗi prompt đơn, dùng cho UC30 Socratic Tutor cần nhớ lịch sử hội thoại
@@ -333,6 +334,12 @@ async def generate_conversation(
             "role": "system",
             "parts": [{"text": system_instruction}],
         }
+    if response_mime_type:
+        generation_config = payload.setdefault("generationConfig", {})
+        generation_config["responseMimeType"] = response_mime_type
+    if response_schema:
+        generation_config = payload.setdefault("generationConfig", {})
+        generation_config["responseSchema"] = response_schema
     return await _execute_request(payload)
 
 
