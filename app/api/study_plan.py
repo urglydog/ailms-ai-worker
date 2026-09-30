@@ -2,10 +2,10 @@ import json
 import logging
 from typing import List
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
-import google.generativeai as genai
+from pydantic import BaseModel
 
 from app.config import settings
+from app.providers import gemini
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/study-plan", tags=["study-plan"])
@@ -33,18 +33,9 @@ class StudyDay(BaseModel):
 class StudyPlanResponse(BaseModel):
     plan_data: List[StudyDay]
 
-# Configure Gemini
-try:
-    genai.configure(api_key=settings.gemini_api_key)
-except Exception as e:
-    logger.warning(f"Failed to configure GenAI: {e}")
-
-@router.post("/generate", response_model=StudyPlanResponse)
+@router.post("/generate")
 async def generate_study_plan(req: AiWorkerStudyPlanReq):
     try:
-        model = genai.GenerativeModel(settings.gemini_model)
-        
-        # Prepare content
         lessons_text = "\n".join([f"- Bài {l.id}: {l.title} (Thời lượng: {l.durationSec // 60} phút)" for l in req.remainingLessons])
         
         prompt = f"""
@@ -64,21 +55,49 @@ async def generate_study_plan(req: AiWorkerStudyPlanReq):
         4. Trả về đúng định dạng JSON Schema yêu cầu. Tuyệt đối không thêm giải thích hay thẻ markdown.
         """
         
-        # Call Gemini with Structured Outputs
-        config = genai.GenerationConfig(
+        schema = {
+            "type": "object",
+            "properties": {
+                "plan_data": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "date": {"type": "string"},
+                            "objective": {"type": "string"},
+                            "lessons": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "lesson_id": {"type": "integer"},
+                                        "title": {"type": "string"},
+                                        "duration_minutes": {"type": "integer"}
+                                    },
+                                    "required": ["lesson_id", "title", "duration_minutes"]
+                                }
+                            }
+                        },
+                        "required": ["date", "objective", "lessons"]
+                    }
+                }
+            },
+            "required": ["plan_data"]
+        }
+        
+        res = await gemini.generate_conversation(
+            [{"role": "user", "parts": [{"text": prompt}]}],
             response_mime_type="application/json",
-            response_schema=StudyPlanResponse
+            response_schema=schema
         )
         
-        response = model.generate_content(prompt, generation_config=config)
-        
-        if not response.text:
-            raise ValueError("Gemini returned empty text")
+        if isinstance(res, gemini.FunctionCall):
+            raise ValueError("Expected text but got FunctionCall from Gemini")
             
-        # Parse the JSON string from Gemini
-        plan_data = json.loads(response.text)
+        plan_data = json.loads(res.text)
         return plan_data
         
     except Exception as e:
         logger.error(f"Error generating study plan: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
