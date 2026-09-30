@@ -11,7 +11,7 @@ BR-MAT-06 — validate dau ra LLM truoc khi luu:
     pipeline long tieng chinh
 
 BR-QUIZ-01/02: cau hoi chi gom noi dung + dung 4 phuong an + dap an dung.
-KHONG sinh explanation, KHONG sinh moc thoi gian.
+Sinh them topic_tag và video_timestamp de phuc vu phan tich diem yeu.
 """
 
 import asyncio
@@ -211,9 +211,9 @@ async def _generate_quizzes(text: str, language: str) -> tuple[list[dict], dict]
     Ban la mot chuyen gia giao duc. Hay tao mot bo cau hoi trac nghiem (Quiz) cho noi dung bai hoc sau day.
     Yeu cau:
     1. Chi tra ve JSON Array, khong giai thich gi them.
-    2. Moi cau hoi co "content" (noi dung cau hoi), "options" (mang DUNG 4 phuong an), va "correct_answer" (chuoi nguyen van 1 trong 4 phuong an).
-    3. KHONG sinh giai thich (explanation), KHONG sinh moc thoi gian (timestamp).
-    4. Dinh dang JSON chinh xac: [{{"content": "...", "options": ["A", "B", "C", "D"], "correct_answer": "..."}}, ...]
+    2. Moi cau hoi co "content" (noi dung cau hoi), "options" (mang DUNG 4 phuong an), "correct_answer" (chuoi nguyen van 1 trong 4 phuong an), "topic_tag" (1 chu de ngan gon nhat bang chu thuong, vi du: 'vong lap for'), va "video_timestamp" (giay, uoc luong thoi diem trong video ma cau hoi nay de cap den).
+    3. KHONG sinh giai thich (explanation).
+    4. Dinh dang JSON chinh xac: [{{"content": "...", "options": ["A", "B", "C", "D"], "correct_answer": "...", "topic_tag": "...", "video_timestamp": 120}}, ...]
     5. QUAN TRONG: TOAN BO NOI DUNG QUIZ PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).
     
     Noi dung:
@@ -235,7 +235,7 @@ async def _generate_quizzes(text: str, language: str) -> tuple[list[dict], dict]
         
         try:
             data = json.loads(content)
-            if isinstance(data, list) and len(data) > 0 and "content" in data[0] and "options" in data[0] and len(data[0]["options"]) == 4 and "correct_answer" in data[0]:
+            if isinstance(data, list) and len(data) > 0 and "content" in data[0] and "options" in data[0] and len(data[0]["options"]) == 4 and "correct_answer" in data[0] and "topic_tag" in data[0] and "video_timestamp" in data[0]:
                 usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens}
                 return data, usage
         except json.JSONDecodeError:
