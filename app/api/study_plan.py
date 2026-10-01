@@ -14,6 +14,7 @@ class LessonInfo(BaseModel):
     id: int
     title: str
     durationSec: int
+    chapterTitle: str
 
 class AiWorkerStudyPlanReq(BaseModel):
     targetDate: str
@@ -36,7 +37,7 @@ class StudyPlanResponse(BaseModel):
 @router.post("/generate")
 async def generate_study_plan(req: AiWorkerStudyPlanReq):
     try:
-        lessons_text = "\n".join([f"- Bài {l.id}: {l.title} (Thời lượng: {l.durationSec // 60} phút)" for l in req.remainingLessons])
+        lessons_text = "\n".join([f"- Bài {l.id}: {l.title} (Thời lượng: {l.durationSec // 60} phút) - Chương: {l.chapterTitle}" for l in req.remainingLessons])
         
         prompt = f"""
         Bạn là một chuyên gia giáo dục AI. Nhiệm vụ của bạn là lập lịch học cá nhân hóa cho học viên.
@@ -53,6 +54,7 @@ async def generate_study_plan(req: AiWorkerStudyPlanReq):
         2. Đảm bảo tổng thời gian học mỗi tuần không vượt quá {req.hoursPerWeek} giờ.
         3. Đối với mỗi ngày học, xác định danh sách bài cần học và một mục tiêu học tập (objective) ngắn gọn.
         4. Trả về đúng định dạng JSON Schema yêu cầu. Tuyệt đối không thêm giải thích hay thẻ markdown.
+        5. ƯU TIÊN GOM CÁC BÀI GIẢNG: Hãy cố gắng xếp các bài giảng thuộc CÙNG MỘT CHƯƠNG (Chapter) vào học trong cùng một ngày. Tránh việc cắt ngang một chương hoặc học bài đầu chương mới khi chưa học xong chương cũ trong cùng ngày nếu thời lượng cho phép.
         """
         
         schema = {
