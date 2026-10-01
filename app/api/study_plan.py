@@ -1,5 +1,6 @@
 import json
 import logging
+from datetime import datetime
 from typing import List
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -43,6 +44,7 @@ async def generate_study_plan(req: AiWorkerStudyPlanReq):
         Bạn là một chuyên gia giáo dục AI. Nhiệm vụ của bạn là lập lịch học cá nhân hóa cho học viên.
         
         THÔNG TIN HỌC VIÊN:
+        - Hôm nay là: {datetime.now().strftime('%Y-%m-%d')}
         - Ngày mục tiêu kết thúc: {req.targetDate}
         - Số giờ học mỗi tuần: {req.hoursPerWeek} giờ
         
@@ -54,7 +56,7 @@ async def generate_study_plan(req: AiWorkerStudyPlanReq):
         2. Đảm bảo tổng thời gian học mỗi tuần không vượt quá {req.hoursPerWeek} giờ.
         3. Đối với mỗi ngày học, xác định danh sách bài cần học và một mục tiêu học tập (objective) ngắn gọn.
         4. Trả về đúng định dạng JSON Schema yêu cầu. Tuyệt đối không thêm giải thích hay thẻ markdown.
-        5. ƯU TIÊN GOM CÁC BÀI GIẢNG: Hãy cố gắng xếp các bài giảng thuộc CÙNG MỘT CHƯƠNG (Chapter) vào học trong cùng một ngày. Tránh việc cắt ngang một chương hoặc học bài đầu chương mới khi chưa học xong chương cũ trong cùng ngày nếu thời lượng cho phép.
+        5. TUYỆT ĐỐI KHÔNG xếp các bài giảng thuộc 2 Chương (Chapter) khác nhau vào cùng 1 ngày học. Mỗi ngày chỉ học các bài của CÙNG 1 chương. Nếu đã hết bài của chương đó mà vẫn còn thời gian của ngày, hãy để học viên nghỉ ngơi, KHÔNG lấy bài của chương tiếp theo sang học ghép vào cùng ngày!
         """
         
         schema = {
