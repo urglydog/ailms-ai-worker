@@ -52,7 +52,7 @@ async def generate_study_plan(req: AiWorkerStudyPlanReq):
         {lessons_text}
         
         YÊU CẦU:
-        1. Phân bổ đều các bài giảng này vào các ngày từ hôm nay (hoặc ngày mai) đến {req.targetDate}.
+        1. BẮT ĐẦU NGAY LẬP TỨC: Lịch học phải bắt đầu từ HÔM NAY (hoặc ngày mai). Tuyệt đối không được dồn toàn bộ bài học vào những ngày cuối cùng sát ngày mục tiêu. Hãy phân bổ đều ra các ngày.
         2. Đảm bảo tổng thời gian học mỗi tuần không vượt quá {req.hoursPerWeek} giờ.
         3. Đối với mỗi ngày học, xác định danh sách bài cần học và một mục tiêu học tập (objective) ngắn gọn.
         4. Trả về đúng định dạng JSON Schema yêu cầu. Tuyệt đối không thêm giải thích hay thẻ markdown.
