@@ -87,6 +87,14 @@ async def ask(request: TutorAskRequest) -> TutorAskResponse:
 
     if request.course_id is not None and request.current_lesson_id is not None:
         result = await tutor_service.answer(request.course_id, request.current_lesson_id, **common_kwargs)
+    elif request.lesson_id == -1:
+        # BUG THẬT (12/10/2026) — `lesson_id=-1` là sentinel "không gắn bài học nào" (QuizService
+        # giải thích câu hỏi trắc nghiệm), nhưng trước đây vẫn bị route qua `answer_single_lesson()`
+        # (yêu cầu lesson_id THẬT để lấy ngữ cảnh bài giảng) → luôn lỗi 100% số lần gọi. Giờ tách
+        # hẳn nhánh riêng, không cần ngữ cảnh bài giảng (xem docblock `answer_quiz_explanation`).
+        result = await tutor_service.answer_quiz_explanation(
+            question=request.question, language=request.language,
+        )
     elif request.lesson_id is not None:
         result = await tutor_service.answer_single_lesson(request.lesson_id, **common_kwargs)
     else:

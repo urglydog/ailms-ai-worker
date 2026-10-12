@@ -54,9 +54,16 @@ nay de tua dung video + tu dieu huong sang dung bai khi khac bai dang mo (xem `l
 trich dan bai nao) — chi con y nghia "tham khao/hien thi", KHONG con dung de dieu huong nua.
 
 `answer_single_lesson()` giu nguyen hanh vi CU (1 lesson_id co dinh, khong tim xuyen khoa, dinh
-dang trich dan van la `[MM:SS]` khong doi) — chi con dung cho luong giai thich cau hoi trac nghiem
-(`com.lms.material.service.QuizService`, goi thang `/api/v1/tutor/ask` voi `lesson_id=-1`, khong
-qua `TutorService.ask` cua Socratic Tutor — luon dung DUNG 1 bai, khong co gi de tim xuyen khoa).
+dang trich dan van la `[MM:SS]` khong doi) — dung cho cac luong co 1 lesson_id THAT (vd dang mo 1
+bai hoc cu the ngoai Socratic Tutor chinh).
+
+(12/10/2026, sua bug) — luong giai thich cau hoi trac nghiem
+(`com.lms.material.service.QuizService`, goi thang `/api/v1/tutor/ask` voi `lesson_id=-1` lam
+sentinel "khong gan bai hoc nao") TRUOC DAY cung bi route qua `answer_single_lesson()`, nhung ham
+nay luon goi `backend_client.get_tutor_context(lesson_id)` doi hoi 1 lesson THAT trong DB — lesson
+id=-1 khong ton tai nen luon loi, bi nuot silent o BE (catch-all "ignore and fallback"), khien tinh
+nang nay tra ve dung 1 cau co dinh "khong kha dung" 100% so lan goi tu luc ra doi. Gio tach rieng
+`answer_quiz_explanation()` (xem ham duoi), khong can ngu canh bai giang nao ca.
 
 UU TIEN bai dang mo (13/09/2026, sua lan 2): ban dau tim xuyen khoa CUNG LUC (khong uu tien bai
 nao) co nhuoc diem — hoc vien dang o dung bai co cau tra loi van co the bi nhay sang bai KHAC chi
@@ -457,6 +464,35 @@ async def answer_single_lesson(
     """Đường CŨ (không đổi hành vi) — 1 `lesson_id` cố định, không phân loại/không RAG toàn
     khóa. Chỉ còn dùng cho luồng giải thích câu hỏi trắc nghiệm (xem docblock đầu file)."""
     return await _answer_for_lesson(lesson_id, question, history, attachments, language)
+
+
+_QUIZ_EXPLAIN_SYSTEM_INSTRUCTION = """Ban la Gia su AI giai thich cau hoi trac nghiem cho hoc vien.
+Hoc vien vua lam sai 1 cau hoi — prompt se neu ro noi dung cau hoi, cac lua chon, dap an dung, va
+dap an hoc vien da chon. Nhiem vu cua ban: giai thich NGAN GON, RO RANG, mang tinh giao duc vi sao
+dap an dung la dung va (neu hop ly) vi sao lua chon cua hoc vien chua chinh xac. KHONG can giu kieu
+Socratic (khong can goi mo/dat cau hoi nguoc) vi dap an da duoc tiet lo san trong cau hoi — hay giai
+thich truc tiep. Dung Markdown nhe (in dam tu khoa chinh) neu giup de doc hon. Tra loi ngan gon
+(2-4 cau), giong dieu than thien."""
+
+
+async def answer_quiz_explanation(question: str, language: str | None = None) -> TutorAnswer:
+    """(12/10/2026, bug thật) — Trước đây `lesson_id=-1` (sentinel "không gắn bài học nào") vẫn bị
+    route qua `answer_single_lesson()` → `_answer_for_lesson()`, hàm này LUÔN gọi
+    `backend_client.get_tutor_context(-1)` để lấy tiêu đề bài/khoá — BE không có Lesson id=-1 nên
+    luôn lỗi, bị nuốt silent ở `QuizService.explainWrongAnswer` (catch-all "ignore and fallback"),
+    khiến tính năng "Hỏi Gia sư AI tại sao sai?" trả về đúng 1 câu cố định
+    "Gia sư AI hiện không khả dụng..." 100% số lần gọi, cả web lẫn mobile, từ lúc tính năng ra đời.
+
+    Fix: tách hẳn 1 nhánh riêng cho quiz-explain, KHÔNG gọi `get_tutor_context`/RAG nào cả — prompt
+    từ `QuizService.java` đã tự chứa đủ câu hỏi/đáp án/lựa chọn, không cần ngữ cảnh bài giảng nào.
+    """
+    result = await gemini.generate(question, system_instruction=_QUIZ_EXPLAIN_SYSTEM_INSTRUCTION)
+    return TutorAnswer(
+        answer=result.text.strip(),
+        cited_timestamps=[],
+        token_used=result.total_tokens,
+        context_lesson_id=None,
+    )
 
 
 _FALLBACK_TITLE = "Cuộc trò chuyện mới"
