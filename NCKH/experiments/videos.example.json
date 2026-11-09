@@ -1,0 +1,18 @@
+[
+  {
+    "id": "it01",
+    "source": "https://www.youtube.com/watch?v=XXXXXXXXXXX",
+    "target_language": "vi-VN",
+    "voice_name": "vi-VN-HoaiMyNeural",
+    "category": "CNTT",
+    "note": "Thay bằng video bài giảng tiếng Anh công khai, 5-20 phút"
+  },
+  {
+    "id": "soft01",
+    "source": "D:/videos/soft_skill_01.mp4",
+    "target_language": "vi-VN",
+    "voice_name": "vi-VN-NamMinhNeural",
+    "category": "KyNangMem",
+    "note": "File local cũng được (ffmpeg đọc trực tiếp)"
+  }
+]
