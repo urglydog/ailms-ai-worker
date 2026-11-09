@@ -60,11 +60,8 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.maintenance.cleanup_old_notifications",
         "schedule": crontab(hour=3, minute=0),
     },
-    # BR-NOTIFY-01: nhắc lịch ôn tập Flashcards trong ngày (SM-2, BR-CARD-01).
-    "remind-flashcard-reviews": {
-        "task": "app.tasks.maintenance.remind_flashcard_reviews",
-        "schedule": crontab(hour=7, minute=0),
-    },
+    # Nhắc ôn Flashcard KHÔNG chạy ở đây nữa: BE đã có FlashcardNotificationJob (cron 8h sáng, lưu DB +
+    # WebSocket theo userId). Mục này trước đây gọi task còn là stub nên báo NotImplementedError mỗi ngày.
     # BR-DUB-08: báo cáo audio không có lượt phát trong 180 ngày, hàng tuần.
     # Hệ thống CHỈ báo cáo — Admin quyết định xoá thủ công, không tự xoá.
     "report-unused-audio": {
