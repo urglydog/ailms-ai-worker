@@ -21,6 +21,7 @@ pydantic-settings==2.7.1
 # ── Job nền (UC19 pipeline lồng tiếng, UC25 sinh học liệu) ──
 celery==5.4.0
 redis==5.2.1
+kombu==5.4.2
 
 # ── Gọi dịch vụ ngoài: Groq, Gemini, Azure Speech, backend callback ──
 # Mỗi provider dùng một AsyncClient riêng (bulkhead) — xem app/providers/
