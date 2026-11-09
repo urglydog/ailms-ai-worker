@@ -1,0 +1,270 @@
+\documentclass{IEEEtran}
+\usepackage[utf8]{vietnam}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp,nicefrac}
+% --- Goi bo sung (khong anh huong dinh dang IEEEtran) ---
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+% Danh dau cho can bo sung so lieu / thong tin (xoa truoc khi nop)
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\markboth{STUDENT SCIENTIFIC RESEARCH COMMUNICATION, Volume II, 2026}
+{Nguyễn Hữu Sang \MakeLowercase{\textit{et al.}}: Pipeline lồng tiếng tự động cho video bài giảng với điều chỉnh tốc độ đọc thích ứng}
+
+\begin{document}
+\title{Pipeline lồng tiếng tự động cho video bài giảng trực tuyến với cơ chế điều chỉnh tốc độ đọc thích ứng}
+
+\author{Nguyễn Hữu Sang, Nguyễn Chí Thiện, và Nguyễn Thị Hoàng Khánh
+\thanks{Bài báo được gửi ngày \todo{dd/mm}/2026 tới Hội nghị SSRC-II'2026.}
+\thanks{Nguyễn Hữu Sang và Nguyễn Chí Thiện là sinh viên Khoa Công nghệ Thông tin, Trường Đại học Công nghiệp Thành phố Hồ Chí Minh (e-mail: \todo{email1}, \todo{email2}).}
+\thanks{ThS. Nguyễn Thị Hoàng Khánh là giảng viên Khoa Công nghệ Thông tin, Trường Đại học Công nghiệp Thành phố Hồ Chí Minh (e-mail: \todo{email3}).}}
+
+\maketitle
+
+\begin{abstract}
+Các khóa học trực tuyến quốc tế phần lớn được giảng bằng tiếng nước ngoài, khiến người học Việt Nam phải vừa nghe bài giảng vừa đọc phụ đề, làm tăng tải nhận thức và giảm hiệu quả tiếp thu. Bài báo này đề xuất một pipeline lồng tiếng tự động cho video bài giảng, được tích hợp trực tiếp vào hệ thống quản lý học tập. Pipeline gồm các bước: nhận dạng giọng nói có mốc thời gian, dịch theo ngữ cảnh hai pha bằng mô hình ngôn ngữ lớn, tổng hợp giọng nói và ghép âm thanh theo đúng vị trí của từng câu gốc. Đóng góp chính là thuật toán điều chỉnh tốc độ đọc thích ứng: với mỗi câu, hệ thống so sánh thời lượng âm thanh tổng hợp với khung thời gian của câu gốc, tăng tốc độ đọc trong giới hạn ba mươi phần trăm hoặc yêu cầu mô hình ngôn ngữ rút gọn câu dịch khi vượt ngưỡng, nhờ đó âm thanh lồng tiếng luôn khớp với hình ảnh mà vẫn giữ được độ tự nhiên. Ngoài ra, pipeline chia video thành các đoạn mười phút độc lập để xử lý song song với tiến độ thời gian thực, chịu lỗi cục bộ và tái sử dụng bản ký âm giữa các ngôn ngữ đích nhằm giảm chi phí. Thực nghiệm trên \todo{N} video bài giảng thuộc lĩnh vực công nghệ thông tin và kỹ năng mềm cho thấy \todo{kết quả chính}. Hệ thống được triển khai trong nền tảng học tập trực tuyến LinguaLearn và cho phép người học chọn ngôn ngữ nghe cho từng bài giảng.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Điều chỉnh tốc độ đọc, hệ thống quản lý học tập, lồng tiếng tự động, mô hình ngôn ngữ lớn, nhận dạng giọng nói, tổng hợp giọng nói.
+\end{IEEEkeywords}
+
+% =====================================================================
+\section{Giới thiệu}
+\label{sec:introduction}
+\IEEEPARstart{H}{ọc} trực tuyến đã trở thành kênh tiếp cận tri thức phổ biến, trong đó phần lớn khóa học chất lượng cao trên các nền tảng quốc tế được giảng bằng tiếng Anh. Với người học Việt Nam, rào cản ngôn ngữ thường được khắc phục bằng phụ đề. Tuy nhiên, theo nguyên lý dư thừa và chia tách sự chú ý trong học tập đa phương tiện \cite{mayer2009,kalyuga1999}, việc buộc người học vừa đọc chữ vừa quan sát hình minh họa, mã nguồn hay thao tác trên màn hình làm tăng tải nhận thức và giảm khả năng ghi nhớ. Lồng tiếng sang ngôn ngữ mẹ đẻ giúp người học dồn toàn bộ sự chú ý thị giác vào nội dung bài giảng.
+
+Lồng tiếng thủ công tốn kém và không thể áp dụng cho hàng nghìn video bài giảng. Sự phát triển của các mô hình nhận dạng giọng nói quy mô lớn \cite{radford2023whisper}, mô hình ngôn ngữ lớn (LLM) \cite{gemini2023} và tổng hợp giọng nói (TTS) thần kinh mở ra khả năng tự động hóa toàn bộ quy trình. Dù vậy, lồng tiếng tự động khác dịch phụ đề ở một ràng buộc quan trọng: câu nói được lồng tiếng phải \emph{khớp thời lượng} với câu gốc \cite{federico2020,brannon2023}. Bản dịch tiếng Việt thường dài hơn câu tiếng Anh tương ứng; nếu phát nguyên văn, âm thanh sẽ trễ dần so với hình ảnh, còn nếu tăng tốc quá mức thì giọng đọc mất tự nhiên.
+
+Bài báo này trình bày một pipeline lồng tiếng tự động cho video bài giảng, được xây dựng và tích hợp trong hệ thống quản lý học tập (LMS) LinguaLearn. Các đóng góp chính gồm:
+\begin{itemize}
+\item Thuật toán \emph{điều chỉnh tốc độ đọc thích ứng} (Adaptive Speech Rate) kết hợp ba chiến lược theo từng câu: chèn khoảng lặng, tăng tốc độ đọc qua SSML trong giới hạn 30\%, và rút gọn câu bằng LLM có giới hạn số lần lặp.
+\item Quy trình \emph{dịch ngữ cảnh hai pha}: dịch sát nghĩa theo lô, sau đó biên tập lại cho văn nói với ngân sách thời lượng của từng câu.
+\item Kiến trúc xử lý \emph{phân đoạn theo lớp} (Layered Chunking) mười phút, cho phép báo tiến độ thời gian thực, chịu lỗi cục bộ, cùng các cơ chế chống trùng tác vụ và tái sử dụng kết quả nhằm giảm chi phí gọi dịch vụ AI.
+\item Đánh giá thực nghiệm về độ khớp thời lượng, thời gian xử lý và chi phí trên tập video bài giảng thực tế.
+\end{itemize}
+
+Phần còn lại của bài báo được tổ chức như sau: Mục~\ref{sec:related} trình bày các nghiên cứu liên quan; Mục~\ref{sec:method} mô tả pipeline và thuật toán đề xuất; Mục~\ref{sec:impl} trình bày cách triển khai trong hệ thống; Mục~\ref{sec:exp} trình bày thực nghiệm và Mục~\ref{sec:conclusion} kết luận.
+
+% =====================================================================
+\section{Nghiên cứu liên quan}
+\label{sec:related}
+
+\subsection{Lồng tiếng tự động}
+Federico và cộng sự \cite{federico2020} mở rộng bài toán dịch tiếng nói sang tiếng nói thành lồng tiếng tự động, trong đó yêu cầu đồng bộ nhịp (isochrony) giữa câu gốc và câu dịch được đặt lên hàng đầu. \"{O}ktem và cộng sự \cite{oktem2019} căn chỉnh các cụm ngữ điệu giữa hai ngôn ngữ để phân bổ lời thoại khớp với các khoảng ngắt. Nghiên cứu thực tiễn của Brannon và cộng sự \cite{brannon2023} trên các bản lồng tiếng chuyên nghiệp chỉ ra rằng người lồng tiếng ưu tiên độ trung thành nội dung và sự tự nhiên hơn là khớp thời lượng tuyệt đối, đồng thời thường xuyên điều chỉnh tốc độ nói.
+
+\subsection{Điều khiển độ dài bản dịch}
+Một hướng tiếp cận là điều khiển độ dài ngay trong mô hình dịch. Lakew và cộng sự \cite{lakew2022} đề xuất dịch máy đẳng cự (isometric MT) để bản dịch có số ký tự tương đương câu nguồn. Wu và cộng sự \cite{wu2023videodubber} đưa thông tin thời lượng tiếng nói vào mô hình dịch để kiểm soát độ dài ở mức âm vị. Các phương pháp này đòi hỏi huấn luyện lại mô hình dịch, khó áp dụng khi hệ thống sử dụng LLM thông qua API.
+
+\subsection{Nhận dạng giọng nói và giải pháp thương mại}
+Whisper \cite{radford2023whisper} cho độ chính xác cao trên nhiều ngôn ngữ; WhisperX \cite{bain2023whisperx} bổ sung căn chỉnh mốc thời gian cấp độ từ cho âm thanh dài. Về sản phẩm, một số nền tảng chia sẻ video và dịch vụ thương mại đã cung cấp tính năng lồng tiếng tự động, tuy nhiên chúng tách rời khỏi hệ thống quản lý học tập, tính phí theo phút video và không công bố chi tiết thuật toán đồng bộ thời lượng.
+
+Khác với các nghiên cứu trên, bài báo không huấn luyện mô hình mới mà tập trung vào \emph{điều phối} các dịch vụ AI có sẵn: ràng buộc thời lượng được xử lý ở hai tầng là tầng prompt (biên tập theo ngân sách thời lượng) và tầng hậu xử lý (điều chỉnh tốc độ đọc và rút gọn có điều kiện).
+
+% =====================================================================
+\section{Phương pháp đề xuất}
+\label{sec:method}
+
+\subsection{Tổng quan pipeline}
+Hình~\ref{fig:pipeline} mô tả pipeline đề xuất. Đầu vào là một video bài giảng (tệp tải lên hoặc đường dẫn YouTube) và ngôn ngữ đích do học viên chọn. Đầu ra là một tệp âm thanh lồng tiếng duy nhất có cùng thời lượng với video, được phát đồng bộ với video gốc đã tắt tiếng.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=3.2mm,
+  box/.style={draw, rounded corners=2pt, text width=7.0cm, minimum height=6mm, align=center, font=\footnotesize},
+  dec/.style={draw, diamond, aspect=2.6, inner sep=1pt, align=center, font=\scriptsize},
+  arr/.style={-{Stealth[length=2mm]}}]
+\node[box] (in) {Video bài giảng + ngôn ngữ đích};
+\node[box, below=of in] (chunk) {Tách âm thanh, chia đoạn cố định 10 phút};
+\node[box, below=of chunk] (asr) {Nhận dạng giọng nói (Whisper): câu + mốc thời gian\\ \scriptsize (bỏ qua nếu đã có bản ký âm từ tác vụ trước)};
+\node[box, below=of asr] (tr) {Dịch hai pha bằng LLM: dịch sát nghĩa $\rightarrow$\\ biên tập theo ngân sách thời lượng};
+\node[box, below=of tr] (tts) {Tổng hợp giọng nói từng câu (Azure TTS, SSML)};
+\node[box, below=of tts] (asr2) {Điều chỉnh tốc độ đọc thích ứng (Thuật toán~\ref{alg:asr})};
+\node[box, below=of asr2] (cat) {Ghép câu theo khoảng lặng gốc $\rightarrow$ âm thanh của đoạn};
+\node[box, below=of cat] (out) {Ghép các đoạn $\rightarrow$ tệp lồng tiếng cuối cùng};
+\foreach \a/\b in {in/chunk,chunk/asr,asr/tr,tr/tts,tts/asr2,asr2/cat,cat/out}
+  \draw[arr] (\a) -- (\b);
+\draw[arr, dashed] (cat.east) -- ++(4mm,0) |- node[pos=0.25, right, font=\scriptsize, align=left]{lặp\\từng\\đoạn} (asr.east);
+\end{tikzpicture}
+\caption{Pipeline lồng tiếng tự động đề xuất. Mỗi đoạn 10 phút được xử lý độc lập và báo tiến độ ngay khi hoàn thành.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{Phân đoạn theo lớp}
+Video dài (tối đa 180 phút) nếu xử lý nguyên khối sẽ khiến người học phải chờ đến khi toàn bộ pipeline kết thúc, đồng thời một lỗi nhỏ có thể làm hỏng cả tác vụ. Hệ thống chia âm thanh thành $K = \lceil D / L \rceil$ đoạn cố định, với $D$ là thời lượng video và $L = 600$ giây; đoạn cuối chứa phần dư. Mỗi đoạn được xử lý độc lập qua các bước nhận dạng, dịch và tổng hợp; khi một đoạn hoàn thành, tiến độ được phát qua kênh thời gian thực để giao diện cập nhật ngay.
+
+Mỗi đoạn được thử lại tối đa ba lần với thời gian chờ tăng theo hàm mũ. Nếu vẫn thất bại, hệ thống \emph{giữ âm thanh gốc} cho riêng đoạn đó thay vì hủy toàn bộ tác vụ; người học vẫn nghe được bản lồng tiếng ở các đoạn còn lại. Đoạn có tỷ lệ lời thoại dưới 10\% thời lượng (ví dụ phần trình chiếu không lời) được bỏ qua bước dịch và giữ nguyên âm thanh gốc.
+
+\subsection{Nhận dạng giọng nói}
+Âm thanh của từng đoạn được gửi tới mô hình Whisper \cite{radford2023whisper} (biến thể large-v3-turbo) để nhận về danh sách câu $s_i$ kèm mốc bắt đầu $b_i$ và kết thúc $e_i$, cùng ngôn ngữ nguồn được tự động phát hiện. Khung thời gian của câu là $T_i^{\mathrm{orig}} = e_i - b_i$. Bản ký âm gốc được lưu vào cơ sở dữ liệu; khi bài giảng được lồng tiếng sang ngôn ngữ đích khác, bước nhận dạng được bỏ qua hoàn toàn.
+
+\subsection{Dịch ngữ cảnh hai pha}
+Thay vì dịch từng câu riêng lẻ, toàn bộ các câu trong một đoạn được đánh số và gửi theo lô để LLM nắm được ngữ cảnh bài giảng, giúp thuật ngữ được dịch nhất quán. Quá trình dịch gồm hai pha:
+\begin{enumerate}
+\item \emph{Dịch sát nghĩa}: LLM dịch từng dòng, giữ nguyên số dòng, không thêm bớt nội dung; đầu ra ở định dạng JSON để kiểm tra tự động.
+\item \emph{Biên tập cho văn nói}: mỗi câu dịch được gửi kèm ngân sách thời lượng $T_i^{\mathrm{orig}}$; LLM viết lại câu cho tự nhiên khi đọc thành lời và cố gắng diễn đạt gọn trong ngân sách, nhưng không được hy sinh độ rõ ràng hay ý nghĩa.
+\end{enumerate}
+Tên mô hình LLM được cấu hình qua biến môi trường, kèm danh sách mô hình dự phòng khi mô hình chính bị giới hạn tần suất gọi.
+
+\subsection{Điều chỉnh tốc độ đọc thích ứng}
+Sau khi tổng hợp giọng nói cho câu dịch $t_i$ ở tốc độ mặc định, ta đo thời lượng thực tế $T_i^{\mathrm{tts}}$ và tính tỷ số tốc độ:
+\begin{equation}
+R_i = \frac{T_i^{\mathrm{tts}}}{T_i^{\mathrm{orig}}}.
+\label{eq:ratio}
+\end{equation}
+Với hai ngưỡng $R_{\min} = 1{,}0$ và $R_{\max} = 1{,}3$, hành động cho câu $i$ được chọn như sau:
+\begin{equation}
+A(R_i) =
+\begin{cases}
+\text{chèn lặng } T_i^{\mathrm{orig}} - T_i^{\mathrm{tts}}, & R_i \le R_{\min}\\
+\text{tăng tốc } (R_i - 1)\cdot 100\%, & R_{\min} < R_i \le R_{\max}\\
+\text{rút gọn bằng LLM}, & R_i > R_{\max}
+\end{cases}
+\label{eq:policy}
+\end{equation}
+
+Tốc độ đọc được điều khiển bằng thẻ \texttt{<prosody rate>} của SSML \cite{ssml2010}, do đó dịch vụ TTS sinh lại câu ở tốc độ mới thay vì kéo giãn tín hiệu âm thanh, giúp giữ cao độ và độ tự nhiên. Ngưỡng 30\% được chọn vì vượt mức này giọng đọc trở nên khó nghe.
+
+Ở nhánh thứ ba, LLM được yêu cầu rút gọn câu nhưng giữ ý chính, sau đó câu được tổng hợp và tính lại $R_i$. Để tránh vòng lặp vô hạn khi câu đã quá ngắn, số lần rút gọn bị giới hạn bởi $M = 2$; nếu sau $M$ lần vẫn có $R_i > R_{\max}$, hệ thống chấp nhận tốc độ tối đa $+30\%$ và ghi cảnh báo để quản trị viên xem xét. Thuật toán~\ref{alg:asr} tóm tắt quy trình.
+
+\begin{algorithm}[t]
+\caption{Điều chỉnh tốc độ đọc thích ứng cho câu $i$}
+\label{alg:asr}
+\begin{algorithmic}[1]
+\Require câu dịch $t$, khung thời gian $T^{\mathrm{orig}}$, giọng đọc $v$
+\State $a \gets \textsc{TTS}(t, v, +0\%)$; \quad $R \gets |a| / T^{\mathrm{orig}}$
+\State $k \gets 0$
+\While{$R > 1{,}3$ \textbf{and} $k < M$}
+  \State $t \gets \textsc{LLM\_RútGọn}(t)$
+  \State $a \gets \textsc{TTS}(t, v, +0\%)$; \quad $R \gets |a| / T^{\mathrm{orig}}$
+  \State $k \gets k + 1$
+\EndWhile
+\If{$R > 1{,}3$}
+  \State $a \gets \textsc{TTS}(t, v, +30\%)$; ghi cảnh báo
+\ElsIf{$R > 1{,}0$}
+  \State $a \gets \textsc{TTS}(t, v, +\lfloor (R-1)\cdot 100 \rceil\%)$
+\Else
+  \State $a \gets a \oplus \textsc{Lặng}(T^{\mathrm{orig}} - |a|)$
+\EndIf
+\State \Return $a$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Ghép âm thanh}
+Các câu trong một đoạn được ghép theo thứ tự, trước mỗi câu $i$ chèn một khoảng lặng bằng $b_i - e_{i-1}$ (với $e_0$ là thời điểm bắt đầu đoạn) để giữ đúng nhịp ngắt của giảng viên; phần cuối đoạn được đệm lặng tới hết đoạn. Nhờ vậy âm thanh của mỗi đoạn có thời lượng đúng bằng $L$, và tệp cuối cùng ghép từ $K$ đoạn có thời lượng bằng video gốc, không tích lũy độ trễ giữa các đoạn.
+
+% =====================================================================
+\section{Triển khai trong hệ thống}
+\label{sec:impl}
+
+\subsection{Kiến trúc}
+Pipeline được triển khai trong nền tảng LinguaLearn theo kiến trúc hai dịch vụ: dịch vụ nghiệp vụ viết bằng Spring Boot quản lý khóa học, quyền truy cập, hạn ngạch và trạng thái tác vụ; dịch vụ AI viết bằng Python (FastAPI, Celery) thực thi pipeline. Hai dịch vụ giao tiếp qua hàng đợi Redis; tiến độ từng đoạn được phát qua Redis Pub/Sub và chuyển tới trình duyệt bằng WebSocket. Âm thanh được lưu trên dịch vụ lưu trữ đối tượng tương thích S3.
+
+\subsection{Chống trùng và tái sử dụng kết quả}
+Do chi phí gọi dịch vụ AI tỷ lệ với thời lượng video, hệ thống áp dụng ba lớp tiết kiệm:
+\begin{itemize}
+\item \emph{Tái sử dụng bản lồng tiếng}: mỗi cặp (bài giảng, ngôn ngữ đích) chỉ được lồng tiếng một lần; mọi học viên chọn cùng ngôn ngữ dùng chung kết quả và không bị tính vào hạn ngạch.
+\item \emph{Khóa chống trùng}: khi nhiều học viên yêu cầu cùng lúc, khóa phân tán (Redis \texttt{SETNX}) theo cặp (bài giảng, ngôn ngữ) bảo đảm chỉ một tác vụ được tạo.
+\item \emph{Tái sử dụng bản ký âm}: bản ký âm gốc được dùng lại cho các ngôn ngữ đích khác, bỏ qua bước nhận dạng giọng nói.
+\end{itemize}
+Ngoài ra, mỗi học viên có hạn ngạch 15 tác vụ lồng tiếng mới mỗi ngày (giảng viên 30) để kiểm soát chi phí.
+
+\subsection{Trình phát kép}
+Thay vì ghép âm thanh vào video (tốn thời gian mã hóa lại và nhân bản dung lượng theo số ngôn ngữ), hệ thống dùng trình phát kép (Dual Player): video gốc được tắt tiếng và phát song song với tệp âm thanh lồng tiếng. Hai luồng được đồng bộ theo chu kỳ 250 ms; khi độ lệch vượt ngưỡng, vị trí âm thanh được hiệu chỉnh theo video. Cơ chế này hoạt động với cả video tải lên và video YouTube thông qua IFrame Player API.
+
+% =====================================================================
+\section{Thực nghiệm và đánh giá}
+\label{sec:exp}
+
+\subsection{Thiết lập thực nghiệm}
+Tập dữ liệu gồm \todo{N} video bài giảng tiếng Anh công khai thuộc hai nhóm công nghệ thông tin và kỹ năng mềm, tổng thời lượng \todo{X} phút, được lồng tiếng sang tiếng Việt. Các tham số của pipeline được liệt kê trong Bảng~\ref{tab:params}. Thực nghiệm chạy trên \todo{cấu hình máy}.
+
+\begin{table}[t]
+\caption{Tham số của pipeline}
+\label{tab:params}
+\centering
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Tham số} & \textbf{Giá trị} \\
+\hline
+Độ dài đoạn $L$ & 600 giây \\
+Số lần thử lại mỗi đoạn & 3 \\
+Ngưỡng tỷ lệ lời thoại tối thiểu & 10\% \\
+Ngưỡng $R_{\min}$ / $R_{\max}$ & 1,0 / 1,3 \\
+Tốc độ đọc tăng tối đa & +30\% \\
+Số lần rút gọn tối đa $M$ & 2 \\
+Mô hình nhận dạng giọng nói & Whisper large-v3-turbo \\
+Mô hình ngôn ngữ lớn & Gemini 3.5 Flash \todo{xác nhận} \\
+Tổng hợp giọng nói & Azure Speech (SSML) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Độ đo}
+\begin{itemize}
+\item \emph{Phân bố tỷ số $R$}: tỷ lệ câu rơi vào từng nhánh của (\ref{eq:policy}) sau pha dịch thứ nhất và sau pha biên tập thứ hai.
+\item \emph{Độ lệch thời lượng}: $\Delta_i = |T_i^{\mathrm{final}} - T_i^{\mathrm{orig}}|$ trung bình theo câu, so sánh giữa phương án phát nguyên tốc độ và phương án đề xuất.
+\item \emph{Thời gian xử lý}: thời gian thực thi trên mỗi phút video và thời gian đến khi có đoạn đầu tiên.
+\item \emph{Chi phí}: số lần gọi LLM và TTS, mức tiết kiệm khi tái sử dụng bản ký âm.
+\item \emph{Chất lượng cảm nhận}: điểm đánh giá trung bình (thang 1--5) của \todo{n} người nghe về độ tự nhiên và độ khớp hình.
+\end{itemize}
+
+\subsection{Kết quả}
+\todo{Phần này sẽ được bổ sung sau khi đo đạc. Bảng~\ref{tab:results} là khung dự kiến.}
+
+\begin{table}[t]
+\caption{So sánh độ khớp thời lượng giữa các phương án}
+\label{tab:results}
+\centering
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Phương án} & \textbf{$\bar{\Delta}$ (s)} & \textbf{Câu $R>1{,}3$} & \textbf{Gọi LLM} \\
+\hline
+Dịch một pha, tốc độ mặc định & \todo{} & \todo{} & \todo{} \\
+Dịch hai pha, tốc độ mặc định & \todo{} & \todo{} & \todo{} \\
+Hai pha + tăng tốc độ đọc & \todo{} & \todo{} & \todo{} \\
+Đề xuất (đầy đủ) & \todo{} & \todo{} & \todo{} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Thảo luận}
+\todo{Phân tích kết quả: hiệu quả của pha biên tập theo ngân sách thời lượng; tỷ lệ câu cần rút gọn; các trường hợp lỗi như thuật ngữ chuyên ngành, câu rất ngắn, đoạn không lời.}
+
+% =====================================================================
+\section{Kết luận}
+\label{sec:conclusion}
+Bài báo đã trình bày một pipeline lồng tiếng tự động cho video bài giảng được tích hợp trong hệ thống quản lý học tập. Bằng cách xử lý ràng buộc thời lượng ở cả tầng prompt (biên tập theo ngân sách thời lượng) và tầng hậu xử lý (điều chỉnh tốc độ đọc thích ứng với giới hạn số lần rút gọn), hệ thống tạo ra âm thanh lồng tiếng khớp với hình ảnh mà không cần huấn luyện mô hình riêng. Kiến trúc phân đoạn mười phút cùng các cơ chế chống trùng và tái sử dụng giúp hệ thống phản hồi sớm, chịu lỗi cục bộ và tiết kiệm chi phí.
+
+Hạn chế hiện tại là giọng đọc là giọng tổng hợp có sẵn, chưa giữ được âm sắc của giảng viên, và đánh giá mới thực hiện trên tập dữ liệu nhỏ. Hướng phát triển gồm: nhân bản giọng nói của giảng viên, đồng bộ khẩu hình, đánh giá với nhóm người học lớn hơn và so sánh hiệu quả học tập giữa học bằng phụ đề và học bằng lồng tiếng.
+
+\section*{Lời cảm ơn}
+Nhóm tác giả xin cảm ơn Khoa Công nghệ Thông tin, Trường Đại học Công nghiệp Thành phố Hồ Chí Minh đã tạo điều kiện thực hiện nghiên cứu này.
+
+% =====================================================================
+\begin{thebibliography}{00}
+\bibitem{mayer2009} R. E. Mayer, \textit{Multimedia Learning}, 2nd ed. Cambridge, U.K.: Cambridge Univ. Press, 2009.
+\bibitem{kalyuga1999} S. Kalyuga, P. Chandler, and J. Sweller, ``Managing split-attention and redundancy in multimedia instruction,'' \textit{Appl. Cogn. Psychol.}, vol. 13, no. 4, pp. 351--371, 1999.
+\bibitem{radford2023whisper} A. Radford, J. W. Kim, T. Xu, G. Brockman, C. McLeavey, and I. Sutskever, ``Robust speech recognition via large-scale weak supervision,'' in \textit{Proc. 40th Int. Conf. Mach. Learn. (ICML)}, Honolulu, HI, USA, 2023, pp. 28492--28518.
+\bibitem{gemini2023} Gemini Team, Google, ``Gemini: A family of highly capable multimodal models,'' arXiv:2312.11805, 2023.
+\bibitem{federico2020} M. Federico, R. Enyedi, R. Barra-Chicote, R. Giri, U. Isik, A. Krishnaswamy, and H. Sawaf, ``From speech-to-speech translation to automatic dubbing,'' in \textit{Proc. 17th Int. Conf. Spoken Lang. Transl. (IWSLT)}, 2020, pp. 257--264.
+\bibitem{brannon2023} W. Brannon, Y. Virkar, and B. Thompson, ``Dubbing in practice: A large scale study of human localization with insights for automatic dubbing,'' \textit{Trans. Assoc. Comput. Linguist.}, vol. 11, pp. 419--435, 2023.
+\bibitem{oktem2019} A. \"{O}ktem, M. Farr\'{u}s, and A. Bonafonte, ``Prosodic phrase alignment for machine dubbing,'' in \textit{Proc. Interspeech}, Graz, Austria, 2019, pp. 4215--4219.
+\bibitem{lakew2022} S. M. Lakew, Y. Virkar, P. Mathur, and M. Federico, ``Isometric MT: Neural machine translation for automatic dubbing,'' in \textit{Proc. IEEE Int. Conf. Acoust., Speech Signal Process. (ICASSP)}, Singapore, 2022, pp. 6242--6246.
+\bibitem{wu2023videodubber} Y. Wu, J. Guo, X. Tan, C. Zhang, B. Li, R. Song, L. He, S. Zhao, A. Menezes, and J. Bian, ``VideoDubber: Machine translation with speech-aware length control for video dubbing,'' in \textit{Proc. AAAI Conf. Artif. Intell.}, vol. 37, no. 11, 2023, pp. 13772--13779.
+\bibitem{bain2023whisperx} M. Bain, J. Huh, T. Han, and A. Zisserman, ``WhisperX: Time-accurate speech transcription of long-form audio,'' in \textit{Proc. Interspeech}, Dublin, Ireland, 2023, pp. 4489--4493.
+\bibitem{ssml2010} W3C, ``Speech Synthesis Markup Language (SSML) Version 1.1,'' W3C Recommendation, Sep. 2010. [Online]. Available: \underline{https://www.w3.org/TR/speech-synthesis11/}
+\end{thebibliography}
+
+\end{document}

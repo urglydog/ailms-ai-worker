@@ -1,0 +1,16 @@
+# LaTeX build
+paper/build/
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Thực nghiệm: cache ASR, audio từng câu
+experiments/.cache/
+experiments/results/*/audio/
+
+# Bí mật — KHÔNG commit
+.env
+*.env
