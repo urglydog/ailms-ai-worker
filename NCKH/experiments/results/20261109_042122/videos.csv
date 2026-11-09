@@ -1,0 +1,5 @@
+﻿run_id,video_id,category,duration_sec,n_chunks,n_segments,speech_ratio,t_prepare_sec,t_asr_sec,asr_cached,t_translate_sec,t_tts_default_sec,t_v3_sec,t_v4_sec,llm_calls_translate,tts_calls_total,resummarize_calls_v4
+20261109_042122,lec01,CNTT,566.0,1,131,0.959,1.11,5.65,False,87.35,459.53,192.07,802.64,2,691,81
+20261109_042122,lec02,CNTT,815.1,1,138,0.98,1.5,5.71,False,99.5,499.36,214.77,994.83,2,755,100
+20261109_042122,lec03,KyNangMem,718.0,1,144,0.985,1.09,5.62,False,100.99,518.73,206.93,903.72,2,757,89
+20261109_042122,lec04,KyNangMem,900.0,1,190,0.906,1.78,5.2,False,95.45,577.47,193.33,1269.55,2,1014,166

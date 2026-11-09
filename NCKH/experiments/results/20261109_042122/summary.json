@@ -1,0 +1,152 @@
+{
+  "variants": {
+    "V1": {
+      "name": "Dịch một pha, tốc độ mặc định",
+      "n_segments": 603,
+      "mean_abs_delta_s": 1.679,
+      "median_abs_delta_s": 1.556,
+      "p95_abs_delta_s": 3.46,
+      "total_overrun_s": 1012.7,
+      "overrun_per_min_speech_s": 26.82,
+      "pct_segments_overrun": 94.2,
+      "pct_segments_R_gt_1_3_after": 75.3,
+      "pct_R_default_gt_1_3": 75.1,
+      "mean_R_default": 1.586,
+      "llm_calls": 4,
+      "tts_calls": 603,
+      "mean_chars": 73.6
+    },
+    "V2": {
+      "name": "Dịch hai pha, tốc độ mặc định",
+      "n_segments": 603,
+      "mean_abs_delta_s": 0.989,
+      "median_abs_delta_s": 0.908,
+      "p95_abs_delta_s": 2.512,
+      "total_overrun_s": 596.2,
+      "overrun_per_min_speech_s": 15.79,
+      "pct_segments_overrun": 82.9,
+      "pct_segments_R_gt_1_3_after": 48.3,
+      "pct_R_default_gt_1_3": 48.3,
+      "mean_R_default": 1.393,
+      "llm_calls": 8,
+      "tts_calls": 603,
+      "mean_chars": 58.6
+    },
+    "V3": {
+      "name": "Hai pha + tăng tốc độ đọc",
+      "n_segments": 603,
+      "mean_abs_delta_s": 0.318,
+      "median_abs_delta_s": 0.044,
+      "p95_abs_delta_s": 1.128,
+      "total_overrun_s": 191.6,
+      "overrun_per_min_speech_s": 5.08,
+      "pct_segments_overrun": 48.1,
+      "pct_segments_R_gt_1_3_after": 18.6,
+      "pct_R_default_gt_1_3": 48.3,
+      "mean_R_default": 1.393,
+      "llm_calls": 8,
+      "tts_calls": 504,
+      "mean_chars": 58.6
+    },
+    "V4": {
+      "name": "Đề xuất (đầy đủ)",
+      "n_segments": 603,
+      "mean_abs_delta_s": 0.157,
+      "median_abs_delta_s": 0.016,
+      "p95_abs_delta_s": 0.908,
+      "total_overrun_s": 93.7,
+      "overrun_per_min_speech_s": 2.48,
+      "pct_segments_overrun": 23.5,
+      "pct_segments_R_gt_1_3_after": 13.8,
+      "pct_R_default_gt_1_3": 48.3,
+      "mean_R_default": 1.393,
+      "llm_calls": 444,
+      "tts_calls": 1507,
+      "mean_chars": 50.3
+    }
+  },
+  "branches": {
+    "V1": {
+      "none": {
+        "n": 570,
+        "pct": 94.5
+      },
+      "pad": {
+        "n": 33,
+        "pct": 5.5
+      },
+      "_R_zones": {
+        "R<=1.0": 5.5,
+        "1.0<R<=1.3": 19.4,
+        "R>1.3": 75.1
+      }
+    },
+    "V2": {
+      "none": {
+        "n": 504,
+        "pct": 83.6
+      },
+      "pad": {
+        "n": 99,
+        "pct": 16.4
+      },
+      "_R_zones": {
+        "R<=1.0": 16.4,
+        "1.0<R<=1.3": 35.3,
+        "R>1.3": 48.3
+      }
+    },
+    "V3": {
+      "capped": {
+        "n": 291,
+        "pct": 48.3
+      },
+      "speedup": {
+        "n": 213,
+        "pct": 35.3
+      },
+      "pad": {
+        "n": 99,
+        "pct": 16.4
+      },
+      "_R_zones": {
+        "R<=1.0": 16.4,
+        "1.0<R<=1.3": 35.3,
+        "R>1.3": 48.3
+      }
+    },
+    "V4": {
+      "speedup": {
+        "n": 211,
+        "pct": 35.0
+      },
+      "summarize": {
+        "n": 179,
+        "pct": 29.7
+      },
+      "capped": {
+        "n": 113,
+        "pct": 18.7
+      },
+      "pad": {
+        "n": 100,
+        "pct": 16.6
+      },
+      "_R_zones": {
+        "R<=1.0": 16.4,
+        "1.0<R<=1.3": 35.3,
+        "R>1.3": 48.3
+      }
+    }
+  },
+  "local_timing": {
+    "n_videos": 4,
+    "total_minutes": 50.0,
+    "asr_sec_per_min": 0.44,
+    "translate_sec_per_min": 7.67,
+    "tts_default_sec_per_min": 41.11,
+    "v4_adaptive_sec_per_min": 79.44,
+    "note": "Thời gian local, chạy tuần tự từng câu; số liệu triển khai thật lấy từ server_job_stats."
+  },
+  "server_timing": {}
+}
