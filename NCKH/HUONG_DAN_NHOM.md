@@ -80,7 +80,7 @@ không có `undefined` reference.
 | Bỏ qua đoạn không lời | lời thoại < **10%** thời lượng | `MIN_SPEECH_RATIO = 0.10` |
 | ASR | Groq API, **whisper-large-v3-turbo**; bỏ qua nếu bài đã có transcript gốc | `app/providers/groq_asr.py`, `config.groq_asr_model` |
 | Dịch | **2 lời gọi Gemini / đoạn** (dịch sát nghĩa → biên tập theo `budget_sec`) — gọi là "dịch hai pha" (KHÔNG phải "3 bước" như khóa luận) | `app/services/translation.py` `translate_batch` |
-| LLM | `gemini-2.5-flash` mặc định, đọc từ env, có danh sách fallback | `config.gemini_model`, `gemini_models` |
+| LLM | Theo `.env` local: **`gemini-3.5-flash`** (code mặc định `gemini-2.5-flash` nếu env không đặt). Ghi vào bài đúng model đã dùng khi đo — `run_meta.json` có lưu. Hỏi Sang model trên server. | `config.gemini_model`, `.env` `GEMINI_MODEL` |
 | TTS | **Azure Speech REST + SSML** `<prosody rate>` (KHÔNG phải Edge-TTS) | `app/providers/azure_tts.py` |
 | Tỷ số tốc độ | **R = T_tts / T_orig** (code đảo chiều so với tài liệu "T_orig/T_exp" để có nghĩa) | `_speech_rate` |
 | Nhánh | R ≤ 1.0 → đệm lặng; 1.0 < R ≤ 1.3 → tăng tốc `(R−1)·100%`; R > 1.3 → LLM rút gọn, tối đa **M = 2** lần, vẫn > 1.3 thì dùng **+30%** và log cảnh báo | `_synthesize_with_adaptive_rate`, `max_resummarize_attempts=2`, `MAX_TTS_RATE="+30%"` |
