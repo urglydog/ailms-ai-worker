@@ -114,14 +114,21 @@ def branch_distribution(seg: list[dict]) -> dict:
     return out
 
 
-def local_timing(videos: list[dict]) -> dict:
+def processed_sec(v: dict, chunk_sec: float) -> float:
+    """Thời lượng THỰC SỰ được xử lý: khi chạy với --max-chunks, `n_chunks` là số chunk
+    đã xử lý nên chỉ tính tới n_chunks * độ dài chunk (không dùng cả thời lượng video)."""
+    return min(f(v["duration_sec"]), f(v["n_chunks"]) * chunk_sec)
+
+
+def local_timing(videos: list[dict], chunk_sec: float) -> dict:
     if not videos:
         return {}
-    minutes = sum(f(v["duration_sec"]) for v in videos) / 60 or 1
+    minutes = sum(processed_sec(v, chunk_sec) for v in videos) / 60 or 1
     asr_live = [v for v in videos if str(v.get("asr_cached")).lower() != "true"]
-    asr_min = sum(f(v["duration_sec"]) for v in asr_live) / 60
+    asr_min = sum(processed_sec(v, chunk_sec) for v in asr_live) / 60
     return {
         "n_videos": len(videos),
+        "total_minutes_source": round(sum(f(v["duration_sec"]) for v in videos) / 60, 1),
         "total_minutes": round(minutes, 1),
         "asr_sec_per_min": round(sum(f(v["t_asr_sec"]) for v in asr_live) / asr_min, 2) if asr_min else None,
         "translate_sec_per_min": round(sum(f(v["t_translate_sec"]) for v in videos) / minutes, 2),
@@ -189,11 +196,14 @@ def main() -> None:
     videos = read_csv(run / "videos.csv")
     if not seg:
         raise SystemExit(f"Không thấy {run / 'segments.csv'}")
+    meta_path = run / "run_meta.json"
+    meta = json.loads(meta_path.read_text(encoding="utf-8")) if meta_path.exists() else {}
+    chunk_sec = 60.0 * float(meta.get("params", {}).get("chunk_minutes", 10))
 
     summary = {
         "variants": summarize_variants(seg, videos),
         "branches": branch_distribution(seg),
-        "local_timing": local_timing(videos),
+        "local_timing": local_timing(videos, chunk_sec),
         "server_timing": server_timing(Path(args.server)) if args.server else {},
     }
     fig = maybe_plot(seg, run / "figures" / "r_hist.pdf")

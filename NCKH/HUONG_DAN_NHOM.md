@@ -3,6 +3,8 @@
 > File này dùng làm **context cho AI (Claude) của thành viên trong nhóm**. Đưa nguyên file cho Claude
 > và nói: *"Đọc NCKH/HUONG_DAN_NHOM.md rồi tiếp tục công việc ở mục 6."*
 > Claude: đọc hết file này trước khi làm bất cứ việc gì. Trả lời bằng **tiếng Việt**.
+>
+> **Cập nhật mới nhất: mục 9 – Kế hoạch đo đợt 2 (10/11/2026).** Ai đã đọc các mục 1–8 thì đọc tiếp từ mục 9.
 
 ---
 
@@ -58,6 +60,7 @@ NCKH/                         (nằm trong repo ai-worker: project/ai-worker/NCK
 6. Không commit mật khẩu, API key, chuỗi kết nối DB. Dùng biến môi trường.
 7. Chỉ commit/push khi người dùng yêu cầu.
 8. Tài liệu tham khảo phải **có thật**; không bịa số trang/năm. Không chắc thì hỏi lại hoặc bỏ.
+9. *(10/11)* Người đo **không sửa `paper/main.tex`**; đầu ra là REPORT theo mục 9.6 để nhóm kiểm tra lại.
 
 ## 4. Biên dịch bài báo
 
@@ -114,7 +117,8 @@ không có `undefined` reference.
 3. **Lấy số liệu server** (chỉ đọc; thời gian xử lý thật, thời gian ra đoạn đầu, phân bố speech_rate/was_summarized):
    mở SSH tunnel, đặt biến `NCKH_DB_HOST/PORT/USER/PASSWORD/NAME`, `pip install pymysql`, chạy
    `python NCKH/experiments/server_job_stats.py`. Sau đó `analyze.py <run_dir> --server <server_dir>`.
-4. **Điền số liệu vào `paper/main.tex`**:
+4. **Điền số liệu vào `paper/main.tex`** — ⚠️ *Cập nhật 10/11: người đo KHÔNG tự sửa `main.tex`; Sang và Thiện
+   kiểm tra REPORT (mục 9.6) rồi mới điền.* Nội dung dưới đây chỉ để tham khảo:
    - Mục *Thiết lập thực nghiệm*: số video N, tổng phút X, cấu hình máy (local) và server.
    - Bảng `tab:results`: dán các dòng LaTeX mà `analyze.py` in ra.
    - Có thể thêm hình `figures/r_hist.pdf` (phân bố R một pha vs hai pha) — nhớ thêm vào zip Overleaf.
@@ -177,3 +181,228 @@ Phương án thay thế nếu không mở tunnel được: copy `server_job_stat
 - `analyze.py`: Δ trung bình/trung vị/p95, % câu còn tràn, % R>1.3, số lời gọi LLM theo phương án; phân bố
   nhánh; thời gian/phút video; xuất `summary.md`, `summary.json`, dòng LaTeX cho Bảng `tab:results`.
 - Khi script lỗi do code app đã đổi (tên hàm/tham số), sửa **script**, không sửa app trừ khi được yêu cầu.
+
+---
+
+## 9. Kế hoạch đo đợt 2 (cập nhật 10/11/2026) — ĐỌC TỪ ĐÂY
+
+### 9.1. Tình trạng sau đợt 1 (run `20261109_042122`)
+
+- 4 bài giảng (`lec01`–`lec04`, file `.mp3`), **603 câu**, chạy đủ 4 phương án V1–V4 với `--max-chunks 1`
+  → mỗi bài **chỉ xử lý 10 phút đầu**, tổng **39,4 phút** (không phải 50 phút).
+- Số liệu chất lượng đã được kiểm tra lại từ `segments.csv` và **khớp**:
+
+  | Phương án | Δ TB (s) | % câu còn tràn | % R>1,3 sau | LLM |
+  |---|---|---|---|---|
+  | V1 một pha | 1,68 | 94,2 | 75,3 | 4 |
+  | V2 hai pha | 0,99 | 82,9 | 48,3 | 8 |
+  | V3 hai pha + tăng tốc | 0,32 | 48,1 | 18,6 | 8 |
+  | V4 đề xuất | 0,16 | 23,5 | 13,8 | 444 |
+
+- Đã sửa `analyze.py` (10/11): thời gian/phút giờ chia cho **thời lượng thực sự xử lý**
+  (`min(duration, n_chunks × 600 s)`); trước đó chia cho cả độ dài file nên ra số nhỏ hơn thực tế.
+  **Luôn chạy lại `analyze.py` sau khi pull** để `summary.md` đúng.
+- Còn thiếu để bài báo đạt yêu cầu:
+  1. Chưa có **nguồn gốc dữ liệu** (bài giảng lấy ở đâu, tác giả, giấy phép).
+  2. Chưa chạy **toàn bộ độ dài** bài (chưa kiểm chứng ghép nhiều đoạn 10 phút).
+  3. Chỉ chạy **1 lần** — LLM không tất định, chưa biết độ dao động.
+  4. Chưa đánh giá **độ trung thành nội dung** của câu bị rút gọn (trung bình bị cắt 34% ký tự — có mất ý không?).
+  5. Chưa có **đánh giá cảm nhận** của người nghe.
+  6. Chưa có **thời gian xử lý thật trên server** và số liệu vận hành (tỷ lệ job thành công, tái sử dụng).
+
+### 9.2. Nguyên tắc để số liệu hợp lệ cho bài NCKH
+
+1. **Cố định cấu hình** trong cả đợt đo: không đổi code `app/`, `.env`, giọng đọc giữa các lần chạy. Ghi lại
+   commit đang dùng (`git rev-parse --short HEAD`) vào `experiments/results/<run_id>/NOTES.md`.
+2. **Không chọn lọc kết quả**: báo cáo mọi lần chạy, kể cả lần lỗi; video lỗi ghi lý do, không âm thầm bỏ.
+3. **Đánh giá mù** khi cho người nghe chấm: không cho biết clip thuộc phương án nào, thứ tự ngẫu nhiên.
+4. **Tách bạch môi trường**: chỉ số chất lượng (Δ, R, số lời gọi) đo **local**; thời gian triển khai đo
+   **server**. Trong bài ghi rõ số nào đo ở đâu.
+5. **Server chỉ ĐỌC**. Không tạo job, không sửa DB, không restart — trừ mục S4 khi Sang cho phép bằng lời.
+6. Dữ liệu cá nhân (email, tên học viên trên server) **không** đưa vào CSV/commit — câu SQL chỉ lấy cột cần thiết.
+
+### 9.3. Đo ở LOCAL
+
+> Chạy trong môi trường có `ffmpeg`. Đợt 1 dùng đường dẫn `/app/NCKH/...` → đã chạy **trong container
+> ai-worker**; giữ nguyên cách đó. Đứng ở thư mục gốc của ai-worker (`/app` trong container).
+
+**L1 – Ghi nguồn dữ liệu** (bắt buộc, làm trước)
+- Bổ sung `note` cho mỗi bài trong `experiments/videos.json`: *tên bài – người giảng/kênh – URL gốc – giấy phép
+  (CC BY, MIT OCW, YouTube Standard…) – thời lượng*. Ưu tiên bài có giấy phép mở để trích dẫn được.
+- Nếu thêm/thay bài: 4–6 bài, 10–20 phút, tiếng Anh, giọng rõ, chia đều 2 nhóm CNTT / Kỹ năng mềm,
+  **ít nhất 2 bài dài hơn 10 phút** để có nhiều đoạn.
+
+**L2 – Chạy đầy đủ độ dài (không giới hạn đoạn)**
+```bash
+python NCKH/experiments/run_experiment.py --manifest NCKH/experiments/videos.json --run-id full_r1 --keep-audio
+python NCKH/experiments/analyze.py NCKH/experiments/results/full_r1
+```
+- ASR cache cũ chỉ có đoạn đầu → script tự gọi lại Groq cho cả bài (đúng, không phải lỗi).
+- Kiểm tra thêm: ghép audio V4 của cả bài (các file `*_v4.mp3` + khoảng lặng theo `start/end` trong
+  `.cache/<id>/asr_cache.json`) rồi đo tổng thời lượng ≈ thời lượng gốc (lệch < 1 s). Đây là bằng chứng
+  cho mục "Ghép âm thanh" trong bài. Có thể viết script nhỏ `check_full_length.py` dùng `audio_utils`.
+
+**L3 – Lặp lại để đo độ dao động**
+```bash
+python NCKH/experiments/run_experiment.py --manifest NCKH/experiments/videos.json --run-id full_r2 --variants V2,V4
+python NCKH/experiments/run_experiment.py --manifest NCKH/experiments/videos.json --run-id full_r3 --variants V2,V4
+```
+- ASR dùng cache (không tốn Groq), chỉ dịch + TTS chạy lại. Báo cáo **trung bình ± độ lệch chuẩn** của Δ TB,
+  % câu còn tràn, % câu rút gọn qua 3 lần. Có thể viết `aggregate_runs.py` gộp các `summary.json`.
+- Nếu hết ngân sách API: tối thiểu 2 lần cho V4.
+
+**L4 – Độ trung thành nội dung của câu bị rút gọn** (quan trọng — phản biện sẽ hỏi)
+- Lấy ngẫu nhiên **50 câu** có `was_summarized = True` ở V4 của `full_r1` (seed cố định, ví dụ 42), xuất CSV:
+  `src_text` (tiếng Anh), bản dịch V2 (trước rút gọn), bản dịch V4 (sau rút gọn).
+- 2 người (Sang, Thiện) chấm **độc lập**: `2` = giữ đủ ý, `1` = mất ý phụ, `0` = mất/sai ý chính.
+  Báo cáo % mỗi mức và độ đồng thuận giữa 2 người (tỷ lệ trùng, hoặc hệ số kappa của Cohen).
+- Có thể cho LLM chấm thêm để tham khảo, nhưng **số chính trong bài là do người chấm**.
+- Lưu: `results/full_r1/fidelity_sample.csv`, `results/full_r1/fidelity_scores.csv`.
+
+**L5 – Đánh giá cảm nhận (MOS)** (nên có; không kịp thì ghi là hạn chế)
+- Từ audio của `full_r1`, chọn **20 câu** phân tầng theo nhánh của V4 (pad / speedup / summarize / capped,
+  mỗi nhánh 5 câu). Mỗi câu 2 clip: V2 và V4 → 40 clip, đặt tên ngẫu nhiên.
+- Nếu có video gốc: cắt đúng đoạn `start–end` và ghép audio để người nghe chấm cả độ khớp hình:
+  `ffmpeg -ss <start> -to <end> -i video.mp4 -i clip.mp3 -map 0:v -map 1:a -shortest out.mp4`.
+  Nếu chỉ có mp3 thì chỉ chấm độ tự nhiên và độ dễ hiểu — ghi rõ trong bài.
+- 8–15 người nghe, Google Form, mỗi clip thang 1–5: **độ tự nhiên**, **độ dễ hiểu**, (**độ khớp hình**).
+  Thứ tự xáo trộn, không ghi tên phương án.
+- Báo cáo MOS trung bình ± khoảng tin cậy 95% cho V2 và V4; kiểm định Wilcoxon theo cặp nếu đủ người.
+- Lưu: `results/mos/clips_key.csv` (bảng giải mã — KHÔNG gửi người nghe), `results/mos/mos_responses.csv`.
+
+**L6 – Cấu hình máy**: CPU, RAM, hệ điều hành, có chạy trong Docker không, tốc độ mạng → ghi vào `NOTES.md`.
+
+### 9.4. Đo trên SERVER (chỉ đọc)
+
+> Trước khi làm: hỏi Sang các thông tin ở **mục 7.B** (host, user SSH, MySQL trong Docker hay không, user DB).
+> Không yêu cầu dán mật khẩu vào chat.
+
+**S1 – Số liệu job thật**
+```bash
+python NCKH/experiments/server_job_stats.py
+python NCKH/experiments/analyze.py NCKH/experiments/results/full_r1 --server NCKH/experiments/results/server_<ngày>
+```
+Từ `jobs.csv` báo cáo:
+- Số job, tỷ lệ `COMPLETED` / `FAILED` / `SKIPPED`, số lần retry trung bình.
+- **Thời gian xử lý / phút video** = `processing_sec / (lesson_duration_sec / 60)`: trung bình, trung vị, min–max.
+- **Thời gian ra đoạn đầu tiên** (`first_chunk_sec`) — chứng minh lợi ích của chia đoạn 10 phút: người học
+  nghe được sau X giây thay vì chờ cả bài.
+- **Thời gian chờ hàng đợi** (`queue_wait_sec`).
+- Loại job test/lỗi theo khoảng thời gian Sang chỉ định; ghi rõ số job bị loại và lý do.
+
+**S2 – Tốc độ đọc trong vận hành thật** (`segments.csv` của server)
+- Phân bố `speech_rate` (= 1.0, 1.0–1.3, = 1.3) và tỷ lệ `was_summarized`, so sánh với V4 ở local.
+  Nếu tương đồng → kết quả local có tính đại diện (1–2 câu trong phần Thảo luận).
+
+**S3 – Hiệu quả tái sử dụng** (`reuse.csv`)
+- Số bản lồng tiếng (bài, ngôn ngữ) đã tạo và tổng `play_count` → trung bình mỗi bản được phát lại bao
+  nhiêu lần, tức là số lần **không** phải chạy lại pipeline.
+- Số bài có từ 2 ngôn ngữ trở lên → số lần bỏ qua ASR nhờ dùng lại transcript.
+
+**S4 – (Tùy chọn, CẦN Sang cho phép bằng lời)** chạy 1–2 job mới trên server với bài trong tập thử nghiệm để
+có thời gian thật của đúng dữ liệu đó. Không được phép thì bỏ qua, dùng S1.
+
+**S5 – Xác nhận cấu hình server**: model Gemini, `CHUNK_MINUTES`, commit đang chạy. Chỉ đọc đúng biến cần
+thiết, ví dụ `docker exec <ai-worker> printenv GEMINI_MODEL CHUNK_MINUTES` — **không in toàn bộ env** (có key).
+Ghi vào `NOTES.md` và REPORT. **Không sửa `main.tex`.**
+
+### 9.5. Kết quả cần nộp lại
+
+```
+experiments/results/
+├── full_r1/  full_r2/  full_r3/   segments.csv, videos.csv, run_meta.json, summary.md/json, NOTES.md
+│                                  (KHÔNG commit thư mục audio/ — đã có trong .gitignore)
+├── full_r1/fidelity_sample.csv, fidelity_scores.csv
+├── mos/clips_key.csv, mos_responses.csv        (nếu làm L5)
+└── server_<ngày>/jobs.csv, segments.csv, reuse.csv, NOTES.md
+```
+- `NOTES.md` mỗi thư mục: commit, cấu hình máy/server, người chạy, ngày giờ, sự cố gặp phải.
+- Commit + push lên nhánh **`NCKH`** kèm file REPORT (mục 9.6), nhắn Sang.
+- **KHÔNG sửa `paper/main.tex`** và không sửa file kết quả cũ của người khác. Sang và Thiện sẽ đọc REPORT,
+  kiểm tra lại số liệu, rồi tự điền vào bài.
+
+### 9.6. REPORT đo đạc (đầu ra bắt buộc)
+
+Mỗi đợt đo phải có **một file report** để người khác đọc là hiểu đã làm gì, làm như thế nào và ra kết quả gì,
+đủ để **tự kiểm tra lại hoặc chạy lại** được.
+
+- Vị trí: `NCKH/experiments/reports/REPORT_<yyyymmdd>_<tên người đo>.md` (ví dụ `REPORT_20261112_Thien.md`).
+- AI viết report từ **dữ liệu thật** trong các file kết quả; mọi con số phải truy được về file CSV/JSON nguồn.
+  Không làm tròn khác đi, không tự diễn giải thành "tốt/xấu" trong phần số liệu.
+- Một lần chạy lỗi hay một bước bị bỏ qua cũng phải ghi vào, kèm lý do.
+
+**Mẫu report** (giữ nguyên các mục, mục nào không làm thì ghi "Không thực hiện – lý do"):
+
+````markdown
+# REPORT đo đạc – <ngày> – <người đo>
+
+## 0. Tóm tắt nhanh
+- Đã làm: L1, L2, ... / S1, ...   Chưa làm: ... (lý do)
+- 3–5 con số chính (kèm file nguồn).
+- Vấn đề cần nhóm xem lại: ...
+
+## 1. Môi trường
+| Mục | Local | Server |
+|---|---|---|
+| Commit ai-worker (`git rev-parse --short HEAD`) | | |
+| Chạy ở đâu (container / máy) | | |
+| CPU / RAM / OS | | |
+| Mạng (tải lên/xuống) | | – |
+| GEMINI_MODEL / ASR model / giọng đọc | | |
+| CHUNK_MINUTES, MAX_RESUMMARIZE_ATTEMPTS | | |
+| Thời gian bắt đầu – kết thúc | | |
+
+## 2. Dữ liệu
+| id | Tên bài | Nguồn (URL) | Giấy phép | Nhóm | Thời lượng | Số câu |
+|---|---|---|---|---|---|---|
+Cách lấy dữ liệu: tải từ đâu, chuyển định dạng thế nào (lệnh ffmpeg/yt-dlp đã dùng).
+
+## 3. Các bước đã thực hiện
+Với MỖI mục (L1…L6, S1…S5):
+- **Mục đích**: đo cái gì.
+- **Lệnh đã chạy** (copy nguyên văn, kể cả tham số `--run-id`, `--variants`, `--max-chunks`).
+- **Thay đổi so với hướng dẫn** (nếu có) và lý do.
+- **File đầu ra**: đường dẫn.
+- **Sự cố**: lỗi gặp phải, cách xử lý, có chạy lại không.
+Script tự viết thêm (ví dụ `check_full_length.py`, `aggregate_runs.py`, chọn mẫu L4/L5): ghi tên file,
+chức năng, seed ngẫu nhiên, và commit file đó cùng report.
+
+## 4. Kết quả
+### 4.1. So sánh V1–V4 (từ `summary.json` của từng run)
+| Phương án | run | n câu | Δ TB | Δ trung vị | Δ p95 | % còn tràn | % R>1,3 sau | LLM | TTS |
+|---|---|---|---|---|---|---|---|---|---|
+Nếu có nhiều run: thêm dòng trung bình ± độ lệch chuẩn, ghi rõ cách tính.
+
+### 4.2. Phân bố nhánh của V4 và phân bố R
+### 4.3. Kiểm tra toàn bộ độ dài (L2): thời lượng gốc / thời lượng audio ghép / chênh lệch, theo từng bài
+### 4.4. Độ trung thành câu rút gọn (L4): số câu, % mức 2/1/0 từng người chấm, độ đồng thuận, 3–5 ví dụ
+### 4.5. MOS (L5): số người nghe, số clip, trung bình ± KTC 95% cho V2/V4, kiểm định (nếu có)
+### 4.6. Server (S1–S3): số job (tổng / bị loại và lý do), tỷ lệ trạng thái, thời gian xử lý/phút,
+thời gian ra đoạn đầu, thời gian chờ hàng đợi, phân bố speech_rate, tỷ lệ was_summarized, play_count
+### 4.7. Cấu hình server xác nhận được (S5)
+
+## 5. Điểm bất thường và nghi vấn
+- Số liệu lạ (ví dụ R rất lớn ở câu rất ngắn, câu dịch rỗng, video có Δ khác hẳn các video khác).
+- Chỗ không chắc là đo đúng hoặc tính đúng.
+- Khác biệt giữa local và server.
+
+## 6. Cách kiểm tra lại
+Lệnh tối thiểu để người khác tái tạo con số trong mục 4 (ví dụ chạy lại `analyze.py` trên thư mục kết quả).
+
+## 7. Danh sách file đã commit
+````
+
+**Tự kiểm tra trước khi nộp**:
+- [ ] Mọi con số trong mục 4 đều có file nguồn đi kèm trong `results/`.
+- [ ] Đã chạy lại `analyze.py` (bản đã sửa ngày 10/11) trên mọi thư mục run.
+- [ ] Không có mật khẩu, key, email hay tên học viên trong report/CSV.
+- [ ] Không có thư mục `audio/` hoặc `.cache/` trong commit.
+- [ ] Không sửa `paper/main.tex`.
+
+### 9.7. Thứ tự ưu tiên (hạn nộp 15/11)
+
+1. **Bắt buộc**: L1 → L2 → S1 → S5 → L6
+2. **Rất nên**: L4 → L3 → S2 → S3
+3. **Nếu kịp**: L5 (MOS), S4
+
+Chỉ kịp nhóm 1 thì bài vẫn nộp được; các mục còn lại ghi vào phần *Hạn chế và hướng phát triển*.

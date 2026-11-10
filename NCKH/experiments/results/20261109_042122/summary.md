@@ -104,11 +104,12 @@ Hai pha + tăng tốc độ đọc & 0.32 & 18.6\% & 8 \\
 ```json
 {
  "n_videos": 4,
- "total_minutes": 50.0,
- "asr_sec_per_min": 0.44,
- "translate_sec_per_min": 7.67,
- "tts_default_sec_per_min": 41.11,
- "v4_adaptive_sec_per_min": 79.44,
+ "total_minutes_source": 50.0,
+ "total_minutes": 39.4,
+ "asr_sec_per_min": 0.56,
+ "translate_sec_per_min": 9.72,
+ "tts_default_sec_per_min": 52.12,
+ "v4_adaptive_sec_per_min": 100.7,
  "note": "Thời gian local, chạy tuần tự từng câu; số liệu triển khai thật lấy từ server_job_stats."
 }
 ```
