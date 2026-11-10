@@ -14,3 +14,5 @@ experiments/results/*/audio/
 # Bí mật — KHÔNG commit
 .env
 *.env
+
+__pycache__/
