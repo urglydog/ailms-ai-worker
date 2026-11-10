@@ -5,7 +5,7 @@
     "target_language": "vi-VN",
     "voice_name": "vi-VN-HoaiMyNeural",
     "category": "CNTT",
-    "note": "audio bài giảng tiếng Anh"
+    "note": "Crash Course Computer Science #10: Early Programming | kênh: CrashCourse | https://www.youtube.com/watch?v=nwDq4adJwzM | giấy phép: chưa xác minh | đã trích audio, 9,4 phút"
   },
   {
     "id": "lec02",
@@ -13,7 +13,7 @@
     "target_language": "vi-VN",
     "voice_name": "vi-VN-NamMinhNeural",
     "category": "CNTT",
-    "note": "audio bài giảng tiếng Anh"
+    "note": "Crash Course Computer Science #18: Operating Systems | kênh: CrashCourse | https://www.youtube.com/watch?v=26QPDBe-NB8 | giấy phép: chưa xác minh | đã trích audio, 13,6 phút"
   },
   {
     "id": "lec03",
@@ -21,7 +21,7 @@
     "target_language": "vi-VN",
     "voice_name": "vi-VN-HoaiMyNeural",
     "category": "KyNangMem",
-    "note": "audio bài giảng tiếng Anh"
+    "note": "Crash Course Computer Science #29: The Internet | kênh: CrashCourse | https://www.youtube.com/watch?v=AEaKrq3SpW8 | giấy phép: chưa xác minh | đã trích audio, 12,0 phút"
   },
   {
     "id": "lec04",
@@ -29,6 +29,6 @@
     "target_language": "vi-VN",
     "voice_name": "vi-VN-NamMinhNeural",
     "category": "KyNangMem",
-    "note": "audio bài giảng tiếng Anh"
+    "note": "Stanford CS229, Lecture 1 (15 phút đầu) | https://www.youtube.com/watch?v=UzxYlbK2c7E | giấy phép: chưa xác minh | đã trích audio, 15,0 phút"
   }
 ]

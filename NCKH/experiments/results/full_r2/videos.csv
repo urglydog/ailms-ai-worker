@@ -1,0 +1,2 @@
+﻿run_id,video_id,category,duration_sec,n_chunks,n_segments,speech_ratio,t_prepare_sec,t_asr_sec,asr_cached,t_translate_sec,t_tts_default_sec,t_v3_sec,t_v4_sec,llm_calls_translate,tts_calls_total,resummarize_calls_v4
+full_r2,lec01,CNTT,566.0,1,131,0.959,0.0,0.13,True,94.71,202.88,0.0,964.44,2,469,99

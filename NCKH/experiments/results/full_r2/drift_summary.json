@@ -1,0 +1,64 @@
+{
+ "run_id": "full_r2",
+ "model_note": "Ước lượng từ segments.csv dưới giả định khoảng lặng cố định (xem docstring); cần kiểm chứng bằng audio ghép thật.",
+ "per_variant": {
+  "V2": {
+   "n_videos": 1,
+   "total_drift_end_of_video_s_mean": 171.28,
+   "total_drift_end_of_video_s_max": 171.28,
+   "chunk_end_drift_mean_s": 171.28,
+   "chunk_end_drift_max_s": 171.28,
+   "onset_cumulative_p95_s_max_over_videos": 159.72
+  },
+  "V4": {
+   "n_videos": 1,
+   "total_drift_end_of_video_s_mean": 9.79,
+   "total_drift_end_of_video_s_max": 9.79,
+   "chunk_end_drift_mean_s": 9.79,
+   "chunk_end_drift_max_s": 9.79,
+   "onset_cumulative_p95_s_max_over_videos": 7.19
+  }
+ },
+ "per_video": {
+  "V2|lec01": {
+   "n_segments": 131,
+   "n_chunks": 1,
+   "chunk_end_drift_s": {
+    "0": 171.28
+   },
+   "chunk_end_drift_mean_s": 171.28,
+   "chunk_end_drift_max_s": 171.28,
+   "total_drift_end_of_video_s": 171.28,
+   "onset_in_chunk_mean_s": 83.05,
+   "onset_in_chunk_p95_s": 159.72,
+   "onset_in_chunk_max_s": 169.88,
+   "onset_cumulative_mean_s": 83.05,
+   "onset_cumulative_p95_s": 159.72,
+   "onset_cumulative_max_s": 169.88,
+   "pct_sentences_cum_drift_gt_0_5s": 99.2,
+   "pct_sentences_cum_drift_gt_1s": 98.5,
+   "pct_sentences_cum_drift_gt_2s": 97.7,
+   "min_d_s": 0.0
+  },
+  "V4|lec01": {
+   "n_segments": 131,
+   "n_chunks": 1,
+   "chunk_end_drift_s": {
+    "0": 9.79
+   },
+   "chunk_end_drift_mean_s": 9.79,
+   "chunk_end_drift_max_s": 9.79,
+   "total_drift_end_of_video_s": 9.79,
+   "onset_in_chunk_mean_s": 3.41,
+   "onset_in_chunk_p95_s": 7.19,
+   "onset_in_chunk_max_s": 8.39,
+   "onset_cumulative_mean_s": 3.41,
+   "onset_cumulative_p95_s": 7.19,
+   "onset_cumulative_max_s": 8.39,
+   "pct_sentences_cum_drift_gt_0_5s": 80.2,
+   "pct_sentences_cum_drift_gt_1s": 68.7,
+   "pct_sentences_cum_drift_gt_2s": 67.9,
+   "min_d_s": -0.044
+  }
+ }
+}

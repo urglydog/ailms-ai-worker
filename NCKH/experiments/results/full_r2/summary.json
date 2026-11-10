@@ -1,0 +1,87 @@
+{
+  "variants": {
+    "V2": {
+      "name": "Dịch hai pha, tốc độ mặc định",
+      "n_segments": 131,
+      "mean_abs_delta_s": 1.308,
+      "median_abs_delta_s": 1.236,
+      "p95_abs_delta_s": 2.96,
+      "total_overrun_s": 171.3,
+      "overrun_per_min_speech_s": 18.93,
+      "pct_segments_overrun": 91.6,
+      "pct_segments_R_gt_1_3_after": 56.5,
+      "pct_R_default_gt_1_3": 56.5,
+      "mean_R_default": 1.389,
+      "llm_calls": 2,
+      "tts_calls": 131,
+      "mean_chars": 73.0
+    },
+    "V4": {
+      "name": "Đề xuất (đầy đủ)",
+      "n_segments": 131,
+      "mean_abs_delta_s": 0.08,
+      "median_abs_delta_s": 0.016,
+      "p95_abs_delta_s": 0.648,
+      "total_overrun_s": 10.2,
+      "overrun_per_min_speech_s": 1.12,
+      "pct_segments_overrun": 13.0,
+      "pct_segments_R_gt_1_3_after": 5.3,
+      "pct_R_default_gt_1_3": 56.5,
+      "mean_R_default": 1.389,
+      "llm_calls": 101,
+      "tts_calls": 338,
+      "mean_chars": 60.6
+    }
+  },
+  "branches": {
+    "V2": {
+      "none": {
+        "n": 120,
+        "pct": 91.6
+      },
+      "pad": {
+        "n": 11,
+        "pct": 8.4
+      },
+      "_R_zones": {
+        "R<=1.0": 8.4,
+        "1.0<R<=1.3": 35.1,
+        "R>1.3": 56.5
+      }
+    },
+    "V4": {
+      "summarize": {
+        "n": 56,
+        "pct": 42.7
+      },
+      "speedup": {
+        "n": 46,
+        "pct": 35.1
+      },
+      "capped": {
+        "n": 18,
+        "pct": 13.7
+      },
+      "pad": {
+        "n": 11,
+        "pct": 8.4
+      },
+      "_R_zones": {
+        "R<=1.0": 8.4,
+        "1.0<R<=1.3": 35.1,
+        "R>1.3": 56.5
+      }
+    }
+  },
+  "local_timing": {
+    "n_videos": 1,
+    "total_minutes_source": 9.4,
+    "total_minutes": 9.4,
+    "asr_sec_per_min": null,
+    "translate_sec_per_min": 10.04,
+    "tts_default_sec_per_min": 21.51,
+    "v4_adaptive_sec_per_min": 102.24,
+    "note": "Thời gian local, chạy tuần tự từng câu; số liệu triển khai thật lấy từ server_job_stats."
+  },
+  "server_timing": {}
+}
