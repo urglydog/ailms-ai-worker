@@ -134,7 +134,7 @@ A(R_i) =
 
 Tốc độ đọc được điều khiển bằng thẻ \texttt{<prosody rate>} của SSML \cite{ssml2010}, do đó dịch vụ TTS sinh lại câu ở tốc độ mới thay vì kéo giãn tín hiệu âm thanh, giúp giữ cao độ và độ tự nhiên. Ngưỡng 30\% được chọn vì vượt mức này giọng đọc trở nên khó nghe.
 
-Ở nhánh thứ ba, LLM được yêu cầu rút gọn câu nhưng giữ ý chính, sau đó câu được tổng hợp và tính lại $R_i$. Để tránh vòng lặp vô hạn khi câu đã quá ngắn, số lần rút gọn bị giới hạn bởi $M = 2$; nếu sau $M$ lần vẫn có $R_i > R_{\max}$, hệ thống chấp nhận tốc độ tối đa $+30\%$ và ghi cảnh báo để quản trị viên xem xét. Thuật toán~\ref{alg:asr} tóm tắt quy trình.
+Ở nhánh thứ ba, LLM được yêu cầu rút gọn câu nhưng giữ ý chính, sau đó câu được tổng hợp và tính lại $R_i$. Để tránh vòng lặp vô hạn khi câu đã quá ngắn, số lần rút gọn bị giới hạn bởi $M = 2$; nếu sau $M$ lần vẫn có $R_i > R_{\max}$, hệ thống chấp nhận tốc độ tối đa $+30\%$ và ghi cảnh báo để quản trị viên xem xét. Ngoài ra, với câu có khung gốc rất ngắn ($T_i^{\mathrm{orig}} < T_{\min} = 2$ giây, ví dụ lời chào hay câu cảm ơn), bước rút gọn bị bỏ qua: thực nghiệm sơ bộ cho thấy phần lớn các câu này rút gọn hai lần vẫn vượt ngưỡng, chỉ làm tăng số lần gọi LLM. Câu ngắn vẫn được lồng tiếng ở tốc độ tối đa và phần dư được bù bằng khoảng lặng phía sau nhờ cơ chế xếp câu theo mốc tuyệt đối (Mục~\ref{sub:concat}). Thuật toán~\ref{alg:asr} tóm tắt quy trình.
 
 \begin{algorithm}[t]
 \caption{Điều chỉnh tốc độ đọc thích ứng cho câu $i$}
@@ -143,7 +143,7 @@ Tốc độ đọc được điều khiển bằng thẻ \texttt{<prosody rate>}
 \Require câu dịch $t$, khung thời gian $T^{\mathrm{orig}}$, giọng đọc $v$
 \State $a \gets \textsc{TTS}(t, v, +0\%)$; \quad $R \gets |a| / T^{\mathrm{orig}}$
 \State $k \gets 0$
-\While{$R > 1{,}3$ \textbf{and} $k < M$}
+\While{$R > 1{,}3$ \textbf{and} $k < M$ \textbf{and} $T^{\mathrm{orig}} \ge T_{\min}$}
   \State $t \gets \textsc{LLM\_RútGọn}(t)$
   \State $a \gets \textsc{TTS}(t, v, +0\%)$; \quad $R \gets |a| / T^{\mathrm{orig}}$
   \State $k \gets k + 1$
@@ -160,6 +160,7 @@ Tốc độ đọc được điều khiển bằng thẻ \texttt{<prosody rate>}
 \end{algorithm}
 
 \subsection{Ghép âm thanh}
+\label{sub:concat}
 Một cách ghép đơn giản là chèn trước mỗi câu $i$ một khoảng lặng cố định $b_i - e_{i-1}$. Tuy nhiên, khi câu $i$ vẫn dài hơn khung sau bước điều chỉnh tốc độ, phần tràn đẩy lùi toàn bộ các câu phía sau và độ trễ cộng dồn theo độ dài bài giảng; thực nghiệm sơ bộ với cách này cho thấy âm thanh của bài dài 15 phút trễ tới \todo{96} giây ở cuối bài. Vì vậy, các câu được đặt theo \emph{mốc tuyệt đối}: gọi $d_i$ là thời lượng âm thanh cuối cùng của câu $i$, thời điểm bắt đầu phát là
 \begin{equation}
 o_i = \max\bigl(b_i,\; o_{i-1} + d_{i-1}\bigr), \qquad o_0 + d_0 \equiv b_0 .
@@ -208,6 +209,8 @@ Ngưỡng tỷ lệ lời thoại tối thiểu & 10\% \\
 Ngưỡng $R_{\min}$ / $R_{\max}$ & 1,0 / 1,3 \\
 Tốc độ đọc tăng tối đa & +30\% \\
 Số lần rút gọn tối đa $M$ & 2 \\
+Khung tối thiểu để rút gọn $T_{\min}$ & 2 giây \\
+Tăng tốc cả đoạn tối đa & $\times$1,15 \\
 Mô hình nhận dạng giọng nói & Whisper large-v3-turbo \\
 Mô hình ngôn ngữ lớn & Gemini 3.5 Flash \todo{xác nhận} \\
 Tổng hợp giọng nói & Azure Speech (SSML) \\

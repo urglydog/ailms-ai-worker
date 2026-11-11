@@ -431,6 +431,7 @@ async def main() -> None:
             "r_min": R_MIN, "r_max": R_MAX,
             "max_tts_rate": dubbing_service.MAX_TTS_RATE,
             "max_resummarize_attempts": settings.max_resummarize_attempts,
+            "min_resummarize_frame_sec": getattr(settings, "min_resummarize_frame_sec", None),
             "min_speech_ratio": dubbing_service.MIN_SPEECH_RATIO,
             "asr_model": settings.groq_asr_model,
             "llm_model": settings.gemini_model,

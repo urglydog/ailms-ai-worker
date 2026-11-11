@@ -108,3 +108,39 @@ async def test_r_recovers_within_attempts_stops_resummarize_loop_early(tmp_path)
         )
 
     assert resummarize_mock.await_count == 1  # dung ngay khi R da <= 1.3, khong lam het so lan cho phep
+
+
+async def test_short_frame_skips_resummarize_and_uses_max_rate(tmp_path, monkeypatch):
+    """11/11/2026: khung < min_resummarize_frame_sec -> KHONG goi LLM rut gon, van long tieng o +30%."""
+    monkeypatch.setattr(settings, "min_resummarize_frame_sec", 2.0)
+    segment = Segment(seq=5, start=0.0, end=1.2, text="Thank you.")  # T_orig = 1.2s
+    synthesize_mock = AsyncMock(return_value=_synth_result(2.4))   # R = 2.0 > 1.3
+    resummarize_mock = AsyncMock()
+
+    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
+         patch("app.services.translation.resummarize", resummarize_mock):
+        _result, final_text, was_summarized = await dubbing_service._synthesize_with_adaptive_rate(
+            segment, "Cam on cac ban.", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
+        )
+
+    resummarize_mock.assert_not_awaited()
+    assert was_summarized is False and final_text == "Cam on cac ban."
+    assert synthesize_mock.await_count == 2                      # 1 lan do + 1 lan o rate toi da
+    assert synthesize_mock.await_args_list[-1].kwargs.get("rate") == dubbing_service.MAX_TTS_RATE
+
+
+async def test_frame_at_threshold_still_resummarizes(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "min_resummarize_frame_sec", 2.0)
+    monkeypatch.setattr(settings, "max_resummarize_attempts", 2)
+    segment = Segment(seq=6, start=0.0, end=2.0, text="x")       # T_orig = 2.0s (khong < nguong)
+    durations = iter([4.0, 2.2])                                 # R=2.0 -> sau 1 lan rut gon R=1.1
+    synthesize_mock = AsyncMock(side_effect=lambda *a, **k: _synth_result(next(durations, 2.2)))
+    resummarize_mock = AsyncMock(side_effect=lambda text, lang: text)
+
+    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
+         patch("app.services.translation.resummarize", resummarize_mock):
+        await dubbing_service._synthesize_with_adaptive_rate(
+            segment, "x", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
+        )
+
+    assert resummarize_mock.await_count == 1

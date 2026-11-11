@@ -393,7 +393,12 @@ async def _synthesize_with_adaptive_rate(
     # động ở mỗi nhánh đúng như tài liệu, chỉ đảo chiều tỉ số để hành vi có ý nghĩa.
 
     attempts = 0
-    while r > R_UPPER_BOUND and attempts < settings.max_resummarize_attempts:
+    # Khung quá ngắn (vd "Thank you." ~1 s): rút gọn hầu như không đưa được về khung, chỉ tốn
+    # lời gọi LLM -> bỏ qua, đi thẳng xuống nhánh tăng tốc tối đa; phần dư mượn khoảng lặng sau.
+    max_attempts = settings.max_resummarize_attempts
+    if float(t_orig) < settings.min_resummarize_frame_sec:
+        max_attempts = 0
+    while r > R_UPPER_BOUND and attempts < max_attempts:
         current_text = await translation.resummarize(current_text, target_language)
         was_summarized = True
         result = await azure_tts.synthesize(current_text, voice_name, str(out_path))

@@ -86,6 +86,11 @@ class Settings(BaseSettings):
     # Hết số lần này mà R vẫn > 1.3 thì chấp nhận rate +30% (mức tối đa) và ghi log cảnh báo
     # cho Admin xem qua UC45/UC46 (doc/SETUP_GIAIDOAN5.md mục 4).
     max_resummarize_attempts: int = 2
+    # 11/11/2026 (NCKH): câu có khung gốc NGẮN hơn ngưỡng này KHÔNG gọi LLM rút gọn — chỉ tăng tốc
+    # tối đa +30%, phần dư mượn khoảng lặng phía sau (đã có xếp câu theo mốc tuyệt đối). Đo thực
+    # nghiệm: 51,8% lời gọi rút gọn rơi vào câu ngắn mà rút gọn 2 lần vẫn chạm trần → tốn credit vô ích.
+    # Đặt 0 để tắt (luôn rút gọn như cũ).
+    min_resummarize_frame_sec: float = 2.0
 
     # Thư mục file trung gian. Phải dọn sau mỗi job, tối đa 24 giờ (BR-STORAGE-01).
     temp_dir: str = "/tmp/lms-processing"
