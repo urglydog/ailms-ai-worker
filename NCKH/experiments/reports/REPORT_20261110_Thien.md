@@ -164,7 +164,7 @@ Không thực hiện — chờ Sang cung cấp thông tin và cho phép.
    đo trên máy dùng chung với hệ thống đang chạy, 2 vCPU, chạy tuần tự từng câu — **không dùng để suy ra hiệu năng server**.
 6. **Câu rất ngắn / tên riêng bị rút gọn quá tay** (ví dụ "Thought Cafe." → "Tư duy") — chờ L4 để đo.
 7. Khác biệt đợt 1 và `full_r1` (mục 4.1) — cần L3 để biết phần nào do LLM không tất định.
-8. Số dư credit Gemini ngày 10/11/2026 trước khi chạy: ₫89.056 (ảnh chụp của Thiện).
+8. Số dư credit Gemini ngày 10/11/2026 trước khi chạy: ₫89.056 (ảnh chụp của Thiện). Ước tính chi phí theo số lần gọi: xem mục 8, điểm 0.
 9. **Credit Gemini đã hết** (lỗi 402 lúc 20:52 UTC ngày 10/11, sau `full_r1` + một phần `full_r2`). Key này nằm trong biến môi trường của `lms_ai_worker`, container
    cũng phục vụ hệ thống thật. **Chưa kiểm tra** xem các tính năng AI thật (lồng tiếng, trợ lý…) có đang lỗi không và có dùng cùng key/dự án không — cần Sang/Thiện kiểm tra và nạp credit.
    Ngoài ra provider Gemini trong code không phân biệt lỗi 402 (hết credit) với lỗi 5xx: log chỉ báo "network error"/"cooldown", khó chẩn đoán.
@@ -193,8 +193,13 @@ python NCKH/experiments/sample_fidelity.py NCKH/experiments/results/full_r1 --n 
 ## 8. Việc cần Thiện và Sang quyết định (hội ý 11/11)
 
 0. **Ưu tiên cao nhất — credit Gemini đã hết:** kiểm tra tác động lên hệ thống thật, nạp credit, rồi mới chạy lại L3 (`full_r2b`, `full_r3b`, V2 và V4).
-   Số dư ₫89.056 đã hết sau `full_r1` (690 lần gọi LLM cho V4 + 14 lần dịch) và một phần `full_r2`. **Chưa có số đo chi phí chính xác** cho từng run;
-   cần xem bảng chi phí trên AI Studio để biết cần nạp bao nhiêu cho L3 (V2+V4 × 2 lần) trước khi chạy lại.
+   Số dư ₫89.056 đã hết sau `full_r1` và một phần `full_r2`. **Chi phí ước tính** (từ ảnh billing AI Studio ngày 11/11 do Thiện cung cấp: tổng ₫133K từ 1–11/11,
+   cột ngày 10/11 = ₫86,08K): `full_r1` 690 lần gọi + `full_r2` (chỉ `lec01`) 101 lần + 1 lần gọi thử = ~792 lần, tức **~109₫/lần gọi**; đợt 1 (444 lần gọi, cột ~45K quanh 7–8/11, đọc từ biểu đồ)
+   cho ~100₫/lần gọi — hai ngày cho cùng mức đơn giá. Suy ra **một lượt chạy V4 đầy đủ 50 phút (~690 lần gọi) ≈ 75K₫**; V2 chỉ ~14 lần gọi nên không đáng kể.
+   Nguyên nhân đơn giá cao **chưa xác định**: code không đặt `thinkingBudget`/`maxOutputTokens`, nghi token "suy nghĩ" ẩn (giả thuyết, chưa kiểm chứng); pipeline chỉ log `candidatesTokenCount`,
+   không log token suy nghĩ. Cần xem tab Usage/billing theo model trên AI Studio để xác nhận.
+   **Dự toán (ước tính, không phải số đo):** L3 đủ 2 lần V4 ≈ 150K₫ (tối thiểu 1 lần thêm ≈ 75K₫ để có n=2); lồng tiếng thật qua web cho 4 video (~50 phút) ≈ 75K₫ nếu đơn giá mỗi lần gọi như trên.
+   Làm cả hai thì nên nạp khoảng 250–300K₫. Trước khi chạy tốn tiền, nên chạy thử mẫu nhỏ và đối chiếu billing.
 1. **Dữ liệu:** thêm ≥ 2 bài kỹ năng mềm (và cần file video nếu muốn đo độ khớp hình), hay sửa nhãn/câu mô tả trong bài thành "lĩnh vực CNTT"? Xác minh giấy phép 4 bài.
 2. **Độ trễ cộng dồn (mục 5.1):** sửa pipeline hay sửa mô tả trong bài? Thêm chỉ số trễ mốc câu vào bài?
 3. **Câu ASR vượt mốc audio (mục 5.2):** có cần chặn mốc theo thời lượng audio trong pipeline không?
