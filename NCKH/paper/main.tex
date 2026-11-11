@@ -30,7 +30,7 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \maketitle
 
 \begin{abstract}
-Các khóa học trực tuyến quốc tế phần lớn được giảng bằng tiếng nước ngoài, khiến người học Việt Nam phải vừa nghe bài giảng vừa đọc phụ đề, làm tăng tải nhận thức và giảm hiệu quả tiếp thu. Bài báo này đề xuất một pipeline lồng tiếng tự động cho video bài giảng, được tích hợp trực tiếp vào hệ thống quản lý học tập. Pipeline gồm các bước: nhận dạng giọng nói có mốc thời gian, dịch theo ngữ cảnh hai pha bằng mô hình ngôn ngữ lớn, tổng hợp giọng nói và ghép âm thanh theo đúng vị trí của từng câu gốc. Đóng góp chính là thuật toán điều chỉnh tốc độ đọc thích ứng: với mỗi câu, hệ thống so sánh thời lượng âm thanh tổng hợp với khung thời gian của câu gốc, tăng tốc độ đọc trong giới hạn ba mươi phần trăm hoặc yêu cầu mô hình ngôn ngữ rút gọn câu dịch khi vượt ngưỡng, nhờ đó âm thanh lồng tiếng luôn khớp với hình ảnh mà vẫn giữ được độ tự nhiên. Ngoài ra, pipeline chia video thành các đoạn mười phút độc lập để xử lý song song với tiến độ thời gian thực, chịu lỗi cục bộ và tái sử dụng bản ký âm giữa các ngôn ngữ đích nhằm giảm chi phí. Thực nghiệm trên \todo{N} video bài giảng thuộc lĩnh vực công nghệ thông tin và kỹ năng mềm cho thấy \todo{kết quả chính}. Hệ thống được triển khai trong nền tảng học tập trực tuyến LinguaLearn và cho phép người học chọn ngôn ngữ nghe cho từng bài giảng.
+Các khóa học trực tuyến quốc tế phần lớn được giảng bằng tiếng nước ngoài, khiến người học Việt Nam phải vừa nghe bài giảng vừa đọc phụ đề, làm tăng tải nhận thức và giảm hiệu quả tiếp thu. Bài báo này đề xuất một pipeline lồng tiếng tự động cho video bài giảng, được tích hợp trực tiếp vào hệ thống quản lý học tập. Pipeline gồm các bước: nhận dạng giọng nói có mốc thời gian, dịch theo ngữ cảnh hai pha bằng mô hình ngôn ngữ lớn, tổng hợp giọng nói và ghép âm thanh theo đúng vị trí của từng câu gốc. Đóng góp chính là thuật toán điều chỉnh tốc độ đọc thích ứng: với mỗi câu, hệ thống so sánh thời lượng âm thanh tổng hợp với khung thời gian của câu gốc, tăng tốc độ đọc trong giới hạn ba mươi phần trăm hoặc yêu cầu mô hình ngôn ngữ rút gọn câu dịch khi vượt ngưỡng, nhờ đó âm thanh lồng tiếng bám sát hình ảnh. Các câu được đặt theo mốc thời gian tuyệt đối của câu gốc để độ trễ cục bộ không cộng dồn qua cả bài giảng. Ngoài ra, pipeline chia video thành các đoạn mười phút độc lập để xử lý song song với tiến độ thời gian thực, chịu lỗi cục bộ và tái sử dụng bản ký âm giữa các ngôn ngữ đích nhằm giảm chi phí. Thực nghiệm trên bốn bài giảng thuộc lĩnh vực công nghệ thông tin, tổng cộng năm mươi phút, cho thấy \todo{kết quả chính}. Hệ thống được triển khai trong nền tảng học tập trực tuyến LinguaLearn và cho phép người học chọn ngôn ngữ nghe cho từng bài giảng.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -160,7 +160,12 @@ Tốc độ đọc được điều khiển bằng thẻ \texttt{<prosody rate>}
 \end{algorithm}
 
 \subsection{Ghép âm thanh}
-Các câu trong một đoạn được ghép theo thứ tự, trước mỗi câu $i$ chèn một khoảng lặng bằng $b_i - e_{i-1}$ (với $e_0$ là thời điểm bắt đầu đoạn) để giữ đúng nhịp ngắt của giảng viên; phần cuối đoạn được đệm lặng tới hết đoạn. Nhờ vậy âm thanh của mỗi đoạn có thời lượng đúng bằng $L$, và tệp cuối cùng ghép từ $K$ đoạn có thời lượng bằng video gốc, không tích lũy độ trễ giữa các đoạn.
+Một cách ghép đơn giản là chèn trước mỗi câu $i$ một khoảng lặng cố định $b_i - e_{i-1}$. Tuy nhiên, khi câu $i$ vẫn dài hơn khung sau bước điều chỉnh tốc độ, phần tràn đẩy lùi toàn bộ các câu phía sau và độ trễ cộng dồn theo độ dài bài giảng; thực nghiệm sơ bộ với cách này cho thấy âm thanh của bài dài 15 phút trễ tới \todo{96} giây ở cuối bài. Vì vậy, các câu được đặt theo \emph{mốc tuyệt đối}: gọi $d_i$ là thời lượng âm thanh cuối cùng của câu $i$, thời điểm bắt đầu phát là
+\begin{equation}
+o_i = \max\bigl(b_i,\; o_{i-1} + d_{i-1}\bigr), \qquad o_0 + d_0 \equiv b_0 .
+\label{eq:onset}
+\end{equation}
+Câu tràn chỉ lấn vào khoảng lặng phía sau, không bao giờ chồng lên câu kế tiếp, và ngay khi gặp một khoảng lặng đủ dài thì các câu sau trở về đúng mốc gốc. Sau khi xếp, nếu âm thanh của đoạn ngắn hơn $L$ thì được đệm lặng; nếu dài hơn (đoạn dày lời, không đủ khoảng lặng để bù) thì cả đoạn được tăng tốc tối đa 15\% bằng bộ lọc \texttt{atempo} của FFmpeg (giữ cao độ). Nhờ đó mỗi đoạn có thời lượng đúng bằng $L$ và độ trễ không lan sang đoạn kế tiếp. Ngoài ra, mốc thời gian do bộ nhận dạng trả về được kẹp trong biên của đoạn, vì thực nghiệm cho thấy mô hình đôi khi trả mốc vượt quá độ dài âm thanh.
 
 % =====================================================================
 \section{Triển khai trong hệ thống}
@@ -186,7 +191,7 @@ Thay vì ghép âm thanh vào video (tốn thời gian mã hóa lại và nhân 
 \label{sec:exp}
 
 \subsection{Thiết lập thực nghiệm}
-Tập dữ liệu gồm \todo{N} video bài giảng tiếng Anh công khai thuộc hai nhóm công nghệ thông tin và kỹ năng mềm, tổng thời lượng \todo{X} phút, được lồng tiếng sang tiếng Việt. Các tham số của pipeline được liệt kê trong Bảng~\ref{tab:params}. Thực nghiệm chạy trên \todo{cấu hình máy}.
+Tập dữ liệu gồm bốn bài giảng tiếng Anh công khai thuộc lĩnh vực công nghệ thông tin (ba bài của loạt Crash Course Computer Science và 15 phút đầu bài giảng Stanford CS229), tổng thời lượng 50 phút, 787 câu \todo{cập nhật nếu đo lại}, được lồng tiếng sang tiếng Việt. Các tham số của pipeline được liệt kê trong Bảng~\ref{tab:params}. Thực nghiệm chạy trên \todo{cấu hình máy}.
 
 \begin{table}[t]
 \caption{Tham số của pipeline}
@@ -214,6 +219,7 @@ Tổng hợp giọng nói & Azure Speech (SSML) \\
 \begin{itemize}
 \item \emph{Phân bố tỷ số $R$}: tỷ lệ câu rơi vào từng nhánh của (\ref{eq:policy}) sau pha dịch thứ nhất và sau pha biên tập thứ hai.
 \item \emph{Độ lệch thời lượng}: $\Delta_i = |T_i^{\mathrm{final}} - T_i^{\mathrm{orig}}|$ trung bình theo câu, so sánh giữa phương án phát nguyên tốc độ và phương án đề xuất.
+\item \emph{Độ trễ theo trục thời gian}: sau khi ghép cả bài, độ lệch $o_i - b_i$ giữa thời điểm phát của câu lồng tiếng và mốc gốc (trung bình, p95, cực đại) và chênh lệch tổng thời lượng so với video gốc. Độ đo này bắt được trễ cộng dồn mà $\Delta_i$ theo từng câu không phản ánh, và được dùng để so sánh cách ghép khoảng lặng cố định với cách xếp theo mốc tuyệt đối (\ref{eq:onset}).
 \item \emph{Thời gian xử lý}: thời gian thực thi trên mỗi phút video và thời gian đến khi có đoạn đầu tiên.
 \item \emph{Chi phí}: số lần gọi LLM và TTS, mức tiết kiệm khi tái sử dụng bản ký âm.
 \item \emph{Chất lượng cảm nhận}: điểm đánh giá trung bình (thang 1--5) của \todo{n} người nghe về độ tự nhiên và độ khớp hình.

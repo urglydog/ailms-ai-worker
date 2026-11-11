@@ -74,6 +74,23 @@ def split_into_chunks(duration_sec: int, chunk_minutes: int) -> list[ChunkPlan]:
     return chunks
 
 
+MIN_SEGMENT_SEC = 0.05
+
+
+def clamp_stt_segments(stt_segments, audio_len_sec: float) -> list[tuple[float, float, str]]:
+    """Kẹp mốc (tương đối trong chunk) của từng câu ASR vào [0, audio_len_sec].
+    Bỏ câu rỗng, câu bắt đầu từ cuối audio trở đi, hoặc còn dài < MIN_SEGMENT_SEC sau khi kẹp."""
+    out: list[tuple[float, float, str]] = []
+    for s in stt_segments:
+        text = (s.text or "").strip()
+        start = max(0.0, float(s.start))
+        end = min(float(s.end), audio_len_sec)
+        if not text or start >= audio_len_sec or end - start < MIN_SEGMENT_SEC:
+            continue
+        out.append((start, end, s.text))
+    return out
+
+
 async def run_dubbing_pipeline(
     job_id: int, lesson_id: int, video_url: str, target_language: str, celery_task_id: str | None = None,
 ) -> dict:
@@ -220,7 +237,8 @@ async def _process_chunk_once(
 
     if reuse_source:
         segments = [
-            Segment(seq=s.seq, start=float(s.start_sec), end=float(s.end_sec), text=s.text)
+            # kẹp `end` vào biên chunk: transcript cũ (lưu trước bản sửa 11/11) có thể có mốc vượt audio
+            Segment(seq=s.seq, start=float(s.start_sec), end=min(float(s.end_sec), float(chunk.end_sec)), text=s.text)
             for s in ctx.source_segments
             if chunk.start_sec <= float(s.start_sec) < chunk.end_sec
         ]
@@ -240,10 +258,15 @@ async def _process_chunk_once(
             )
         detected_language = stt.language
         generate_source_dtos = True
-        segments = [
-            Segment(seq=next_seq + i, start=chunk.start_sec + s.start, end=chunk.start_sec + s.end, text=s.text)
-            for i, s in enumerate(stt.segments)
-        ]
+        # Whisper đôi khi trả mốc VƯỢT QUÁ độ dài audio (đo được: câu cuối "Thank you."
+        # 709,4 → 739,4 s trong khi audio dài 718 s) → kẹp mốc vào [0, độ dài thật của chunk],
+        # bỏ câu nằm hẳn ngoài audio, để không đệm lặng thừa cuối bài.
+        audio_len = min(float(chunk_len), stt.duration_sec) if stt.duration_sec > 0 else float(chunk_len)
+        segments = []
+        for s in clamp_stt_segments(stt.segments, audio_len):
+            segments.append(Segment(
+                seq=next_seq + len(segments), start=chunk.start_sec + s[0], end=chunk.start_sec + s[1], text=s[2],
+            ))
 
     if not segments:
         # Đoạn toàn khoảng lặng (hay gặp khi tái sử dụng transcript, chunk rơi đúng
@@ -275,14 +298,12 @@ async def _process_chunk_once(
         job_id, lesson_id, stage="TTS", chunkIndex=chunk.index, totalChunks=total_chunks,
     )
     sentence_paths: list[Path] = []
-    leading_silences: list[float] = []
+    desired_onsets: list[float] = []   # mốc gốc của câu, tính TƯƠNG ĐỐI từ đầu chunk
     target_dtos: list[dict] = []
     source_dtos: list[dict] | None = [] if generate_source_dtos else None
 
-    prev_end = float(chunk.start_sec)
     for seg, text in zip(segments, translated_texts):
-        leading_silences.append(max(0.0, seg.start - prev_end))
-        prev_end = seg.end
+        desired_onsets.append(max(0.0, seg.start - chunk.start_sec))
 
         out_path = work_dir / f"chunk_{chunk.index}_seg_{seg.seq}.mp3"
         result, final_text, was_summarized = await _synthesize_with_adaptive_rate(
@@ -315,10 +336,24 @@ async def _process_chunk_once(
         job_id, lesson_id, stage="UPLOADING", chunkIndex=chunk.index, totalChunks=total_chunks,
     )
     chunk_audio = work_dir / f"chunk_{chunk.index}_dub.mp3"
-    await audio_utils.concat_with_leading_silence(sentence_paths, leading_silences, chunk_audio)
-    trailing_gap = max(0.0, chunk.end_sec - prev_end)
-    if trailing_gap > 0.05:
-        await audio_utils.pad_silence(chunk_audio, trailing_gap)
+    # BR-CHUNK-05 (sửa 11/11/2026): xếp câu theo mốc tuyệt đối thay vì chèn khoảng lặng
+    # cố định `start_i − end_{i-1}` — cách cũ làm câu tràn đẩy lùi mọi câu sau, trễ cộng dồn
+    # (đo được +96 s ở bài 15 phút). Chunk luôn được khớp đúng độ dài để không lan sang chunk sau.
+    timeline = await audio_utils.place_on_timeline(
+        sentence_paths, desired_onsets, float(chunk.end_sec - chunk.start_sec), chunk_audio,
+    )
+    if timeline.tempo_applied > 1.0 or timeline.max_delay_sec > 2.0:
+        log.info(
+            "Chunk %s job %s: tre toi da %.1fs, dai tho %.1fs -> tang toc ca doan x%.3f",
+            chunk.index, job_id, timeline.max_delay_sec, timeline.raw_length_sec, timeline.tempo_applied,
+        )
+    if timeline.raw_length_sec / max(timeline.tempo_applied, 1.0) > (chunk.end_sec - chunk.start_sec) + 0.5:
+        log.warning(
+            "Chunk %s job %s: van du %.1fs sau khi tang toc toi da x%s — phan cuoi bi cat",
+            chunk.index, job_id,
+            timeline.raw_length_sec / timeline.tempo_applied - (chunk.end_sec - chunk.start_sec),
+            audio_utils.MAX_CHUNK_TEMPO,
+        )
 
     audio_url = await _upload_chunk_audio(chunk_audio, ctx, chunk)
     await backend_client.upsert_chunk_completed(
