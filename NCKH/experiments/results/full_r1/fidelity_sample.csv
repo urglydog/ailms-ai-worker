@@ -1,0 +1,51 @@
+﻿id,video_id,chunk_index,seq,t_orig,src_text,tgt_v2,tgt_v4
+1,lec04,0,106,1.86,it actually turns out to be amazingly difficult,thì hoá ra lại khó khăn một cách kinh ngạc,Khó không ngờ
+2,lec02,0,2,4.0,"Hi, I'm Carrie-Anne and welcome to Crash Course Computer Science.","Xin chào, tôi là Carrie-Anne, chào mừng bạn đến với Crash Course Khoa học Máy tính.",Chào mừng bạn đến với Crash Course Khoa học Máy tính cùng Carrie-Anne.
+3,lec01,0,24,3.68,Many considered Jacquard's loom to be one of the earliest forms of programming.,Nhiều người coi máy dệt Jacquard là một trong những hình thức lập trình sơ khai nhất.,Máy dệt Jacquard là hình thức lập trình sơ khai nhất.
+4,lec04,1,205,1.3,"In this class, I'm going to assume","Trong lớp học này, tôi giả định",Tôi giả định
+5,lec02,1,142,4.88,"from. It's literally when the kernel crashes, has no recourse to recover, and so calls a","...ra đời. Nó có nghĩa là khi nhân hệ điều hành bị sập mà không thể phục hồi, máy sẽ gọi...","...ra đời. Khi nhân hệ điều hành sập không thể phục hồi, máy sẽ gọi..."
+6,lec02,0,121,4.5,system designed to be secure from the outset. Developers didn't want mischievous users,được thiết kế chú trọng bảo mật ngay từ đầu. Các nhà phát triển không muốn người dùng tò mò,Thiết kế bảo mật ngay từ đầu để tránh người dùng tò mò.
+7,lec02,0,101,1.0,information.,cá nhân.,Riêng.
+8,lec02,0,22,4.12,automatically and near instantly start the next. There was no downtime while someone,tự động chuyển sang chương trình tiếp theo ngay lập tức. Không còn thời gian chết trong lúc ai đó,"Tự động chuyển sang chương trình tiếp theo, không còn thời gian chết."
+9,lec04,1,201,1.82,So let's say a few words about logistics.,"Bây giờ, hãy nói một chút về cách tổ chức lớp học.",Cách tổ chức lớp học.
+10,lec01,0,126,1.68,PBS Infinite Series.,PBS Infinite Series.,PBS Infinite
+11,lec04,0,138,1.32,"applying learning algorithms to them,","và áp dụng các thuật toán học máy vào,",dùng học máy
+12,lec04,0,37,1.54,"and all of information technology,",và đứng đầu danh sách đó,Đứng đầu là
+13,lec01,0,105,4.64,"pre-assembled and as a kit. The kit, which was popular with amateur computing enthusiasts,","máy lắp sẵn và bộ linh kiện tự ráp. Bản tự ráp rất được giới đam mê máy tính chuộng,","máy lắp sẵn và tự ráp. Dân mê máy tính rất chuộng bản tự ráp,"
+14,lec04,0,65,1.0,"ICME, cool.","ICME, tuyệt.",ICME tuyệt!
+15,lec03,0,74,2.32,The whole message really needs to get there correctly.,Toàn bộ tin nhắn phải đến nơi đầy đủ và chính xác.,"Tin nhắn phải đầy đủ, chính xác."
+16,lec01,0,28,3.76,"Things like race, marital status, number of children, country of birth and so on.","như sắc tộc, tình trạng hôn nhân, số con, nơi sinh, vân vân.","như sắc tộc, hôn nhân, con cái, nơi sinh."
+17,lec01,0,27,4.24,"which we talked about in episode 1. Each card held an individual person's data,","như ta đã nhắc ở tập 1. Mỗi thẻ chứa thông tin của một cá nhân,","Như ở tập 1, mỗi thẻ chứa thông tin cá nhân."
+18,lec01,0,114,3.8,"Whether it was plug-boards, switches, or punched paper, programming these early computers was","Dù dùng bảng cắm dây, công tắc hay thẻ đục lỗ, việc lập trình máy tính thời kỳ đầu","Dù bằng bảng cắm, công tắc hay thẻ đục, lập trình máy tính thời đầu"
+19,lec02,0,94,4.78,appear to be continuous to them. It simplifies everything and offers tremendous flexibility,mà vẫn hiển thị liên tục đối với chương trình. Nó đơn giản hóa mọi thứ và mang lại sự linh hoạt tuyệt vời,"nhưng vẫn hiển thị liên tục, giúp tối giản và linh hoạt tối đa."
+20,lec02,0,109,3.28,"This was done through a terminal, which is a keyboard and screen that connects to a big","Việc này thực hiện qua thiết bị đầu cuối, gồm bàn phím và màn hình kết nối với cỗ máy",Thực hiện qua thiết bị đầu cuối gồm bàn phím và màn hình.
+21,lec03,1,169,0.5,See you then.,Hẹn gặp lại các bạn lúc đó!,Tạm biệt!
+22,lec04,0,76,1.0,Endorship.,Doanh nghiệp?,Doanh nghiệp?
+23,lec01,0,25,4.48,"Punched cards turned out to be a cheap, reliable, and fairly human-readable way to store data.","Thẻ đục lỗ trở thành phương pháp lưu dữ liệu giá rẻ, đáng tin cậy và dễ đọc với con người.","Thẻ đục lỗ giúp lưu dữ liệu giá rẻ, tin cậy và dễ đọc."
+24,lec04,0,49,1.2,are computer science majors,là sinh viên chuyên ngành khoa học máy tính,sinh viên Tin học
+25,lec02,0,73,4.72,"is great, but introduces a quirk. It means that Program A could end up being allocated",rất tuyệt vời nhưng lại phát sinh một rắc rối. Nó khiến Chương trình A có thể nhận,"Rất tuyệt, nhưng rắc rối phát sinh khiến Chương trình A nhận"
+26,lec04,0,180,2.46,"And of course, learning algorithms also doing things","Ngoài ra, các thuật toán học máy còn giúp chúng ta",Thuật toán học máy còn giúp
+27,lec04,0,115,1.14,And other things.,Và nhiều ứng dụng khác nữa.,Nhiều ứng dụng khác.
+28,lec04,0,170,1.04,"I had my car service,","tôi đưa xe đi bảo dưỡng,","Đi bảo dưỡng xe,"
+29,lec03,0,67,3.64,"Also, UDP provides no mechanisms to know if packets are getting through.","Ngoài ra, UDP cũng không kiểm tra xem gói tin có đến nơi hay không.",UDP cũng không kiểm tra gói tin đã đến chưa.
+30,lec02,0,96,3.46,Another upside of allocating each program its own memory is that they're better isolated,Một ưu điểm khác của việc cấp bộ nhớ riêng là các chương trình được cô lập tốt hơn.,Cấp bộ nhớ riêng giúp cô lập chương trình tốt hơn.
+31,lec03,0,106,4.32,"So, basically, TCP can handle out-of-order packet delivery, dropped packets including","Tóm lại, TCP xử lý được các gói tin đến sai thứ tự, bị thất lạc bằng cách","Tóm lại, TCP xử lý gói tin sai thứ tự, thất lạc bằng cách"
+32,lec04,0,64,1.0,ICME.,ICME.,Hội nghị Toán Quốc tế
+33,lec02,1,144,3.96,an infinite loop. This simplicity meant that Unix could be run on cheaper and more diverse,"...một vòng lặp vô tận. Sự đơn giản này giúp Unix chạy được trên phần cứng rẻ và đa dạng hơn,","...vòng lặp vô tận. Đơn giản giúp Unix chạy trên phần cứng rẻ, đa dạng,"
+34,lec04,1,260,2.04,in this classroom will not be posted online.,trong phòng học này sẽ không xuất hiện trực tuyến.,Lớp này không phát trực tuyến.
+35,lec01,0,10,3.2,"a computer's memory. It's not magic, it's computer science!","bộ nhớ của máy. Đó không phải phép thuật, đó là khoa học máy tính!","Bộ nhớ là khoa học máy tính, không phải phép thuật!"
+36,lec04,1,216,0.94,"to write, you know,","để viết,",Viết
+37,lec04,1,253,1.6,posting the videos on the web.,bằng cách đăng video lên mạng.,Đăng video.
+38,lec02,0,33,4.18,"with early peripherals was very low level, requiring programmers to know intimate hardware","với thiết bị ngoại vi thời kỳ đầu ở mức rất thấp, đòi hỏi lập trình viên hiểu sâu chi tiết phần cứng",Thiết bị ngoại vi thời kỳ đầu đòi hỏi lập trình viên hiểu sâu phần cứng.
+39,lec04,0,167,1.82,"you like to watch, and can therefore",xem phim của bạn để từ đó,xem phim để
+40,lec02,1,182,3.78,and it was made with the help of all these nice people and our wonderful graphics team,...với sự hỗ trợ của tất cả những người bạn tuyệt vời này cùng đội ngũ đồ họa xuất sắc...,...nhờ các bạn tuyệt vời cùng đội ngũ đồ họa xuất sắc...
+41,lec02,0,30,3.86,not the same printer. This was a huge pain for programmers. Not only did they have to,nhưng lại khác máy in. Điều này gây phiền phức rất lớn cho các lập trình viên. Họ không chỉ phải,"Khác máy in, nó gây phiền phức lớn cho lập trình viên khi không chỉ phải"
+42,lec02,0,92,4.8,"at address 1000, that gets mapped behind the scenes to physical memory address 2000. This","là 1.000, hệ thống sẽ âm thầm ánh xạ nó tới địa chỉ vật lý 2.000. Cơ chế","là 1.000, hệ thống sẽ ánh xạ tới địa chỉ vật lý 2.000."
+43,lec04,1,218,1.08,And it turns out that,"Thực ra,","Thực ra,"
+44,lec02,1,180,1.18,Infinite Series.,...Infinite Series.,Chuỗi vô hạn.
+45,lec03,0,27,3.5,IP address 104.24.109.186.,có địa chỉ IP là 104.24.109.186.,IP: 104.24.109.186.
+46,lec01,0,123,1.46,See you next week.,Hẹn gặp lại các bạn tuần sau!,Hẹn tuần sau!
+47,lec03,0,12,4.22,up of gigantic routers with super high bandwidth connections running between them. To request,được tạo bởi các bộ định tuyến khổng lồ có kết nối băng thông siêu cao. Để yêu cầu,"Tạo từ các bộ định tuyến lớn, băng thông cao."
+48,lec04,1,283,0.46,"Okay, cool.","Được rồi, tuyệt.",Tuyệt.
+49,lec02,1,184,2.64,"Thanks for the Random Access Memories, I'll see you next time.","...Cảm ơn vì những Ký ức Truy cập Ngẫu nhiên, hẹn gặp lại các bạn lần sau!","Cảm ơn RAM, hẹn gặp lại!"
+50,lec04,0,77,1.0,Pardon?,Dạ?,Dạ?

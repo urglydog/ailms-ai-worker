@@ -1,0 +1,60 @@
+{
+  "run_id": "full_r1",
+  "started_at": "2026-11-10T17:20:18",
+  "variants": [
+    "V1",
+    "V2",
+    "V3",
+    "V4"
+  ],
+  "max_chunks": null,
+  "videos": [
+    {
+      "id": "lec01",
+      "source": "/app/NCKH/experiments/media/lecture_01.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-HoaiMyNeural",
+      "category": "CNTT",
+      "note": "audio bài giảng tiếng Anh"
+    },
+    {
+      "id": "lec02",
+      "source": "/app/NCKH/experiments/media/lecture_02.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-NamMinhNeural",
+      "category": "CNTT",
+      "note": "audio bài giảng tiếng Anh"
+    },
+    {
+      "id": "lec03",
+      "source": "/app/NCKH/experiments/media/lecture_03.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-HoaiMyNeural",
+      "category": "KyNangMem",
+      "note": "audio bài giảng tiếng Anh"
+    },
+    {
+      "id": "lec04",
+      "source": "/app/NCKH/experiments/media/lecture_04.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-NamMinhNeural",
+      "category": "KyNangMem",
+      "note": "audio bài giảng tiếng Anh"
+    }
+  ],
+  "params": {
+    "chunk_minutes": 10,
+    "r_min": 1.0,
+    "r_max": 1.3,
+    "max_tts_rate": "+30%",
+    "max_resummarize_attempts": 2,
+    "min_speech_ratio": 0.1,
+    "asr_model": "whisper-large-v3-turbo",
+    "llm_model": "gemini-3.5-flash",
+    "llm_fallback_models": ""
+  },
+  "machine": {
+    "python": "3.11.18",
+    "platform": "linux"
+  }
+}

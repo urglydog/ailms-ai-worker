@@ -1,0 +1,209 @@
+{
+ "run_id": "full_r1",
+ "videos": {
+  "lec01": {
+   "V2": {
+    "variant": "V2",
+    "original_duration_s": 566.0,
+    "final_duration_s": 695.14,
+    "diff_s": 129.14,
+    "diff_pct": 22.82,
+    "per_chunk": [
+     {
+      "chunk": 0,
+      "expected_s": 566.0,
+      "actual_s": 695.14,
+      "diff_s": 129.14
+     }
+    ],
+    "onset_drift_mean_s": 66.72,
+    "onset_drift_p95_s": 118.66,
+    "onset_drift_max_s": 127.74,
+    "pct_sentences_drift_gt_1s": 98.5,
+    "pct_sentences_drift_gt_2s": 96.9
+   },
+   "V4": {
+    "variant": "V4",
+    "original_duration_s": 566.0,
+    "final_duration_s": 575.41,
+    "diff_s": 9.41,
+    "diff_pct": 1.66,
+    "per_chunk": [
+     {
+      "chunk": 0,
+      "expected_s": 566.0,
+      "actual_s": 575.41,
+      "diff_s": 9.41
+     }
+    ],
+    "onset_drift_mean_s": 3.11,
+    "onset_drift_p95_s": 6.81,
+    "onset_drift_max_s": 8.01,
+    "pct_sentences_drift_gt_1s": 70.2,
+    "pct_sentences_drift_gt_2s": 61.1
+   }
+  },
+  "lec02": {
+   "V2": {
+    "variant": "V2",
+    "original_duration_s": 815.1,
+    "final_duration_s": 1093.03,
+    "diff_s": 277.93,
+    "diff_pct": 34.1,
+    "per_chunk": [
+     {
+      "chunk": 0,
+      "expected_s": 600.0,
+      "actual_s": 779.28,
+      "diff_s": 179.28
+     },
+     {
+      "chunk": 1,
+      "expected_s": 215.0,
+      "actual_s": 313.74,
+      "diff_s": 98.74
+     }
+    ],
+    "onset_drift_mean_s": 130.81,
+    "onset_drift_p95_s": 261.42,
+    "onset_drift_max_s": 277.12,
+    "pct_sentences_drift_gt_1s": 98.4,
+    "pct_sentences_drift_gt_2s": 98.4
+   },
+   "V4": {
+    "variant": "V4",
+    "original_duration_s": 815.1,
+    "final_duration_s": 833.39,
+    "diff_s": 18.29,
+    "diff_pct": 2.24,
+    "per_chunk": [
+     {
+      "chunk": 0,
+      "expected_s": 600.0,
+      "actual_s": 611.98,
+      "diff_s": 11.98
+     },
+     {
+      "chunk": 1,
+      "expected_s": 215.0,
+      "actual_s": 221.41,
+      "diff_s": 6.41
+     }
+    ],
+    "onset_drift_mean_s": 8.08,
+    "onset_drift_p95_s": 15.79,
+    "onset_drift_max_s": 17.5,
+    "pct_sentences_drift_gt_1s": 98.4,
+    "pct_sentences_drift_gt_2s": 93.5
+   }
+  },
+  "lec03": {
+   "V2": {
+    "variant": "V2",
+    "original_duration_s": 718.0,
+    "final_duration_s": 898.28,
+    "diff_s": 180.28,
+    "diff_pct": 25.11,
+    "per_chunk": [
+     {
+      "chunk": 0,
+      "expected_s": 600.0,
+      "actual_s": 729.45,
+      "diff_s": 129.45
+     },
+     {
+      "chunk": 1,
+      "expected_s": 118.0,
+      "actual_s": 168.83,
+      "diff_s": 50.83
+     }
+    ],
+    "onset_drift_mean_s": 91.53,
+    "onset_drift_p95_s": 169.32,
+    "onset_drift_max_s": 186.11,
+    "pct_sentences_drift_gt_1s": 98.9,
+    "pct_sentences_drift_gt_2s": 97.8
+   },
+   "V4": {
+    "variant": "V4",
+    "original_duration_s": 718.0,
+    "final_duration_s": 761.5,
+    "diff_s": 43.5,
+    "diff_pct": 6.06,
+    "per_chunk": [
+     {
+      "chunk": 0,
+      "expected_s": 600.0,
+      "actual_s": 612.69,
+      "diff_s": 12.69
+     },
+     {
+      "chunk": 1,
+      "expected_s": 118.0,
+      "actual_s": 148.81,
+      "diff_s": 30.81
+     }
+    ],
+    "onset_drift_mean_s": 7.76,
+    "onset_drift_p95_s": 18.01,
+    "onset_drift_max_s": 22.09,
+    "pct_sentences_drift_gt_1s": 89.5,
+    "pct_sentences_drift_gt_2s": 85.1
+   }
+  },
+  "lec04": {
+   "V2": {
+    "variant": "V2",
+    "original_duration_s": 900.0,
+    "final_duration_s": 1063.54,
+    "diff_s": 163.54,
+    "diff_pct": 18.17,
+    "per_chunk": [
+     {
+      "chunk": 0,
+      "expected_s": 600.0,
+      "actual_s": 688.66,
+      "diff_s": 88.66
+     },
+     {
+      "chunk": 1,
+      "expected_s": 300.0,
+      "actual_s": 374.88,
+      "diff_s": 74.88
+     }
+    ],
+    "onset_drift_mean_s": 72.11,
+    "onset_drift_p95_s": 142.76,
+    "onset_drift_max_s": 164.04,
+    "pct_sentences_drift_gt_1s": 92.4,
+    "pct_sentences_drift_gt_2s": 90.7
+   },
+   "V4": {
+    "variant": "V4",
+    "original_duration_s": 900.0,
+    "final_duration_s": 995.89,
+    "diff_s": 95.89,
+    "diff_pct": 10.65,
+    "per_chunk": [
+     {
+      "chunk": 0,
+      "expected_s": 600.0,
+      "actual_s": 654.87,
+      "diff_s": 54.87
+     },
+     {
+      "chunk": 1,
+      "expected_s": 300.0,
+      "actual_s": 341.01,
+      "diff_s": 41.01
+     }
+    ],
+    "onset_drift_mean_s": 43.07,
+    "onset_drift_p95_s": 82.17,
+    "onset_drift_max_s": 95.92,
+    "pct_sentences_drift_gt_1s": 99.0,
+    "pct_sentences_drift_gt_2s": 94.1
+   }
+  }
+ }
+}
