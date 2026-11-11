@@ -1,5 +1,38 @@
 # REPORT – Thiện – 11/11/2026 — Tình hình thực nghiệm và các câu hỏi gửi Sang
 
+## ✅ TRẢ LỜI CỦA SANG (11/11/2026) — Thiện đọc phần này trước
+
+Sang đã đọc report; số liệu §4.1 và §4.4 đã được tính lại độc lập từ `full_r1/segments.csv` và **khớp**.
+E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
+
+| Câu | Quyết định |
+|---|---|
+| **1a** | **A — đã sửa code.** Câu được xếp theo mốc tuyệt đối `onset_i = max(start_i, onset_{i-1} + dur_{i-1})` (không chồng câu, trễ không cộng dồn). Cuối đoạn: đệm lặng nếu ngắn; nếu dài hơn khung thì tăng tốc **cả đoạn** bằng FFmpeg `atempo` tối đa ×1,15, phần còn dư mới cắt → mỗi đoạn **đúng** `L` = 600 s, không lan sang đoạn sau. Code: `app/audio_utils.py` (`plan_onsets`, `place_on_timeline`, `MAX_CHUNK_TEMPO`), `app/services/dubbing_service.py`. |
+| **1b** | Chưa đổi pipeline. Tạm theo **(iii)**: ghi câu rất ngắn là hạn chế; sửa 1a đã cho câu ngắn mượn khoảng lặng phía sau. Gộp mảnh ngắn (i) để làm sau (đổi đầu vào dịch → phải chạy lại V4). |
+| **1c** | **Có — đã sửa.** Mốc ASR được kẹp trong `[0, độ dài thật của đoạn]`, bỏ câu có `start` ≥ độ dài audio hoặc dài < 0,05 s (`clamp_stt_segments`). Transcript dùng lại từ DB cũng được kẹp `end` theo biên đoạn. |
+| **1d** | (i) **Có — đã sửa:** `gemini.py` nhận diện HTTP 402 / "prepayment credits are depleted", log `HET CREDIT (402)`, khoá slot 1 giờ; lỗi 5xx khác giờ cũng log mã lỗi. (ii) **Không** đổi `thinkingBudget` trong đợt này. |
+| **1e** | Sang xác nhận sau. Thiện ghi commit mới (sau khi pull bản sửa) vào NOTES của đợt đo lại. |
+| **Câu hỏi 2** | Đồng ý bảng T1–T10. Sang đã sửa `main.tex`: T1 (bỏ "luôn khớp… vẫn tự nhiên"), T2 (viết lại mục Ghép âm thanh theo cơ chế mới, công thức `eq:onset`), T7 (đổi thành "4 bài CNTT, 50 phút, 787 câu"); thêm độ đo **trễ theo trục thời gian** (P1). T4, T5 vẫn cần L4. T8, T9 cần S1, S3. |
+| **P1, P2, P6, P7, P8** | OK. Commit chốt để đo = commit chứa bản sửa ngày 11/11 trên nhánh `NCKH`. |
+| **P3** | Xem 1b. **P4: không làm** (sửa bài thành lĩnh vực CNTT). **P5:** chờ Sang quyết định (Q4/Q9). |
+| **Q5** | Sửa mô tả bài thành **CNTT**; không thêm video kỹ năng mềm. |
+| **Q6** | Chưa cần xác minh giấy phép lúc này. |
+| **Q7** | **Sẽ nạp credit.** ⚠️ Thiện đã chạy đo trong container `lms_ai_worker` của hệ thống thật và dùng hết credit của key dùng chung → Sang kiểm tra lại tính năng AI thật. |
+| **Q4, Q9** | **Chạy TẤT CẢ trên server** (cả chất lượng lẫn thời gian) để số liệu thống nhất. Hệ thống mới ở giai đoạn test, chưa có người dùng thật nên được phép. **Cho phép S4**: lồng tiếng thật các bài thử nghiệm qua web (khoá học tạm) để lấy luôn số liệu job thật; ưu tiên dùng **chính các job này** để đo cả chất lượng (từ `transcript_segments`: `speech_rate`, `was_summarized`) và thời gian (`ai_jobs`, `audio_chunks`). Script `run_experiment.py` (V1–V4) cũng chạy trên server. Nhớ deploy bản sửa 11/11 trước khi đo và ghi commit vào NOTES. |
+| **Q8** | Job test/lỗi cần loại do **Thiện tự xác định** dựa trên phần đo của mình; ghi danh sách job bị loại và lý do vào report này. **Không xoá** dữ liệu/nội dung cũ của Thiện, chỉ ghi bổ sung. |
+| **Q7 (kiểm tra)** | **Thiện kiểm tra** sau khi Sang nạp credit: lồng tiếng, AI Tutor, sinh học liệu, Course Discovery có chạy lại bình thường không; xem log `lms_ai_worker`/`lms_ai_api` từ 10/11 20:52 UTC có lỗi `HET CREDIT (402)` hoặc job FAILED không. Ghi kết quả vào report. |
+| **Q10** | Sang tự merge `NCKH` → `develop` sau khi push. |
+
+### Việc Thiện làm tiếp (không tốn API)
+1. Pull nhánh `NCKH` (đã có bản sửa code + test `tests/test_timeline.py`; toàn bộ test ai-worker: 57 passed).
+2. **Sửa `check_full_length.py`** để ghép bằng `audio_utils.place_on_timeline` (cách mới) **bên cạnh** cách cũ, chạy lại trên
+   `full_r1` (file câu đã lưu, `--keep-audio`) cho V2 và V4. Báo cáo cả hai: tổng thời lượng so với gốc, trễ mốc câu
+   TB/p95/max, % câu trễ > 1 s và > 2 s, số đoạn phải tăng tốc và hệ số `tempo_applied`, số đoạn bị cắt phần dư.
+   Lưu ý: kết quả mới cần **kẹp mốc ASR (1c)** khi dựng lại mốc từ `asr_cache.json` cho đúng với code.
+3. Chấm L4 (`fidelity_sample.csv`) cùng Sang.
+4. Sau khi Sang nạp credit và bản sửa đã deploy: kiểm tra Q7, rồi chạy đo trên server theo Q4/Q9 (S4 + V1–V4 + S1–S3).
+   Ghi job bị loại (Q8) vào report.
+
 > **Đây là file report duy nhất.** Đã gộp bản đo đạc 10/11 và bản báo cáo tình hình 11/11 vào đây.
 > **Cách dùng:** Sang đọc §0 → §3 (quyết định), tra §4 khi cần bằng chứng. Trả lời bằng cách **sửa trực tiếp các ô "Trả lời của Sang"**
 > (hoặc nhắn Thiện). Thiện sẽ quyết định hướng đi tiếp dựa trên các câu trả lời đó.
