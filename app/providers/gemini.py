@@ -251,6 +251,14 @@ def _is_key_error(status_code: int, error_status: str, error_message: str) -> bo
     )
 
 
+def _is_credit_exhausted(resp: httpx.Response) -> bool:
+    """HTTP 402 / thông báo "prepayment credits are depleted" — hết credit trả trước của dự án."""
+    if resp.status_code == 402:
+        return True
+    _status, message = _parse_gemini_error_body(resp)
+    return "credits are depleted" in message.lower() or "prepayment" in message.lower()
+
+
 async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
     client = get_client()
     pool = get_key_pool()
@@ -303,7 +311,15 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
                 )
                 raise ProviderInvalidResponse(f"Gemini tu choi request: {error_message or resp.text[:200]}")
 
+            if _is_credit_exhausted(resp):
+                # 11/11/2026: hết credit trả trước (402) trước đây rơi vào nhánh 5xx, log chỉ báo
+                # "network error"/"cooldown" gây hiểu nhầm. Khoá slot 1h, log rõ để Admin nạp tiền.
+                logger.error(f"Gemini HET CREDIT (402) {key[:8]}.../{model}: {resp.text[:200]}")
+                pool.mark_cool_down(key, model, 3600, reason="402-credit")
+                continue
+
             # 5xx hoặc lỗi khác
+            logger.warning(f"Gemini loi {resp.status_code} ({key[:8]}.../{model}): {resp.text[:200]}")
             pool.mark_failure(key, model)
             continue
 
@@ -412,6 +428,10 @@ async def embed_content(text: str) -> list[float]:
                 raise ProviderInvalidResponse(
                     f"Gemini embedContent tu choi request: {error_message or resp.text[:200]}"
                 )
+            if _is_credit_exhausted(resp):
+                logger.error(f"Gemini embedContent HET CREDIT (402): {resp.text[:200]}")
+                pool.mark_cool_down(key, slot["model"], 3600, reason="402-credit")
+                continue
             pool.mark_failure(key, slot["model"])
         except httpx.RequestError as exc:
             logger.error(f"Gemini embedContent network error: {exc}")
