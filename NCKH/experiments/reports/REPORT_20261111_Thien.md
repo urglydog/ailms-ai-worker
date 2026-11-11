@@ -22,6 +22,29 @@ E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
 | **Q8** | Job test/lỗi cần loại do **Thiện tự xác định** dựa trên phần đo của mình; ghi danh sách job bị loại và lý do vào report này. **Không xoá** dữ liệu/nội dung cũ của Thiện, chỉ ghi bổ sung. |
 | **Q7 (kiểm tra)** | **Thiện kiểm tra** sau khi Sang nạp credit: lồng tiếng, AI Tutor, sinh học liệu, Course Discovery có chạy lại bình thường không; xem log `lms_ai_worker`/`lms_ai_api` từ 10/11 20:52 UTC có lỗi `HET CREDIT (402)` hoặc job FAILED không. Ghi kết quả vào report. |
 | **Q10** | Sang tự merge `NCKH` → `develop` sau khi push. |
+| **MOS (L5, T4)** | **CÓ LÀM** (chốt 11/11). Làm trên audio của **bản code đã sửa** (sau deploy), không dùng audio `full_r1` cũ. Chi tiết ở mục "Kế hoạch MOS" ngay dưới. |
+
+### Kế hoạch MOS (chốt 11/11)
+- **Mục tiêu:** kiểm chứng luận điểm T4 — lồng tiếng sau điều chỉnh tốc độ vẫn **tự nhiên, dễ hiểu và khớp hình**.
+- **So sánh:** V2 (hai pha, tốc độ mặc định, không điều chỉnh) vs V4 (đề xuất). Có thể thêm 1 clip **gốc tiếng Anh** mỗi bài làm mốc tham chiếu (không chấm "dễ hiểu").
+- **Clip:** 20 đoạn, mỗi đoạn **15–25 giây** (nhiều câu liên tiếp, đủ để cảm nhận độ khớp; không dùng 1 câu lẻ),
+  phân tầng: mỗi bài 5 đoạn, ưu tiên đoạn có câu ở nhánh speedup / summarize / capped / câu ngắn < 2 s.
+  Mỗi đoạn 2 phiên bản (V2, V4) → **40 clip**. Seed chọn đoạn cố định (vd 42), ghi vào NOTES.
+- **Có hình:** tải video gốc YouTube (chỉ đoạn cần, `yt-dlp --download-sections`), ghép audio lồng tiếng đã **ghép theo
+  timeline mới** (`audio_utils.place_on_timeline`) đúng khoảng thời gian: 
+  `ffmpeg -ss <start> -to <end> -i video.mp4 -i dub.mp3 -map 0:v -map 1:a -c:v libx264 -shortest clip.mp4`.
+  Video chỉ dùng nội bộ để chấm, **không đăng công khai**.
+- **Người nghe:** **10–15 người** (sinh viên, nghe được tiếng Việt), không thuộc nhóm tác giả. Ghi số người, không thu thập
+  tên/email (chỉ mã P01, P02…).
+- **Phiếu:** Google Form, mỗi clip chấm thang **1–5**: (1) Độ tự nhiên của giọng đọc; (2) Độ dễ hiểu; (3) Độ khớp giữa
+  tiếng và hình. Thứ tự clip **xáo trộn** cho mỗi người (hoặc 2 phiếu thứ tự khác nhau), **không** ghi tên phương án.
+  Có 2 clip luyện tập ở đầu (không tính điểm). Mỗi người ~15 phút.
+- **Phân tích:** MOS trung bình ± KTC 95% từng tiêu chí cho V2 và V4; kiểm định **Wilcoxon theo cặp** (theo đoạn, trung
+  bình điểm các người nghe) — báo p-value; số người bị loại (nếu chấm toàn một mức / bỏ dở) và lý do.
+- **File lưu:** `results/mos/clips_key.csv` (mã clip → đoạn, phương án; KHÔNG gửi người nghe),
+  `results/mos/mos_responses.csv` (đã ẩn danh), `results/mos/NOTES.md` (seed, cách chọn đoạn, link form không công khai),
+  script chọn đoạn + ghép clip + phân tích commit kèm. **Không commit video/audio.**
+- **Thời hạn:** gửi form chậm nhất **13/11**, chốt kết quả **14/11** → ghi vào report (mục 4.5) để Sang kiểm tra.
 
 ### Việc Thiện làm tiếp (không tốn API)
 1. Pull nhánh `NCKH` (đã có bản sửa code + test `tests/test_timeline.py`; toàn bộ test ai-worker: 57 passed).
