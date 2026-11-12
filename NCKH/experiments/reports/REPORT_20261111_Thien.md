@@ -62,7 +62,12 @@ E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
 1. **Kiểm tra bản sửa của Sang trên code và dữ liệu `full_r1`.** Đọc `audio_utils.py`, `dubbing_service.py`, `gemini.py`: đúng như mô tả. Test chức năng riêng
    (`plan_onsets`, `clamp_stt_segments`, `place_on_timeline` trong container): **đúng**, đoạn luôn đúng độ dài, tăng tốc chặn ở ×1,15. Container **không cài `pytest`**
    nên Thiện chưa chạy được bộ test của Sang (57 passed là số của Sang).
-2. **Chưa deploy:** file mới đã có trên đĩa từ 12/11 15:23, nhưng `lms_ai_worker` khởi động từ 09/11 03:28 UTC nên tiến trình vẫn chạy **code cũ** tới khi restart.
+2. **Đã deploy (12/11 16:02 UTC):** file mới có trên đĩa từ 15:23 nhưng `lms_ai_worker` chạy từ 09/11 nên đang dùng code cũ; Thiện đã **restart `lms_ai_worker`** (worker rảnh, không task nào đang chạy;
+   không đụng DB/volume/BE/FE; `lms_ai_api` chạy `--reload` nên đã tự nạp code mới). Kiểm tra sau restart: worker trả lời ping, `place_on_timeline`/`clamp_stt_segments` có mặt,
+   `min_resummarize_frame_sec = 2.0`, `MAX_CHUNK_TEMPO = 1.15`, commit `e5a8cb7` (chứa bản sửa 11/11 của Sang); RAM worker ~308 MB, CPU ~0%, `RestartCount=0`, không OOM.
+   **Lưu ý vận hành:** 3 container ai-worker dùng `json-file` **không giới hạn dung lượng log** (hiện nhỏ: worker ~51 KB, api ~20 KB). Nên đặt `max-size` trong file compose
+   của `/var/lms/be` (Thiện chưa tự đổi vì là cấu hình hệ thống). Ngoài ra `lms_ai_api` (`--reload`) tự khởi động lại mỗi khi có file Python đổi trong `/var/lms/ai-worker`, kể cả `NCKH/experiments/*.py`
+   (đã thấy ~26 lần) — nên loại thư mục `NCKH/` khỏi danh sách theo dõi.
 3. **Dự đoán từ dữ liệu `full_r1`** (xếp mốc tuyệt đối + quy tắc câu ngắn, pad nhúng sẵn trong file câu như code thật): trễ tối đa V4 ≈ **8,5 / 5,5 / 1,5 / 16,1 s**
    (đo hiện tại 8,0 / 17,5 / 22,1 / 95,9 s); phần đuôi bị cắt ≈ 0; **tăng tốc cả đoạn 1,00–1,08**. Trễ trung bình có chỗ **âm** (`lec03` ≈ −1,3 đến −1,6 s: tiếng *sớm* hơn hình)
    vì tăng tốc nén cả đoạn. Tổng thời gian tràn theo câu của V4 tăng 147,5 s → ~176,9 s (+20%, vì câu < 2 s không còn được rút gọn) nhưng lời gọi rút gọn giảm
@@ -72,7 +77,21 @@ E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
    `check_full_length.py` (ghép cách cũ/mới, trễ có dấu và tuyệt đối, tempo, cắt đuôi) · `sample_fidelity.py --min-frame 2.0` + `score_fidelity.py` (L4; **mẫu mới
    `results/full_r1/fidelity_sample_v2.csv` gồm 50 câu khung ≥ 2 s, chọn từ 251 câu — Sang và Thiện có thể chấm ngay**) · `mos_select_clips.py`, `mos_make_clips.py`,
    `mos_analyze.py`, `mos_form_template.md` (MOS) · `server_job_stats_ext.sql`, `analyze_server.py`, `parse_worker_logs.py` (S1–S3, chỉ đọc, không lấy email/tên/URL).
-   Kết quả `check_full_length` mới cho cả 4 bài sẽ được bổ sung sau khi chạy xong (đang chạy).
+6. **Kết quả ghép audio thật, cách mới so với cách cũ** (`results/full_r1/check_full_length.md`; audio của `full_r1` — V4 là hành vi cũ, câu ngắn vẫn bị rút gọn):
+
+   | Video | V4 cũ: chênh (s) / trễ max (s) | **V4 mới: chênh (s) / muộn max / sớm max (s)** | tempo cả đoạn | % \|trễ\| > 2 s (cũ → mới) | V2 mới: cắt đuôi (s) |
+   |---|---|---|---|---|---|
+   | lec01 | +9,41 / 8,01 | **0,0** / 7,92 / 0,06 | 1,000 | 61,1 → 60,3 | 18,3 |
+   | lec02 | +18,29 / 17,50 | **−0,1** / 5,52 / 4,09 | 1,009 | 93,5 → 29,7 | 114,6 |
+   | lec03 | +43,50 / 22,09 | **0,0** / 1,19 / 3,52 | 1,042 | 85,1 → 32,6 | 51,4 |
+   | lec04 | +95,89 / 95,92 | **0,0** / 15,37 / 3,54 | 1,013 | 94,1 → 67,2 | 0,03 |
+
+   - Cách mới: **tổng thời lượng đúng bằng bản gốc ở cả 4 bài**; trễ muộn tối đa của V4 giảm mạnh (lec04: 95,9 → 15,4 s; lec03: 22,1 → 1,2 s); phần đuôi bị cắt của V4 ≈ 0; tempo cả đoạn thực tế chỉ
+     1,00–1,04 (dự đoán trước đó 1,08 là quá cao). Còn **~60–77% câu lệch > 1 s** ở `lec01`, `lec04` (độ lệch nhỏ nhưng dai dẳng, chủ yếu do câu tràn ở đầu bài/đoạn dày lời) — cần báo trung thực trong bài.
+   - Có chỗ tiếng **sớm** hơn hình (`lec02`: sớm tối đa 4,1 s, `lec03`: 3,5 s) do tăng tốc cả đoạn nén thời gian → chỉ số trong bài nên báo cả trễ có dấu và \|trễ\|.
+   - **V2 (không điều chỉnh) dưới cách ghép mới bị cắt đuôi rất lớn** (lec02 mất 114,6 s ≈ 14% nội dung vì dư quá ×1,15): V2 dùng trong MOS sẽ nghe trễ nặng và có thể mất đoạn cuối; đây đúng là hành vi
+     "không điều chỉnh" nhưng Sang cần biết khi mô tả đường cơ sở V2 trong bài và khi chọn đoạn MOS (nên chọn đoạn ở phần đầu mỗi chunk để V2 chưa bị cắt).
+   - Cách cũ khớp bảng §4.2 (V4: +9,41 / +18,29 / +43,50 / +95,89 s), xác nhận công cụ đo ổn định.
 
 **Việc cần Sang làm:** (a) trả lời 5 câu hỏi dưới đây, (b) nạp credit Gemini, (c) chấm L4 với Thiện (`fidelity_sample_v2.csv`, điểm 2/1/0 vào `fidelity_scores_v2.csv`, mỗi người một cột).
 
@@ -83,7 +102,7 @@ E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
 | N1 | Nhánh đệm lặng vẫn đệm vào *trong file câu* (`pad_silence(out_path, …)`), nên các câu đó không "nhả" được độ trễ đã tích. Có muốn bỏ đệm trong file câu (kèm tăng tốc cả đoạn ít hơn) không, hay giữ nguyên? | |
 | N2 | Tăng tốc cả đoạn tới ×1,08 (tối đa cho phép ×1,15) có chấp nhận được về độ tự nhiên không? (MOS sẽ đo; nếu không, hạ `MAX_CHUNK_TEMPO`?) | |
 | N3 | Bảng Δ của V4 sẽ xấu đi nhẹ (+20% thời gian tràn theo câu) nhưng trễ theo trục thời gian tốt hơn rõ. Bài trình bày cả hai chỉ số như vậy được không? | |
-| N4 | Cho phép Thiện **restart `lms_ai_worker`** (và `lms_ai_beat` nếu cần) để deploy bản sửa — thời điểm nào, và có job đang chạy nào cần chờ không? | |
+| N4 | ~~Cho phép restart `lms_ai_worker`~~ **Đã xong (12/11 16:02 UTC, Thiện tự chốt)** — xem mục 2 ở trên. Sang chỉ cần xem có muốn thêm giới hạn log trong compose và loại `NCKH/` khỏi `--reload` của `lms_ai_api` không. | |
 | N5 | Nếu credit chưa kịp nạp trước 13/11: có chấp nhận dựng audio V2/V4 cho MOS bằng cách **tái dùng văn bản đã lưu** trong `full_r1/segments.csv` + gọi lại **Azure TTS** (không dùng Gemini), ghép bằng `place_on_timeline` không? (Không phải một lần chạy pipeline mới hoàn toàn; văn bản từ lần chạy 10/11.) | |
 
 **Thiện sẽ làm ngay khi Sang trả lời và có credit:** kiểm tra credit (1 lần gọi 1 từ) → restart + ghi commit vào NOTES → kiểm tra Q7 → chạy `run_experiment.py` V1–V4 trên server (`post_fix_r1`, ước ~36K₫) →
