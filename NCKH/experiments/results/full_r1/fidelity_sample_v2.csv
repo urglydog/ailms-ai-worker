@@ -1,0 +1,51 @@
+﻿id,video_id,chunk_index,seq,t_orig,src_text,tgt_v2,tgt_v4
+1,lec03,0,22,2.98,We start at 192.168.0.1.,"Điểm bắt đầu là 192.168.0.1,","Từ 192.168.0.1,"
+2,lec01,0,67,3.12,I am thinking about something much more important than BOMs.,"""Tôi đang nghĩ về một thứ quan trọng hơn nhiều so với bom nguyên tử.""",Tôi nghĩ đến điều quan trọng hơn bom nguyên tử.
+3,lec01,0,16,3.2,"But this was labor intensive, which made pattern fabrics expensive.","Việc này rất tốn công, khiến vải hoa văn trở nên đắt đỏ.",Tốn công khiến vải hoa văn đắt đỏ.
+4,lec03,0,96,2.46,Or perhaps it was the acknowledgement that was lost.,hoặc bản thân phản hồi ACK bị thất lạc.,hoặc ACK bị thất lạc.
+5,lec02,0,30,3.86,not the same printer. This was a huge pain for programmers. Not only did they have to,nhưng lại khác máy in. Điều này gây phiền phức rất lớn cho các lập trình viên. Họ không chỉ phải,"Khác máy in, nó gây phiền phức lớn cho lập trình viên khi không chỉ phải"
+6,lec02,0,22,4.12,automatically and near instantly start the next. There was no downtime while someone,tự động chuyển sang chương trình tiếp theo ngay lập tức. Không còn thời gian chết trong lúc ai đó,"Tự động chuyển sang chương trình tiếp theo, không còn thời gian chết."
+7,lec02,0,14,2.04,running the actual programs themselves.,cả thời gian thực sự chạy chương trình đó.,thời gian chạy chương trình.
+8,lec01,0,86,4.32,The largest program ever punched into punch cards was the US Air Force's SAGE Air Defense,"Chương trình lớn nhất từng dùng thẻ đục lỗ là hệ thống phòng không SAGE của Không quân Mỹ,","Chương trình thẻ đục lỗ lớn nhất là hệ thống phòng không SAGE của Mỹ,"
+9,lec03,0,95,2.04,acknowledgement is just really delayed.,"phản hồi ACK bị chậm trễ,","ACK bị trễ,"
+10,lec01,0,58,2.08,"As costs fell, memory size grew.","Chi phí giảm xuống, còn dung lượng bộ nhớ tăng lên.","Giảm chi phí, tăng dung lượng."
+11,lec03,0,41,3.88,that's stored in front of the data payload. This means that a packet can show up at a,nằm trước phần tải dữ liệu (payload). Nghĩa là khi gói tin đến,Nằm trước payload. Khi gói tin đến
+12,lec04,1,220,2.6,"So most undergraduate statistics class,","Vì vậy, hầu hết các lớp thống kê ở đại học,","Vì vậy, hầu hết lớp thống kê đại học,"
+13,lec04,0,102,2.3,"And in particular, it turns out that there are many programs,",Thực tế cho thấy có rất nhiều ứng dụng,Rất nhiều ứng dụng thực tế
+14,lec02,1,167,5.32,"in Photoshop, play music in Spotify and sync Dropbox all at the same time. This wouldn't","...bằng Photoshop, nghe nhạc trên Spotify và đồng bộ Dropbox cùng lúc. Điều này sẽ không...","...dùng Photoshop, nghe Spotify và đồng bộ Dropbox cùng lúc. Điều này không..."
+15,lec01,0,46,2.88,But plugboards were fiendishly complicated to program.,"Dù vậy, lập trình bằng bảng cắm dây vẫn cực kỳ phức tạp.","Dù vậy, lập trình bảng cắm rất phức tạp."
+16,lec02,1,182,3.78,and it was made with the help of all these nice people and our wonderful graphics team,...với sự hỗ trợ của tất cả những người bạn tuyệt vời này cùng đội ngũ đồ họa xuất sắc...,...nhờ các bạn tuyệt vời cùng đội ngũ đồ họa xuất sắc...
+17,lec02,0,124,4.22,"Features like this meant Multics was really complicated for its time, using around 1 megabit","Những tính năng đó khiến Multics cực kỳ phức tạp lúc bấy giờ, chiếm khoảng 1 megabit","Điều đó khiến Multics cực kỳ phức tạp, chiếm khoảng 1 megabit."
+18,lec01,0,18,2.32,which he first demonstrated in 1801.,ra mắt lần đầu vào năm 1801.,Ra mắt năm 1801.
+19,lec01,0,17,4.0,"In response, Joseph Marie Jacquard developed a programmable textile loom,","Để giải quyết, Joseph Marie Jacquard đã chế tạo ra một chiếc máy dệt có thể lập trình,","Để giải quyết, Jacquard đã chế tạo máy dệt lập trình được,"
+20,lec01,0,48,3.04,"accounting machine, which were popular in the 1940s.",loại máy rất phổ biến ở những năm 1940.,Máy rất phổ biến những năm 1940.
+21,lec02,0,10,2.34,"often took hours, days or even weeks.","thường mất nhiều giờ, nhiều ngày, thậm chí nhiều tuần.",thường mất từ vài giờ đến vài tuần.
+22,lec02,0,18,4.2,"is turned on, and all subsequent programs are launched by the OS. They got their start","được bật lên, và mọi chương trình sau đó đều do OS khởi chạy. Hệ điều hành bắt đầu xuất hiện","Sau khi bật lên, OS xuất hiện và khởi chạy mọi chương trình."
+23,lec02,1,152,2.52,so their operating systems had to be equally simple.,...nên hệ điều hành của chúng cũng phải đơn giản tương tự.,Nên hệ điều hành cũng phải đơn giản.
+24,lec03,0,6,3.0,which might be every device in your house that's connected to your Wi-Fi router.,gồm các thiết bị trong nhà đang kết nối với bộ định tuyến Wi-Fi.,gồm các thiết bị trong nhà kết nối Wi-Fi.
+25,lec04,1,231,2.46,sort of as a refresher course on the prerequisite class.,như một buổi ôn tập kiến thức nền tảng.,như ôn tập nền tảng.
+26,lec02,1,172,4.56,"with, including .com and .net. You can also get unique domains that are more professional","...bao gồm .com và .net. Bạn cũng có thể sở hữu các tên miền độc đáo, chuyên nghiệp hơn...","như .com, .net hoặc các tên miền độc đáo, chuyên nghiệp hơn."
+27,lec02,0,3,3.0,Computers in the 40s and early 50s ran one program at a time.,Máy tính những năm 1940 và đầu 1950 chỉ chạy được mỗi lần một chương trình.,Máy tính giai đoạn 1940–1950 chỉ chạy một chương trình mỗi lần.
+28,lec03,0,74,2.32,The whole message really needs to get there correctly.,Toàn bộ tin nhắn phải đến nơi đầy đủ và chính xác.,"Tin nhắn phải đầy đủ, chính xác."
+29,lec03,0,27,3.5,IP address 104.24.109.186.,có địa chỉ IP là 104.24.109.186.,IP: 104.24.109.186.
+30,lec03,0,55,6.46,"is 89, 111, 33, 32, 58 and 41. Before the packet is sent, the transmitting computer","là 89, 111, 33, 32, 58 và 41. Trước khi gửi, máy tính truyền","là 89, 111, 33, 32, 58, 41. Trước khi gửi, máy"
+31,lec04,0,160,2.26,like Amazon and Netflix,"các trang như Amazon hay Netflix,","như Amazon, Netflix,"
+32,lec02,0,121,4.5,system designed to be secure from the outset. Developers didn't want mischievous users,được thiết kế chú trọng bảo mật ngay từ đầu. Các nhà phát triển không muốn người dùng tò mò,Thiết kế bảo mật ngay từ đầu để tránh người dùng tò mò.
+33,lec02,0,13,3.9,"Pretty soon, having humans run around inserting programs into readers was taking longer than","Chẳng mấy chốc, việc con người chạy qua chạy lại nạp chương trình vào đầu đọc còn tốn thời gian hơn","Chẳng mấy chốc, việc nạp chương trình vào đầu đọc còn tốn thời gian hơn."
+34,lec02,0,137,2.52,"Tom Van Vleck, another Multics developer, recalled,","Tom Van Vleck, một nhà phát triển Multics, nhớ lại:",Nhà phát triển Multics Tom Van Vleck kể:
+35,lec02,1,181,4.62,"This episode was filmed at the Chad and Stacey Emmergoltz studio in Indianapolis, Indiana","...Tập này được quay tại studio Chad và Stacey Emshwiller ở Indianapolis, Indiana,","Tập này quay tại studio Chad và Stacey Emshwiller ở Indianapolis, Indiana,"
+36,lec02,0,32,5.04,"of printer, and all devices connected to a computer, what are called peripherals. Interfacing","máy in cùng mọi thiết bị kết nối với máy tính, gọi là các thiết bị ngoại vi. Việc giao tiếp",Máy in và các thiết bị kết nối máy tính là thiết bị ngoại vi. Việc giao tiếp
+37,lec03,1,161,4.6,"As we've talked about all series, abstraction allows computer scientists and engineers to","Như chúng ta đã thảo luận xuyên suốt chuỗi bài giảng, sự trừu tượng hóa cho phép các kỹ sư máy tính","Như đã thảo luận, trừu tượng hóa giúp kỹ sư máy tính"
+38,lec01,0,5,2.0,"sequences of operations, which is a computer program.","các chuỗi lệnh, bản chất chính là một chương trình máy tính.",Chuỗi lệnh là chương trình máy tính.
+39,lec03,0,121,3.66,"It's like the phone book for the internet, and it's called the Domain Name System, or","Nó giống như danh bạ điện thoại của Internet, gọi là Hệ thống Tên miền,","Nó như danh bạ Internet, gọi là Hệ thống Tên miền."
+40,lec03,1,159,3.82,"Each level has different things to worry about and solve, and it would be impossible to build","Mỗi tầng xử lý những vấn đề riêng biệt, và sẽ là bất khả thi nếu muốn xây dựng","Mỗi tầng xử lý vấn đề riêng, không thể xây dựng"
+41,lec01,0,97,3.2,get to those more advanced types of data storage in a future episode.,sẽ nói về các thiết bị lưu trữ hiện đại này trong các tập sau.,Sẽ nói về thiết bị này trong các tập sau.
+42,lec03,0,52,4.28,"UDP headers also include something called a checksum, which allows the data to be verified","Header UDP còn có tổng kiểm tra (checksum), dùng để xác minh tính chính xác",Header UDP có checksum để xác minh tính chính xác.
+43,lec04,0,141,2.14,and even start to alter medical practice,và thậm chí thay đổi phương pháp điều trị,thậm chí đổi cách điều trị
+44,lec02,0,71,5.62,"through 1,999, and so on. If a program asks for more memory, the operating system decides","đến 1.999, và cứ thế tiếp tục. Nếu một chương trình xin thêm bộ nhớ, hệ điều hành sẽ quyết định","đến 1.999. Khi chương trình cần thêm bộ nhớ, hệ điều hành sẽ quyết định"
+45,lec03,1,179,2.0,That's where we're going to have to halt and catch fire.,Đó cũng là lúc chúng ta phải tạm ngắt chương trình (halt and catch fire).,Cần tạm ngắt chương trình (halt and catch fire).
+46,lec01,0,95,4.64,"the same idea but continuous instead of being on individual cards. And of course, we haven't","nguyên lý giống hệt nhưng ở dạng cuộn dài thay vì thẻ rời. Và dĩ nhiên, chúng ta chưa","Cùng nguyên lý, nhưng dùng cuộn dài thay thẻ rời. Dĩ nhiên, ta chưa"
+47,lec04,0,116,2.48,One thing that my students and I do is autonomous flights.,Tôi và các sinh viên của mình hiện nghiên cứu về bay tự hành.,Tôi và sinh viên nghiên cứu bay tự hành.
+48,lec03,0,125,3.28,"usually one provided by your ISP, to look up the address.",(thường do nhà mạng ISP cung cấp) để tra cứu địa chỉ.,do ISP cung cấp để tra cứu địa chỉ.
+49,lec02,0,63,3.84,"was printing out data, and yet another reading in data from a punch tape.","in dữ liệu cho chương trình khác, đồng thời đọc dữ liệu từ băng đục lỗ cho một chương trình thứ ba.",in dữ liệu cho chương trình khác và đọc băng đục lỗ cho chương trình thứ ba.
+50,lec04,0,183,2.72,"So if someday we ever find a cure for cancer,","Nếu một ngày nào đó chúng ta chữa được bệnh ung thư,","Nếu chữa được ung thư,"
