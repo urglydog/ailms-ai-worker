@@ -16,3 +16,6 @@ experiments/results/*/audio/
 *.env
 
 __pycache__/
+
+# MOS: clip có hình chỉ dùng nội bộ để chấm, KHÔNG commit
+experiments/results/mos/clips/

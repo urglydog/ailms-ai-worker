@@ -22,6 +22,10 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--variant", default="V4")
     ap.add_argument("--baseline", default="V2", help="Phương án dùng làm bản dịch 'trước rút gọn'")
+    ap.add_argument("--min-frame", type=float, default=0.0,
+                    help="Chỉ lấy câu có khung gốc t_orig >= giá trị này (giây). Pipeline sau 11/11/2026 không rút gọn "
+                         "câu có khung < 2 s (MIN_RESUMMARIZE_FRAME_SEC), nên dùng --min-frame 2.0 để mẫu chỉ gồm câu vẫn bị rút gọn.")
+    ap.add_argument("--out-suffix", default="", help="Hậu tố tên file đầu ra, vd _v2 -> fidelity_sample_v2.csv")
     args = ap.parse_args()
     run_dir = Path(args.run_dir)
 
@@ -30,13 +34,14 @@ def main() -> None:
 
     key = lambda r: (r["video_id"], int(r["chunk_index"]), int(r["seq"]))
     base = {key(r): r for r in rows if r["variant"] == args.baseline}
-    pool = [r for r in rows if r["variant"] == args.variant and r["was_summarized"] == "True"]
+    pool = [r for r in rows if r["variant"] == args.variant and r["was_summarized"] == "True"
+            and float(r["t_orig"]) >= args.min_frame]
     pool.sort(key=key)  # thứ tự cố định trước khi lấy mẫu -> tái lập được với cùng seed
     if len(pool) < args.n:
         print(f"Cảnh báo: chỉ có {len(pool)} câu rút gọn, nhỏ hơn --n {args.n}; lấy hết.")
     picked = random.Random(args.seed).sample(pool, min(args.n, len(pool)))
 
-    sample_path = run_dir / "fidelity_sample.csv"
+    sample_path = run_dir / f"fidelity_sample{args.out_suffix}.csv"
     with sample_path.open("w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["id", "video_id", "chunk_index", "seq", "t_orig", "src_text", "tgt_v2", "tgt_v4"])
@@ -45,7 +50,7 @@ def main() -> None:
             w.writerow([i, r["video_id"], r["chunk_index"], r["seq"], r["t_orig"],
                         r["src_text"], b.get("tgt_text", ""), r["tgt_text"]])
 
-    scores_path = run_dir / "fidelity_scores.csv"
+    scores_path = run_dir / f"fidelity_scores{args.out_suffix}.csv"
     with scores_path.open("w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["id", "score_rater1", "score_rater2"])

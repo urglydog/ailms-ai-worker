@@ -56,6 +56,39 @@ E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
 4. Sau khi Sang nạp credit và bản sửa đã deploy: kiểm tra Q7, rồi chạy đo trên server theo Q4/Q9 (S4 + V1–V4 + S1–S3).
    Ghi job bị loại (Q8) vào report.
 
+## 📝 THIỆN PHẢN HỒI LẦN 2 (12/11/2026) — Sang đọc phần này tiếp
+
+**Đã làm sau khi Sang trả lời (không cần credit Gemini):**
+1. **Kiểm tra bản sửa của Sang trên code và dữ liệu `full_r1`.** Đọc `audio_utils.py`, `dubbing_service.py`, `gemini.py`: đúng như mô tả. Test chức năng riêng
+   (`plan_onsets`, `clamp_stt_segments`, `place_on_timeline` trong container): **đúng**, đoạn luôn đúng độ dài, tăng tốc chặn ở ×1,15. Container **không cài `pytest`**
+   nên Thiện chưa chạy được bộ test của Sang (57 passed là số của Sang).
+2. **Chưa deploy:** file mới đã có trên đĩa từ 12/11 15:23, nhưng `lms_ai_worker` khởi động từ 09/11 03:28 UTC nên tiến trình vẫn chạy **code cũ** tới khi restart.
+3. **Dự đoán từ dữ liệu `full_r1`** (xếp mốc tuyệt đối + quy tắc câu ngắn, pad nhúng sẵn trong file câu như code thật): trễ tối đa V4 ≈ **8,5 / 5,5 / 1,5 / 16,1 s**
+   (đo hiện tại 8,0 / 17,5 / 22,1 / 95,9 s); phần đuôi bị cắt ≈ 0; **tăng tốc cả đoạn 1,00–1,08**. Trễ trung bình có chỗ **âm** (`lec03` ≈ −1,3 đến −1,6 s: tiếng *sớm* hơn hình)
+   vì tăng tốc nén cả đoạn. Tổng thời gian tràn theo câu của V4 tăng 147,5 s → ~176,9 s (+20%, vì câu < 2 s không còn được rút gọn) nhưng lời gọi rút gọn giảm
+   676 → ~316 (cả run V4 ≈ 330 lần gọi so với 690) → chi phí một lượt V4 ≈ **36K₫** (giả định ~109₫/lần gọi). Đây là **dự đoán**, chưa phải đo trên bản đã deploy.
+4. **Hệ thống thật:** log `lms_ai_worker`/`lms_ai_api`/`lms_backend` từ 10/11 20:52 UTC **không có** lỗi Gemini do hết credit (chưa có lưu lượng AI thật chạm key; log docker có thể bị giới hạn lưu).
+5. **Đã chuẩn bị sẵn để nạp credit xong là chạy** (script trong `NCKH/experiments/`, đã chạy thử trên dữ liệu giả hoặc `full_r1`):
+   `check_full_length.py` (ghép cách cũ/mới, trễ có dấu và tuyệt đối, tempo, cắt đuôi) · `sample_fidelity.py --min-frame 2.0` + `score_fidelity.py` (L4; **mẫu mới
+   `results/full_r1/fidelity_sample_v2.csv` gồm 50 câu khung ≥ 2 s, chọn từ 251 câu — Sang và Thiện có thể chấm ngay**) · `mos_select_clips.py`, `mos_make_clips.py`,
+   `mos_analyze.py`, `mos_form_template.md` (MOS) · `server_job_stats_ext.sql`, `analyze_server.py`, `parse_worker_logs.py` (S1–S3, chỉ đọc, không lấy email/tên/URL).
+   Kết quả `check_full_length` mới cho cả 4 bài sẽ được bổ sung sau khi chạy xong (đang chạy).
+
+**Việc cần Sang làm:** (a) trả lời 5 câu hỏi dưới đây, (b) nạp credit Gemini, (c) chấm L4 với Thiện (`fidelity_sample_v2.csv`, điểm 2/1/0 vào `fidelity_scores_v2.csv`, mỗi người một cột).
+
+**Năm câu hỏi mới cho Sang**
+
+| # | Câu hỏi | Trả lời của Sang |
+|---|---|---|
+| N1 | Nhánh đệm lặng vẫn đệm vào *trong file câu* (`pad_silence(out_path, …)`), nên các câu đó không "nhả" được độ trễ đã tích. Có muốn bỏ đệm trong file câu (kèm tăng tốc cả đoạn ít hơn) không, hay giữ nguyên? | |
+| N2 | Tăng tốc cả đoạn tới ×1,08 (tối đa cho phép ×1,15) có chấp nhận được về độ tự nhiên không? (MOS sẽ đo; nếu không, hạ `MAX_CHUNK_TEMPO`?) | |
+| N3 | Bảng Δ của V4 sẽ xấu đi nhẹ (+20% thời gian tràn theo câu) nhưng trễ theo trục thời gian tốt hơn rõ. Bài trình bày cả hai chỉ số như vậy được không? | |
+| N4 | Cho phép Thiện **restart `lms_ai_worker`** (và `lms_ai_beat` nếu cần) để deploy bản sửa — thời điểm nào, và có job đang chạy nào cần chờ không? | |
+| N5 | Nếu credit chưa kịp nạp trước 13/11: có chấp nhận dựng audio V2/V4 cho MOS bằng cách **tái dùng văn bản đã lưu** trong `full_r1/segments.csv` + gọi lại **Azure TTS** (không dùng Gemini), ghép bằng `place_on_timeline` không? (Không phải một lần chạy pipeline mới hoàn toàn; văn bản từ lần chạy 10/11.) | |
+
+**Thiện sẽ làm ngay khi Sang trả lời và có credit:** kiểm tra credit (1 lần gọi 1 từ) → restart + ghi commit vào NOTES → kiểm tra Q7 → chạy `run_experiment.py` V1–V4 trên server (`post_fix_r1`, ước ~36K₫) →
+lồng tiếng thật 4 bài qua web (ước ~36K₫) → lấy số liệu server → MOS → cập nhật report. Cần nạp khoảng **≥ 150K₫** (ước tính ~72–80K₫ cho phần bắt buộc, còn lại là dự phòng).
+
 > **Đây là file report duy nhất.** Đã gộp bản đo đạc 10/11 và bản báo cáo tình hình 11/11 vào đây.
 > **Cách dùng:** Sang đọc §0 → §3 (quyết định), tra §4 khi cần bằng chứng. Trả lời bằng cách **sửa trực tiếp các ô "Trả lời của Sang"**
 > (hoặc nhắn Thiện). Thiện sẽ quyết định hướng đi tiếp dựa trên các câu trả lời đó.
