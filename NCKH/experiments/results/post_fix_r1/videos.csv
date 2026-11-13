@@ -1,0 +1,5 @@
+﻿run_id,video_id,category,duration_sec,n_chunks,n_segments,speech_ratio,t_prepare_sec,t_asr_sec,asr_cached,t_translate_sec,t_tts_default_sec,t_v3_sec,t_v4_sec,llm_calls_translate,tts_calls_total,resummarize_calls_v4
+post_fix_r1,lec01,CNTT,566.0,1,131,0.959,0.0,0.71,True,94.37,437.29,202.67,795.96,2,693,71
+post_fix_r1,lec02,CNTT,815.1,2,185,0.968,0.0,0.15,True,155.46,651.42,309.87,1252.66,4,971,108
+post_fix_r1,lec03,KyNangMem,718.0,2,181,1.011,0.0,0.14,True,141.01,591.5,237.8,850.03,4,896,65
+post_fix_r1,lec04,KyNangMem,900.0,2,290,0.875,0.0,0.18,True,130.11,722.35,288.51,710.42,4,1358,28

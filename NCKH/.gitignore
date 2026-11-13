@@ -19,3 +19,8 @@ __pycache__/
 
 # MOS: clip có hình chỉ dùng nội bộ để chấm, KHÔNG commit
 experiments/results/mos/clips/
+
+
+# MOS: không thực hiện; chỉ commit NOTES.md (file phản hồi mẫu, bảng giải mã clip, clip KHÔNG commit)
+experiments/results/mos/*
+!experiments/results/mos/NOTES.md
