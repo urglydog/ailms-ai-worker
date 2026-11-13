@@ -83,3 +83,9 @@ async def test_overlong_chunk_is_sped_up_and_fitted(tmp_path):
     assert res.tempo_applied == pytest.approx(audio_utils.MAX_CHUNK_TEMPO)
     assert res.max_delay_sec == pytest.approx(2.0, abs=0.1)
     assert abs(len(AudioSegment.from_file(out)) / 1000 - 10.0) < 0.1
+
+
+def test_short_unpadded_sentence_lets_next_return_to_original_onset():
+    # N1: cau 0 tran 1 s, cau 1 ngan hon khung (khong dem) -> cau 2 ve dung moc goc ngay.
+    onsets = audio_utils.plan_onsets([0.0, 2.0, 5.0], [3.0, 1.0, 1.0])
+    assert onsets == [0.0, 3.0, 5.0]

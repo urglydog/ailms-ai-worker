@@ -414,10 +414,9 @@ async def _synthesize_with_adaptive_rate(
         result = await azure_tts.synthesize(current_text, voice_name, str(out_path), rate=MAX_TTS_RATE)
     elif r > R_LOWER_BOUND:
         result = await azure_tts.synthesize(current_text, voice_name, str(out_path), rate=azure_tts.compute_rate_flag(r))
-    else:
-        pad_sec = float(t_orig) - result.duration_sec
-        if pad_sec > 0.05:
-            await audio_utils.pad_silence(out_path, pad_sec)
+    # R <= 1.0: KHÔNG đệm lặng vào file câu nữa (13/11/2026, NCKH N1). Khoảng lặng được dựng
+    # ở bước ghép `audio_utils.place_on_timeline` theo mốc tuyệt đối; đệm sẵn trong file câu làm
+    # câu bị lùi giờ không "nhả" được độ trễ cho câu sau và buộc phải tăng tốc cả đoạn nhiều hơn.
 
     return result, current_text, was_summarized
 
