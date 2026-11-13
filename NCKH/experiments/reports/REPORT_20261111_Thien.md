@@ -93,6 +93,21 @@ E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
      "không điều chỉnh" nhưng Sang cần biết khi mô tả đường cơ sở V2 trong bài và khi chọn đoạn MOS (nên chọn đoạn ở phần đầu mỗi chunk để V2 chưa bị cắt).
    - Cách cũ khớp bảng §4.2 (V4: +9,41 / +18,29 / +43,50 / +95,89 s), xác nhận công cụ đo ổn định.
 
+### Cập nhật 13/11/2026 (sau khi Sang trả lời N1–N5) — Thiện
+
+- **Credit:** Thiện đã nạp, số dư 143K₫. Gọi thử Gemini (1 từ) thành công; lưu ý lời gọi 1 từ vẫn tốn **5 token "suy nghĩ" ẩn** (`thoughtsTokenCount`), phù hợp giả thuyết đơn giá cao do token suy nghĩ.
+- **N1 đã deploy + N4 đã làm (13/11 09:53 UTC):** `docker compose up -d --no-deps ai-api ai-worker ai-beat` (chỉ 3 container ai bị tạo lại; worker rảnh; không đụng DB/volume/BE/FE). Sửa `/var/lms/be/docker-compose.yml`
+  (file này **chưa commit trong repo `be`**, ngoài ra còn 1 dòng `LMS_PAYOUT_ENCRYPTION_KEY` chưa commit từ trước, không phải của Thiện):
+  (1) thêm `logging: json-file, max-size 10m, max-file 3` cho `ai-api`, `ai-worker`, `ai-beat`; (2) `ai-api`: thêm `--reload-dir /app/app --reload-exclude "NCKH/experiments/*"`.
+  **Lưu ý:** `--reload-dir` một mình **không đủ** (uvicorn vẫn reload vì file trong `NCKH/`), phải thêm `--reload-exclude`. Đã kiểm chứng: chạm file trong `NCKH/experiments/` → 0 lần reload; chạm file trong `app/` → vẫn reload (đối chứng).
+  Sao lưu compose trước khi sửa. Kiểm tra sau áp dụng: cả 3 container `running`, `RestartCount=0`, không OOM; worker nạp code N1 (không còn `pad_silence` trong file câu), `min_resummarize_frame_sec=2.0`; commit `4ab708f`.
+- **Run đo sau bản sửa (`post_fix_r1`, V1–V4, 4 bài, `--keep-audio`) đang chạy** từ 09:53 UTC trong container `lms_ai_worker` (uid 1000), bản code `4ab708f`. **Bài đầu `lec01` đã qua kiểm tra:** không lỗi, không 402; câu khung < 2 s **0 lần rút gọn** (đúng quy tắc);
+  không câu nào có `t_final < t_orig`; lời gọi rút gọn V4 79 → 71 (bài ngắn); nhánh V4: pad 8, speedup 67, summarize 52, capped 4 (trước: pad 17, speedup 57, summarize 41, capped 16); tổng tràn theo câu V4 = 9,9 s (như trước).
+- **Khóa học thử nghiệm đã tạo:** khóa **92** "Nền tảng khoa học máy tính" (Nháp, không gửi duyệt), 4 bài đã up mp4 (khớp thời lượng audio ±0,04 s): `lec01` = lesson **2284**, `lec02` = **2285**, `lec03` = **2286**, `lec04` = **2288**
+  (lesson 2287 cũng từng xuất hiện trong log với tên `lec04` — Thiện cần xác nhận đó là bản trùng đã xoá). **Chưa bấm lồng tiếng** vì run `post_fix_r1` đang dùng chung máy/API; sẽ chạy 4 job web sau khi run xong để số thời gian server không bị nhiễu.
+- **Phát hiện ngoài phạm vi thí nghiệm (Q7):** 12 tác vụ `embed_course` cho khóa 92 lỗi `[Errno -2] Name or service not known` — host Supabase vector `esiyaricxvhucimtrdqn.supabase.co` **không phân giải được tên** từ server (cả `lms_ai_api`, cả máy host), trong khi Gemini/Groq/Redis/backend bình thường. Nghi project Supabase bị tạm dừng hoặc xoá;
+  ảnh hưởng: đánh chỉ mục khóa học (Course Discovery) và RAG của AI Tutor; **không ảnh hưởng lồng tiếng** (lỗi ở bước này bị bắt riêng). **Sang kiểm tra dashboard Supabase** (khôi phục nếu bị tạm dừng). Không do restart/sửa compose (cấu hình môi trường không đổi).
+
 **Việc cần Sang làm:** (a) trả lời 5 câu hỏi dưới đây, (b) nạp credit Gemini, (c) chấm L4 với Thiện (`fidelity_sample_v2.csv`, điểm 2/1/0 vào `fidelity_scores_v2.csv`, mỗi người một cột).
 
 **Năm câu hỏi mới cho Sang**

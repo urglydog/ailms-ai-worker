@@ -85,8 +85,12 @@ async def amain() -> None:
         tmp = Path(td)
         for (p, v), code in zip(jobs, codes):
             video = video_dir / f"{p['video_id']}.mp4"
+            if not video.exists():   # chấp nhận cả tên lecture_0N.mp4 (khớp tên file mp3 trong media/)
+                alt = video_dir / f"lecture_{p['video_id'][3:].zfill(2)}.mp4"
+                if alt.exists():
+                    video = alt
             if not video.exists():
-                raise FileNotFoundError(f"Thiếu video gốc {video}")
+                raise FileNotFoundError(f"Thiếu video gốc {video} (hoặc lecture_NN.mp4)")
             dub = await build_dub(run_dir, p, v, seg_chunk, starts, tmp)
             clip = out_dir / f"C{code}.mp4"
             subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", p["start_sec"], "-to", p["end_sec"], "-i", str(video),
