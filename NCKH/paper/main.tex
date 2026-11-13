@@ -153,7 +153,7 @@ Tốc độ đọc được điều khiển bằng thẻ \texttt{<prosody rate>}
 \ElsIf{$R > 1{,}0$}
   \State $a \gets \textsc{TTS}(t, v, +\lfloor (R-1)\cdot 100 \rceil\%)$
 \Else
-  \State $a \gets a \oplus \textsc{Lặng}(T^{\mathrm{orig}} - |a|)$
+  \State giữ nguyên $a$ \Comment{khoảng lặng do bước ghép, Mục~\ref{sub:concat}}
 \EndIf
 \State \Return $a$
 \end{algorithmic}

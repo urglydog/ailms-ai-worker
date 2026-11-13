@@ -26,7 +26,9 @@ def _synth_result(duration_sec: float) -> SynthesisResult:
     return SynthesisResult(file_path="x.mp3", duration_sec=duration_sec, applied_rate=Decimal("1.0"), was_summarized=False)
 
 
-async def test_r_at_or_below_1_keeps_normal_speed_and_pads_silence(tmp_path):
+async def test_r_at_or_below_1_keeps_normal_speed_without_padding_sentence(tmp_path):
+    """13/11/2026 (N1): câu ngắn hơn khung KHÔNG được đệm lặng trong file câu — khoảng lặng do
+    `place_on_timeline` dựng theo mốc tuyệt đối, để câu bị lùi giờ hấp thụ được độ trễ."""
     segment = Segment(seq=1, start=0.0, end=5.0, text="cau ngan")  # T_orig = 5s
     # audio thuc te 3s <= T_orig(5s) -> R = 3/5 = 0.6 <= 1.0
     synthesize_mock = AsyncMock(return_value=_synth_result(3.0))
@@ -42,10 +44,8 @@ async def test_r_at_or_below_1_keeps_normal_speed_and_pads_silence(tmp_path):
 
     assert was_summarized is False
     resummarize_mock.assert_not_awaited()
-    assert synthesize_mock.await_count == 1  # khong can tong hop lai, chi can chen lang
-    pad_silence_mock.assert_awaited_once()
-    pad_sec = pad_silence_mock.await_args.args[1]
-    assert pad_sec == 2.0  # 5s (T_orig) - 3s (thuc te) = 2s can chen
+    assert synthesize_mock.await_count == 1  # khong tong hop lai
+    pad_silence_mock.assert_not_awaited()
 
 
 async def test_r_between_1_and_1_3_applies_rate_flag_without_resummarize(tmp_path):

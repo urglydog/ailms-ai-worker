@@ -284,7 +284,9 @@ async def run_v4(base: dict, seg: Segment, text: str, t_tts: float, voice: str, 
         before.llm + used.llm, before.tts + used.tts, before.resummarize + used.resummarize)
 
     t_orig = base["t_orig"]
-    t_final = await audio_utils.measure_duration_sec(out)   # sau khi đệm lặng / tăng tốc
+    # Từ 13/11 (N1) file câu không còn được đệm lặng -> câu ngắn hơn khung coi như t_final = t_orig
+    # (khoảng lặng do bước ghép dựng), giống cách tính của V1-V3; chỉ phần TRÀN được tính vào Δ.
+    t_final = max(await audio_utils.measure_duration_sec(out), base["t_orig"])
     r = t_tts / t_orig if t_orig > 0 else 0.0
     rate = float(res.applied_rate)
     if used.resummarize and r > R_MAX and rate >= R_MAX - 1e-6 and t_final > t_orig * 1.001:
