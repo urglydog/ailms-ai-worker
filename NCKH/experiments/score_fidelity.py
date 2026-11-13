@@ -40,6 +40,28 @@ def cohen_kappa(a: list[int], b: list[int]) -> float | None:
     return (po - pe) / (1 - pe)
 
 
+def weighted_kappa(a: list[int], b: list[int]) -> float | None:
+    """Kappa trọng số bậc hai (phạt theo bình phương khoảng cách giữa hai mức)."""
+    n = len(a)
+    if n == 0:
+        return None
+    ca, cb = Counter(a), Counter(b)
+    num = sum((x - y) ** 2 for x, y in zip(a, b)) / n
+    den = sum(((i - j) ** 2) * (ca[i] / n) * (cb[j] / n) for i in LEVELS for j in LEVELS)
+    return None if den == 0 else 1 - num / den
+
+
+def gwet_ac1(a: list[int], b: list[int]) -> float | None:
+    """Gwet's AC1 cho hai người chấm, 3 mức; ít nhạy với phân bố lệch hơn Cohen kappa."""
+    n = len(a)
+    if n == 0:
+        return None
+    pa = sum(1 for x, y in zip(a, b) if x == y) / n
+    pi = [(a.count(k) + b.count(k)) / (2 * n) for k in LEVELS]
+    pe = sum(p * (1 - p) for p in pi) / (len(LEVELS) - 1)
+    return None if pe >= 1 else (pa - pe) / (1 - pe)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("run_dir")
@@ -74,6 +96,11 @@ def main() -> None:
         "rater1": dist(r1), "rater2": dist(r2),
         "exact_agreement_pct": agree,
         "cohen_kappa": round(kappa, 3) if kappa is not None else None,
+        "weighted_kappa_quadratic": round(weighted_kappa(both1, both2), 3) if n else None,
+        "gwet_ac1": round(gwet_ac1(both1, both2), 3) if n else None,
+        "mean_score_rater1": round(sum(both1) / n, 2) if n else None,
+        "mean_score_rater2": round(sum(both2) / n, 2) if n else None,
+        "mean_score_both": round((sum(both1) + sum(both2)) / (2 * n), 3) if n else None,
         "kappa_note": "không xác định (một người chấm toàn một mức)" if kappa is None and n else "",
         "items_missing_a_score": ids_skipped,
     }
@@ -85,7 +112,9 @@ def main() -> None:
     for l in LEVELS:
         md.append(f"| {names[l]} | {out['rater1'][str(l)]['n']} ({out['rater1'][str(l)]['pct']}%) | "
                   f"{out['rater2'][str(l)]['n']} ({out['rater2'][str(l)]['pct']}%) |")
-    md += ["", f"Tỷ lệ trùng khớp tuyệt đối: {agree}%", f"Hệ số kappa của Cohen: {out['cohen_kappa']} {out['kappa_note']}"]
+    md += ["", f"Tỷ lệ trùng khớp tuyệt đối: {agree}%", f"Hệ số kappa của Cohen: {out['cohen_kappa']} {out['kappa_note']}",
+           f"Kappa trọng số bậc hai: {out['weighted_kappa_quadratic']}", f"Gwet's AC1: {out['gwet_ac1']}",
+           f"Điểm bảo toàn ý trung bình (thang 0–2): người chấm 1 = {out['mean_score_rater1']}, người chấm 2 = {out['mean_score_rater2']}, chung = {out['mean_score_both']}"]
     (run_dir / f"fidelity_summary{args.suffix}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
     print("\n".join(md))
 

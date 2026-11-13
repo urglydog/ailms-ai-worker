@@ -1,0 +1,150 @@
+{
+ "n_jobs_total": 4,
+ "n_jobs_excluded": 0,
+ "excluded_job_ids": [],
+ "status": {
+  "COMPLETED": 4
+ },
+ "retry_count": {
+  "n": 4,
+  "mean": 0.0,
+  "median": 0.0,
+  "min": 0.0,
+  "max": 0.0
+ },
+ "processing_sec_per_video_min": {
+  "n": 4,
+  "mean": 110.33,
+  "median": 112.54,
+  "min": 88.93,
+  "max": 127.29
+ },
+ "first_chunk_sec": {
+  "n": 4,
+  "mean": 1044.75,
+  "median": 1059.5,
+  "min": 886.0,
+  "max": 1174.0
+ },
+ "queue_wait_sec": {
+  "n": 4,
+  "mean": 8.25,
+  "median": 7.5,
+  "min": 7.0,
+  "max": 11.0
+ },
+ "per_job": [
+  {
+   "job_id": "10",
+   "lesson_id": "2284",
+   "status": "COMPLETED",
+   "lesson_duration_sec": 566.0,
+   "processing_sec": 1048.0,
+   "first_chunk_sec": 1040.0,
+   "queue_wait_sec": 8.0,
+   "retry_count": 0.0,
+   "total_chunks": 1.0,
+   "processing_sec_per_video_min": 111.1
+  },
+  {
+   "job_id": "11",
+   "lesson_id": "2285",
+   "status": "COMPLETED",
+   "lesson_duration_sec": 815.0,
+   "processing_sec": 1729.0,
+   "first_chunk_sec": 1174.0,
+   "queue_wait_sec": 11.0,
+   "retry_count": 0.0,
+   "total_chunks": 2.0,
+   "processing_sec_per_video_min": 127.29
+  },
+  {
+   "job_id": "12",
+   "lesson_id": "2286",
+   "status": "COMPLETED",
+   "lesson_duration_sec": 718.0,
+   "processing_sec": 1364.0,
+   "first_chunk_sec": 1079.0,
+   "queue_wait_sec": 7.0,
+   "retry_count": 0.0,
+   "total_chunks": 2.0,
+   "processing_sec_per_video_min": 113.98
+  },
+  {
+   "job_id": "13",
+   "lesson_id": "2288",
+   "status": "COMPLETED",
+   "lesson_duration_sec": 900.0,
+   "processing_sec": 1334.0,
+   "first_chunk_sec": 886.0,
+   "queue_wait_sec": 7.0,
+   "retry_count": 0.0,
+   "total_chunks": 2.0,
+   "processing_sec_per_video_min": 88.93
+  }
+ ],
+ "seconds_between_chunk_completions": {
+  "n": 3,
+  "mean": 417.0,
+  "median": 433.0,
+  "min": 275.0,
+  "max": 543.0
+ },
+ "segments": {
+  "n": 761,
+  "speech_rate_zones_pct": {
+   "1,0–1,3": 55.3,
+   "=1,3 (chạm trần)": 22.9,
+   "=1,0": 21.8
+  },
+  "pct_was_summarized": 32.2,
+  "pct_frame_lt_2s": 19.7
+ },
+ "tracks": [
+  {
+   "lesson_id": "2284",
+   "language": "vi-VN",
+   "status": "COMPLETED",
+   "track_duration_sec": 566.0,
+   "lesson_duration_sec": 566.0,
+   "diff_sec": 0.0,
+   "play_count": 0.0
+  },
+  {
+   "lesson_id": "2285",
+   "language": "vi-VN",
+   "status": "COMPLETED",
+   "track_duration_sec": 815.0,
+   "lesson_duration_sec": 815.0,
+   "diff_sec": 0.0,
+   "play_count": 0.0
+  },
+  {
+   "lesson_id": "2286",
+   "language": "vi-VN",
+   "status": "COMPLETED",
+   "track_duration_sec": 718.0,
+   "lesson_duration_sec": 718.0,
+   "diff_sec": 0.0,
+   "play_count": 0.0
+  },
+  {
+   "lesson_id": "2288",
+   "language": "vi-VN",
+   "status": "COMPLETED",
+   "track_duration_sec": 900.0,
+   "lesson_duration_sec": 900.0,
+   "diff_sec": 0.0,
+   "play_count": 0.0
+  }
+ ],
+ "abs_duration_diff_sec": {
+  "n": 4,
+  "mean": 0.0,
+  "median": 0.0,
+  "min": 0.0,
+  "max": 0.0
+ },
+ "lessons_with_2plus_languages": 0,
+ "total_play_count": 0
+}

@@ -56,6 +56,31 @@ E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
 4. Sau khi Sang nạp credit và bản sửa đã deploy: kiểm tra Q7, rồi chạy đo trên server theo Q4/Q9 (S4 + V1–V4 + S1–S3).
    Ghi job bị loại (Q8) vào report.
 
+## ✅ KẾT QUẢ CUỐI VÀ THAY ĐỔI BÀI BÁO (13/11/2026 đêm) — Sang đọc phần này đầu tiên
+
+**Quyết định của Thiện (13/11):** (1) **bỏ MOS**, không có đủ người nghe thật; bài chỉ dựa trên phân tích lồng tiếng và ghi MOS vào Hạn chế (`results/mos/NOTES.md`); (2) **sửa thẳng `paper/main.tex`** cho khớp thực tế (ngoại lệ so với quy tắc 9 của hướng dẫn, theo yêu cầu của Thiện; để **commit riêng** cho Sang xem diff và hoàn tác từng phần nếu cần).
+
+**Số liệu cuối** (nguồn: `results/post_fix_r1/` bản code `4ab708f`; `results/server_20261113/`):
+
+| Nhóm | Kết quả |
+|---|---|
+| So sánh V1–V4 (787 câu, 1 lần chạy) | Δ TB: 1,67 → 1,00 → 0,36 → **0,22 s**; % câu còn tràn: 95,2 → 83,5 → 49,8 → **27,6**; gọi LLM: 7 / 14 / 14 / **286** (trước quy tắc câu ngắn: 690) |
+| Độ trễ theo trục thời gian, pipeline cuối (V4) | Tổng thời lượng **đúng bằng bài** (chênh ≤ 0,1 s); \|trễ\| TB **2,1 s**, P95 8,7 s, muộn tối đa 21,5 s, sớm tối đa 5,7 s; tăng tốc cả đoạn tối đa ×1,023; cắt đuôi ≤ 0,06 s. Khoảng lặng cố định (pipeline cũ): chênh +9,4…+95,9 s, \|trễ\| TB 20,1 s |
+| Bài khó nhất | `lec04` (bài giảng trên lớp): \|trễ\| TB 4,35 s, 62,8% câu lệch > 1 s; ba bài còn lại TB ≤ 1,03 s |
+| 4 job lồng tiếng thật | 4/4 `COMPLETED`, 0 thử lại, chờ hàng đợi 7–11 s; thời lượng audio = bài (chênh 0 s); xử lý **110 s/phút video** (88,9–127,3), đến đoạn đầu 886–1174 s; 761 câu: 32,2% rút gọn; tốc độ đọc =1,0: 21,8%, 1,0–1,3: 55,3%, +30%: 22,9% (script: 22,1 / 50,6 / 27,3) |
+| L4 (50 câu rút gọn) | Người chấm 1 = **mô hình AI (Claude)**, người chấm 2 = **một người** (chấm trước khi xem điểm AI); đồng thuận 86,0%; kappa trọng số bậc hai 0,757 (Cohen 0,691; Gwet AC1 0,819); điểm bảo toàn ý TB **1,65/2**. Không phải hai người chấm độc lập (xem `results/post_fix_r1/NOTES_L4.md`) |
+| Không có | MOS; đo tái sử dụng (chưa lồng ngôn ngữ thứ hai, `play_count` = 0); bản chạy lặp |
+
+**Đã đổi trong `main.tex`** (commit riêng, `git diff` để xem):
+1. **Tóm tắt:** viết lại còn 245 từ (bản trước 292 từ, vượt giới hạn 250), điền kết quả chính, bỏ "xử lý song song" (các đoạn của một tác vụ được xử lý tuần tự), thêm câu "nghiên cứu chưa đánh giá cảm nhận của người nghe".
+2. **Mục 3.5:** bỏ "giữ độ tự nhiên" và nói ngưỡng 30% chọn theo kinh nghiệm, chưa kiểm chứng bằng người nghe. **Mục 3.6:** điền 96 giây (đo từ pipeline cũ, bài 15 phút).
+3. **Mục 5.1:** điền cấu hình máy, mô tả hai phần thực nghiệm (script V1–V4 + 4 tác vụ thật) và định nghĩa V1–V4; bỏ các `\todo`. **Độ đo:** bỏ "chất lượng cảm nhận" (MOS) và "mức tiết kiệm khi tái sử dụng"; thêm "độ bảo toàn ý" (L4).
+4. **Mục 5.3–5.4:** viết Kết quả (3 bảng: so sánh V1–V4, độ trễ theo trục thời gian, 4 tác vụ thật + đoạn L4), Thảo luận (đóng góp từng bước, đánh đổi quy tắc câu ngắn, ca lỗi) và **Hạn chế** (không MOS, dữ liệu nhỏ 1 lần chạy, máy dùng chung và chậm hơn thời gian thực, chưa đo tái sử dụng, một người chấm là AI).
+5. **Kết luận:** thay "khớp với hình ảnh" bằng "khớp thời lượng với video gốc", bỏ khẳng định "phản hồi sớm, tiết kiệm chi phí" chưa đo (đổi thành "được thiết kế để"), cập nhật hạn chế và hướng phát triển (đề xuất MOS thật).
+6. Cập nhật `SSRC_LongTieng_overleaf.zip` (chỉ `main.tex`). **`main.pdf` chưa được biên dịch lại** vì máy không có `pdflatex`: Sang biên dịch trên Overleaf và kiểm tra không có lỗi/Overfull.
+
+**Cần Sang kiểm tra / hoàn thiện:** (a) đọc lại toàn bộ phần đã sửa và các số (đều truy được về file trong `results/`); (b) còn 3 `\todo`: ngày nộp, 3 email; (c) bảng/hình hiển thị ổn sau khi biên dịch (3 bảng mới ở 2 cột, có thể cần thu gọn cột); (d) quyết định có muốn đo thêm tái sử dụng bản ký âm (khoảng 8K₫: lồng `lec01` sang ngôn ngữ thứ hai); (e) **việc vận hành còn mở:** Supabase không phân giải tên (AI Tutor, Course Discovery lỗi), log của worker/api in **khóa API Gemini** trong URL (sửa log `httpx` hoặc gửi khóa qua header; Thiện sẽ tạo khóa mới sau khi đo xong), bài `2287` trùng tên `lec04` trong khóa 92, giấy phép 4 video chưa xác minh.
+
 ## 📝 THIỆN PHẢN HỒI LẦN 2 (12/11/2026) — Sang đọc phần này tiếp
 
 **Đã làm sau khi Sang trả lời (không cần credit Gemini):**
@@ -92,6 +117,21 @@ E3, E6, E7 đã được đối chiếu với code và **xác nhận đúng**.
    - **V2 (không điều chỉnh) dưới cách ghép mới bị cắt đuôi rất lớn** (lec02 mất 114,6 s ≈ 14% nội dung vì dư quá ×1,15): V2 dùng trong MOS sẽ nghe trễ nặng và có thể mất đoạn cuối; đây đúng là hành vi
      "không điều chỉnh" nhưng Sang cần biết khi mô tả đường cơ sở V2 trong bài và khi chọn đoạn MOS (nên chọn đoạn ở phần đầu mỗi chunk để V2 chưa bị cắt).
    - Cách cũ khớp bảng §4.2 (V4: +9,41 / +18,29 / +43,50 / +95,89 s), xác nhận công cụ đo ổn định.
+
+### Cập nhật 13/11/2026 (sau khi Sang trả lời N1–N5) — Thiện
+
+- **Credit:** Thiện đã nạp, số dư 143K₫. Gọi thử Gemini (1 từ) thành công; lưu ý lời gọi 1 từ vẫn tốn **5 token "suy nghĩ" ẩn** (`thoughtsTokenCount`), phù hợp giả thuyết đơn giá cao do token suy nghĩ.
+- **N1 đã deploy + N4 đã làm (13/11 09:53 UTC):** `docker compose up -d --no-deps ai-api ai-worker ai-beat` (chỉ 3 container ai bị tạo lại; worker rảnh; không đụng DB/volume/BE/FE). Sửa `/var/lms/be/docker-compose.yml`
+  (file này **chưa commit trong repo `be`**, ngoài ra còn 1 dòng `LMS_PAYOUT_ENCRYPTION_KEY` chưa commit từ trước, không phải của Thiện):
+  (1) thêm `logging: json-file, max-size 10m, max-file 3` cho `ai-api`, `ai-worker`, `ai-beat`; (2) `ai-api`: thêm `--reload-dir /app/app --reload-exclude "NCKH/experiments/*"`.
+  **Lưu ý:** `--reload-dir` một mình **không đủ** (uvicorn vẫn reload vì file trong `NCKH/`), phải thêm `--reload-exclude`. Đã kiểm chứng: chạm file trong `NCKH/experiments/` → 0 lần reload; chạm file trong `app/` → vẫn reload (đối chứng).
+  Sao lưu compose trước khi sửa. Kiểm tra sau áp dụng: cả 3 container `running`, `RestartCount=0`, không OOM; worker nạp code N1 (không còn `pad_silence` trong file câu), `min_resummarize_frame_sec=2.0`; commit `4ab708f`.
+- **Run đo sau bản sửa (`post_fix_r1`, V1–V4, 4 bài, `--keep-audio`) đang chạy** từ 09:53 UTC trong container `lms_ai_worker` (uid 1000), bản code `4ab708f`. **Bài đầu `lec01` đã qua kiểm tra:** không lỗi, không 402; câu khung < 2 s **0 lần rút gọn** (đúng quy tắc);
+  không câu nào có `t_final < t_orig`; lời gọi rút gọn V4 79 → 71 (bài ngắn); nhánh V4: pad 8, speedup 67, summarize 52, capped 4 (trước: pad 17, speedup 57, summarize 41, capped 16); tổng tràn theo câu V4 = 9,9 s (như trước).
+- **Khóa học thử nghiệm đã tạo:** khóa **92** "Nền tảng khoa học máy tính" (Nháp, không gửi duyệt), 4 bài đã up mp4 (khớp thời lượng audio ±0,04 s): `lec01` = lesson **2284**, `lec02` = **2285**, `lec03` = **2286**, `lec04` = **2288**
+  (lesson 2287 cũng từng xuất hiện trong log với tên `lec04` — Thiện cần xác nhận đó là bản trùng đã xoá). **Chưa bấm lồng tiếng** vì run `post_fix_r1` đang dùng chung máy/API; sẽ chạy 4 job web sau khi run xong để số thời gian server không bị nhiễu.
+- **Phát hiện ngoài phạm vi thí nghiệm (Q7):** 12 tác vụ `embed_course` cho khóa 92 lỗi `[Errno -2] Name or service not known` — host Supabase vector `esiyaricxvhucimtrdqn.supabase.co` **không phân giải được tên** từ server (cả `lms_ai_api`, cả máy host), trong khi Gemini/Groq/Redis/backend bình thường. Nghi project Supabase bị tạm dừng hoặc xoá;
+  ảnh hưởng: đánh chỉ mục khóa học (Course Discovery) và RAG của AI Tutor; **không ảnh hưởng lồng tiếng** (lỗi ở bước này bị bắt riêng). **Sang kiểm tra dashboard Supabase** (khôi phục nếu bị tạm dừng). Không do restart/sửa compose (cấu hình môi trường không đổi).
 
 **Việc cần Sang làm:** (a) trả lời 5 câu hỏi dưới đây, (b) nạp credit Gemini, (c) chấm L4 với Thiện (`fidelity_sample_v2.csv`, điểm 2/1/0 vào `fidelity_scores_v2.csv`, mỗi người một cột).
 

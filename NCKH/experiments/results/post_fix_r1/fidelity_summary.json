@@ -1,0 +1,43 @@
+{
+ "n_items": 50,
+ "n_rater1": 50,
+ "n_rater2": 50,
+ "n_both": 50,
+ "rater1": {
+  "2": {
+   "n": 33,
+   "pct": 66.0
+  },
+  "1": {
+   "n": 15,
+   "pct": 30.0
+  },
+  "0": {
+   "n": 2,
+   "pct": 4.0
+  }
+ },
+ "rater2": {
+  "2": {
+   "n": 35,
+   "pct": 70.0
+  },
+  "1": {
+   "n": 14,
+   "pct": 28.0
+  },
+  "0": {
+   "n": 1,
+   "pct": 2.0
+  }
+ },
+ "exact_agreement_pct": 86.0,
+ "cohen_kappa": 0.691,
+ "weighted_kappa_quadratic": 0.757,
+ "gwet_ac1": 0.819,
+ "mean_score_rater1": 1.62,
+ "mean_score_rater2": 1.68,
+ "mean_score_both": 1.65,
+ "kappa_note": "",
+ "items_missing_a_score": []
+}

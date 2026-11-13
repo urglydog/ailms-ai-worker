@@ -13,7 +13,7 @@
 -- Các khối được đánh dấu bằng dòng "##<TÊN>" để analyze_server.py tách.
 -- =====================================================================
 SET SESSION TRANSACTION READ ONLY;
-SET @lesson_ids = '0';   -- <<< SỬA: ID các bài học thử nghiệm, phân cách dấu phẩy
+SET @lesson_ids = '2284,2285,2286,2287,2288';   -- khóa 92: lec01=2284, lec02=2285, lec03=2286, lec04=2288 (2287: bài trùng/đã xóa nếu có)
 
 SELECT '##JOBS' AS section;
 SELECT
