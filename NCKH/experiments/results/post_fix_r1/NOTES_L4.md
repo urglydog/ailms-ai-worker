@@ -10,3 +10,14 @@
 | Ghi chú | Trong một lần dán trước đó có 3 câu (3, 33, 34) của cột "người chấm 1" bị sửa từ 1 lên 2; đã **khôi phục về điểm gốc của Claude** theo quyết định của Thiện (phương án B) |
 | Kết quả | `fidelity_summary.md/json` (đồng thuận tuyệt đối 86,0%; kappa trọng số bậc hai 0,757; Gwet's AC1 0,819; điểm bảo toàn ý trung bình 1,65/2) |
 | Giới hạn | Một trong hai người chấm là mô hình AI, nên đây **không phải hai người chấm độc lập**; kết quả cần được diễn giải đúng như vậy trong bài |
+
+## Cập nhật 14/11/2026 — bỏ AI, hai người chấm (bản dùng trong bài báo)
+
+| Mục | Giá trị |
+|---|---|
+| Người chấm 1 | Thiện (cột `score_rater2` cũ), so với câu tiếng Anh gốc |
+| Người chấm 2 | Sang, chấm độc lập (không xem điểm người khác/AI), so với bản dịch đầy đủ V2; file chấm `fidelity_cham_Sang.csv` |
+| Đồng thuận ban đầu | 31/50 (62%); Cohen kappa 0,024; kappa trọng số bậc hai −0,043; Gwet AC1 0,53 (`fidelity_summary_human.json`) |
+| Thống nhất | 19 câu lệch, hai người thống nhất theo cùng chuẩn bản dịch đầy đủ (`fidelity_thong_nhat_19cau.csv`, id 37 bị Excel đổi thành 0 đã sửa lại); #16 đổi 2 → 1 sau khi rà (gộp hai ý thành quan hệ nhân quả sai) |
+| Điểm cuối | 2: 36 (72%) · 1: 12 (24%) · 0: 2 (4%, câu #4 và #37); trung bình 1,68/2 (`fidelity_scores_human.csv`, cột `score_final_consensus`) |
+| AI | Điểm của Claude **không dùng** trong bài báo; giữ `fidelity_tham_khao_Claude.csv` làm tham khảo |

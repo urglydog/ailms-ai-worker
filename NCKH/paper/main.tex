@@ -225,7 +225,7 @@ Tổng hợp giọng nói & Azure Speech (SSML) \\
 \item \emph{Độ trễ theo trục thời gian}: sau khi ghép cả bài, độ lệch $o_i - b_i$ giữa thời điểm phát của câu lồng tiếng và mốc gốc (trung bình, p95, cực đại) và chênh lệch tổng thời lượng so với video gốc. Độ đo này bắt được trễ cộng dồn mà $\Delta_i$ theo từng câu không phản ánh, và được dùng để so sánh cách ghép khoảng lặng cố định với cách xếp theo mốc tuyệt đối (\ref{eq:onset}).
 \item \emph{Thời gian xử lý}: thời gian thực thi trên mỗi phút video và thời gian đến khi có đoạn đầu tiên.
 \item \emph{Chi phí}: số lần gọi LLM và TTS.
-\item \emph{Độ bảo toàn ý của câu rút gọn}: 50 câu bị rút gọn được chọn ngẫu nhiên (hạt giống cố định) và chấm trên thang 0--2 (2: giữ đủ ý, 1: mất ý phụ, 0: mất hoặc sai ý chính) bởi hai người chấm; báo cáo độ đồng thuận và hệ số kappa.
+\item \emph{Độ bảo toàn ý của câu rút gọn}: 50 câu bị rút gọn được chọn ngẫu nhiên (hạt giống cố định) và chấm trên thang 0--2 (2: giữ đủ ý, 1: mất ý phụ, 0: mất hoặc sai ý chính) bởi hai thành viên nhóm nghiên cứu, chấm độc lập; sau đó hai người thống nhất điểm cho các câu chấm lệch, dùng bản dịch đầy đủ trước khi rút gọn làm chuẩn so sánh. Báo cáo độ đồng thuận ban đầu và điểm sau khi thống nhất.
 \end{itemize}
 
 \subsection{Kết quả}
@@ -240,12 +240,12 @@ Tổng hợp giọng nói & Azure Speech (SSML) \\
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Phương án} & \textbf{$\bar{\Delta}$ (s)} & \textbf{Còn tràn (\%)} & \textbf{$R>1{,}3$ (\%)} & \textbf{Gọi LLM} \\
+\textbf{Phương án} & \textbf{$\bar{\Delta}$ (s)} & \textbf{Tràn (\%)} & \textbf{$R>1{,}3$ (\%)} & \textbf{LLM} \\
 \hline
-Dịch một pha, tốc độ mặc định & 1,67 & 95,2 & 75,3 & 7 \\
-Dịch hai pha, tốc độ mặc định & 1,00 & 83,5 & 50,7 & 14 \\
-Hai pha + tăng tốc độ đọc & 0,36 & 49,8 & 23,8 & 14 \\
-Đề xuất (đầy đủ) & 0,22 & 27,6 & 19,9 & 286 \\
+V1: một pha, mặc định & 1,67 & 95,2 & 75,3 & 7 \\
+V2: hai pha, mặc định & 1,00 & 83,5 & 50,7 & 14 \\
+V3: hai pha + tăng tốc & 0,36 & 49,8 & 23,8 & 14 \\
+V4: đề xuất (đầy đủ) & 0,22 & 27,6 & 19,9 & 286 \\
 \hline
 \end{tabular}
 \end{table}
@@ -253,17 +253,17 @@ Hai pha + tăng tốc độ đọc & 0,36 & 49,8 & 23,8 & 14 \\
 \paragraph{Độ trễ theo trục thời gian.} Bảng~\ref{tab:timeline} so sánh các cách ghép bằng độ lệch tuyệt đối $|o_i - b_i|$ giữa thời điểm phát của câu lồng tiếng và mốc gốc, đo trên âm thanh được ghép lại từ các tệp câu thật. Với khoảng lặng cố định, âm thanh sau khi ghép dài hơn video gốc từ 9,4 đến 95,9 giây (tăng theo độ dài bài) và độ trễ tuyệt đối trung bình là 20,1 giây. Cùng âm thanh đó, khi xếp theo mốc tuyệt đối (\ref{eq:onset}) và khớp độ dài từng đoạn, độ trễ trung bình giảm còn 2,8 giây và cực đại còn 15,4 giây. Pipeline hiện tại (đã bỏ đệm lặng trong tệp câu và không rút gọn câu quá ngắn) cho tổng thời lượng đúng bằng video gốc ở cả bốn bài (chênh không quá 0,1 giây), độ trễ tuyệt đối trung bình 2,1 giây, phân vị 95 là 8,7 giây; câu muộn nhất trễ 21,5 giây và câu sớm nhất sớm 5,7 giây. Hệ số tăng tốc cả đoạn lớn nhất là 1,023 và hầu như không có phần cuối bị cắt (tối đa 0,06 giây). Kết quả không đồng đều giữa các bài: bài giảng trên lớp (15 phút, nhiều câu ngắn) có độ trễ trung bình 4,35 giây và 62,8\% số câu lệch quá 1 giây, trong khi ba bài còn lại có độ trễ trung bình không quá 1,03 giây.
 
 \begin{table}[t]
-\caption{Độ trễ theo trục thời gian trên bốn bài (787 câu). Dòng (a), (b) dùng âm thanh của pipeline trước khi sửa; dòng (c) là pipeline hiện tại}
+\caption{Độ trễ theo trục thời gian trên bốn bài (787 câu). Dòng (a) ghép bằng khoảng lặng cố định, (b) xếp theo mốc tuyệt đối, cả hai dùng âm thanh của pipeline trước khi sửa; dòng (c) là pipeline hiện tại. Cột TB, P95, Max là $|o_i - b_i|$ tính bằng giây}
 \label{tab:timeline}
 \centering
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{|l|c|c|c|c|c|}
 \hline
-\textbf{Cách ghép} & \textbf{Chênh tổng (s)} & \textbf{TB (s)} & \textbf{P95 (s)} & \textbf{Max (s)} & \textbf{$>$1 s (\%)} \\
+\textbf{Ghép} & \textbf{Chênh (s)} & \textbf{TB} & \textbf{P95} & \textbf{Max} & \textbf{$>$1 s (\%)} \\
 \hline
-(a) Khoảng lặng cố định & $+9{,}4\ldots+95{,}9$ & 20,1 & 74,2 & 95,9 & 91,9 \\
-(b) Mốc tuyệt đối, cùng âm thanh & $-0{,}1\ldots0{,}0$ & 2,8 & 8,6 & 15,4 & 67,1 \\
-(c) Pipeline hiện tại & $-0{,}1\ldots0{,}0$ & 2,1 & 8,7 & 21,5 & 40,3 \\
+(a) Lặng cố định & $+9{,}4\ldots95{,}9$ & 20,1 & 74,2 & 95,9 & 91,9 \\
+(b) Mốc tuyệt đối & $-0{,}1\ldots0$ & 2,8 & 8,6 & 15,4 & 67,1 \\
+(c) Hiện tại & $-0{,}1\ldots0$ & 2,1 & 8,7 & 21,5 & 40,3 \\
 \hline
 \end{tabular}
 \end{table}
@@ -287,7 +287,7 @@ Bài 4 & 900 & 1334 & 88,9 & 886 \\
 \end{tabular}
 \end{table}
 
-\paragraph{Độ bảo toàn ý của câu rút gọn.} Trong 50 câu rút gọn của phương án đề xuất, người chấm thứ nhất (một mô hình ngôn ngữ) cho 66\% câu giữ đủ ý, 30\% mất ý phụ và 4\% mất hoặc sai ý chính; người chấm thứ hai (một người, chấm trước khi xem điểm của mô hình) cho các tỷ lệ tương ứng 70\%, 28\% và 2\%. Độ đồng thuận tuyệt đối là 86,0\%, hệ số kappa trọng số bậc hai là 0,757 (kappa của Cohen 0,691; AC1 của Gwet 0,819), và điểm bảo toàn ý trung bình là 1,65 trên 2. Vì một trong hai người chấm là mô hình ngôn ngữ nên đây không phải hai người chấm độc lập hoàn toàn. Cả hai người chấm cùng cho điểm 0 ở một câu (câu chỉ vị trí thực thi chương trình trong bộ nhớ bị cắt ngắn thành nghĩa khác); các lỗi còn lại chủ yếu là mất chi tiết phụ.
+\paragraph{Độ bảo toàn ý của câu rút gọn.} Trong 50 câu rút gọn của phương án đề xuất, hai người chấm độc lập cho tỷ lệ giữ đủ ý lần lượt là 70\% và 80\%, mất ý phụ 28\% và 18\%, mất hoặc sai ý chính 2\% ở mỗi người. Hai người cho cùng điểm ở 31/50 câu (62\%; AC1 của Gwet 0,53). Kappa của Cohen gần bằng 0 (0,02) vì phần lớn câu được chấm điểm 2, trường hợp kappa được biết là kém tin cậy; ngoài ra, ở lượt chấm đầu, một người so với câu tiếng Anh gốc còn người kia so với bản dịch đầy đủ. Sau khi thống nhất 19 câu lệch theo cùng chuẩn là bản dịch đầy đủ, 72\% câu giữ đủ ý, 24\% mất ý phụ và 4\% (2 câu) mất hoặc sai ý chính, điểm bảo toàn ý trung bình 1,68 trên 2. Hai câu điểm 0 là một câu chỉ vị trí thực thi chương trình trong bộ nhớ bị rút thành nghĩa khác, và một câu ghi công nhóm đồ họa bị rút gọn đến mức khó hiểu; các lỗi còn lại chủ yếu là mất chi tiết phụ hoặc gộp hai ý thành quan hệ nhân quả không có trong câu gốc.
 
 \subsection{Thảo luận}
 Mỗi thành phần của phương pháp đóng góp vào độ khớp thời lượng: pha biên tập theo ngân sách thời lượng giảm độ lệch trung bình khoảng 40\% so với dịch một pha (1,67 xuống 1,00 giây), tăng tốc độ đọc giảm thêm khoảng 64\% (còn 0,36 giây), và rút gọn bằng LLM giảm thêm khoảng 40\% (còn 0,22 giây). Cách xếp theo mốc tuyệt đối là điều kiện cần nhưng không đủ: với phương án hai pha không điều chỉnh tốc độ, cách ghép này vẫn để trễ trung bình 14,7 giây (cực đại 54,5 giây) và phải cắt tới 79,6 giây cuối của bài 13,6 phút, vì tổng phần tràn vượt quá khoảng lặng có sẵn; chỉ khi kết hợp với tăng tốc độ đọc và rút gọn, độ trễ mới nằm ở mức vài giây.
@@ -296,7 +296,7 @@ Quy tắc bỏ qua bước rút gọn đối với câu có khung dưới 2 giâ
 
 Các trường hợp còn lỗi gồm: bài giảng trên lớp có nhiều câu ngắn và nói dày nên độ trễ lớn hơn hẳn; câu bị rút gọn mất ý phụ hoặc đôi khi sai ý khi nội dung phụ thuộc vào ngữ cảnh (Mục độ bảo toàn ý); và mốc thời gian của bộ nhận dạng giọng nói đôi khi vượt quá độ dài âm thanh, đã được xử lý bằng cách kẹp mốc.
 
-Các hạn chế của nghiên cứu gồm: (i) chưa đánh giá cảm nhận của người nghe về độ tự nhiên, độ dễ hiểu và độ khớp hình, nên kết luận của bài chỉ về độ khớp thời lượng và độ bảo toàn ý, không về chất lượng nghe; (ii) tập dữ liệu nhỏ (bốn bài, 50 phút, tiếng Anh, lĩnh vực công nghệ thông tin) và mỗi phương án chỉ chạy một lần; (iii) thời gian xử lý đo trên máy 2 vCPU dùng chung với hệ thống đang vận hành, chậm hơn thời gian thực (khoảng 110 giây cho mỗi phút video); (iv) hiệu quả tái sử dụng bản ký âm giữa các ngôn ngữ đích chưa được đo; (v) độ bảo toàn ý có một người chấm là mô hình ngôn ngữ.
+Các hạn chế của nghiên cứu gồm: (i) chưa đánh giá cảm nhận của người nghe về độ tự nhiên, độ dễ hiểu và độ khớp hình, nên kết luận của bài chỉ về độ khớp thời lượng và độ bảo toàn ý, không về chất lượng nghe; (ii) tập dữ liệu nhỏ (bốn bài, 50 phút, tiếng Anh, lĩnh vực công nghệ thông tin) và mỗi phương án chỉ chạy một lần; (iii) thời gian xử lý đo trên máy 2 vCPU dùng chung với hệ thống đang vận hành, chậm hơn thời gian thực (khoảng 110 giây cho mỗi phút video); (iv) hiệu quả tái sử dụng bản ký âm giữa các ngôn ngữ đích chưa được đo; (v) độ bảo toàn ý do hai thành viên nhóm chấm trên 50 câu, độ đồng thuận ban đầu chỉ ở mức trung bình.
 
 % =====================================================================
 \section{Kết luận}
