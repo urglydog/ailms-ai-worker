@@ -335,6 +335,7 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
 async def generate_conversation(
     contents: list[dict], *, system_instruction: str | None = None, tools: list[dict] | None = None,
     response_mime_type: str | None = None, response_schema: dict | None = None,
+    thinking_level: str | None = None,
 ) -> LlmResult | FunctionCall:
     """Lớp nền tảng cho mọi lệnh sinh văn bản — nhận thẳng `contents` đa lượt (multi-turn)
     thay vì 1 chuỗi prompt đơn, dùng cho UC30 Socratic Tutor cần nhớ lịch sử hội thoại
@@ -356,13 +357,20 @@ async def generate_conversation(
     if response_schema:
         generation_config = payload.setdefault("generationConfig", {})
         generation_config["responseSchema"] = response_schema
+    if thinking_level:
+        # Giới hạn token "suy nghĩ" ẩn (vẫn tính tiền) cho việc đơn giản như dịch/rút gọn câu.
+        generation_config = payload.setdefault("generationConfig", {})
+        generation_config["thinkingConfig"] = {"thinkingLevel": thinking_level}
     return await _execute_request(payload)
 
 
-async def generate(prompt: str, *, system_instruction: str | None = None) -> LlmResult:
+async def generate(
+    prompt: str, *, system_instruction: str | None = None, thinking_level: str | None = None,
+) -> LlmResult:
     """Sinh văn bản 1 lượt. Dùng cho dịch 3 bước, re-summarization, sinh học liệu."""
     res = await generate_conversation(
         [{"role": "user", "parts": [{"text": prompt}]}], system_instruction=system_instruction,
+        thinking_level=thinking_level,
     )
     if isinstance(res, FunctionCall):
         raise ProviderInvalidResponse("Expected text but got FunctionCall from Gemini")

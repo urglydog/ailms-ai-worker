@@ -91,6 +91,14 @@ class Settings(BaseSettings):
     # nghiệm: 51,8% lời gọi rút gọn rơi vào câu ngắn mà rút gọn 2 lần vẫn chạm trần → tốn credit vô ích.
     # Đặt 0 để tắt (luôn rút gọn như cũ).
     min_resummarize_frame_sec: float = 2.0
+    # Hiệu năng dubbing (S1): số câu tổng hợp giọng CÙNG LÚC trong 1 chunk. Azure Speech S0 cho
+    # ~100 request/10 s qua REST nên 8 là an toàn; đặt 1 để quay về chạy tuần tự như cũ.
+    tts_concurrency: int = 8
+    # Số tiến trình FFmpeg `atempo` chạy cùng lúc (CPU-bound, máy chủ 2 vCPU).
+    tempo_concurrency: int = 2
+    # Mức "suy nghĩ" của Gemini cho dịch/rút gọn lời thoại (S7). Rỗng = mặc định của model (như cũ).
+    # Model Gemini 3.x nhận "minimal" | "low" | "medium" | "high"; token suy nghĩ ẩn VẪN tính tiền.
+    dubbing_thinking_level: str = ""
 
     # Thư mục file trung gian. Phải dọn sau mỗi job, tối đa 24 giờ (BR-STORAGE-01).
     temp_dir: str = "/tmp/lms-processing"

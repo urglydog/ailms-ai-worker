@@ -15,6 +15,7 @@ import re
 
 from langcodes import Language
 
+from app.config import settings
 from app.models import Segment
 from app.providers import gemini
 from app.providers.base import ProviderInvalidResponse
@@ -33,6 +34,10 @@ def _natural_language_name(locale_code: str) -> str:
         return Language.get(locale_code).language_name() or locale_code
     except Exception:
         return locale_code
+
+
+def _thinking() -> str | None:
+    return settings.dubbing_thinking_level or None
 
 
 def _extract_json(text: str) -> dict:
@@ -99,17 +104,51 @@ async def translate_batch(segments: list[Segment], source_lang: str, target_lang
         return []
 
     numbered = {str(i + 1): seg.text for i, seg in enumerate(segments)}
-    direct_result = await gemini.generate(_build_direct_prompt(numbered, source_lang, target_lang))
+    direct_result = await gemini.generate(_build_direct_prompt(numbered, source_lang, target_lang), thinking_level=_thinking())
     direct_map = _extract_json(direct_result.text)
 
     durations = {str(i + 1): seg.duration for i, seg in enumerate(segments)}
-    adapt_result = await gemini.generate(_build_adapt_prompt(direct_map, durations, target_lang))
+    adapt_result = await gemini.generate(_build_adapt_prompt(direct_map, durations, target_lang), thinking_level=_thinking())
     adapt_map = _extract_json(adapt_result.text)
 
     return [
         (adapt_map.get(str(i + 1)) or direct_map.get(str(i + 1)) or "").strip()
         for i in range(len(segments))
     ]
+
+
+async def resummarize_batch(items: list[tuple[str, int]], target_lang: str) -> list[str]:
+    """Rút gọn NHIỀU câu trong MỘT lời gọi Gemini (hiệu năng dubbing, S4).
+
+    `items` = [(bản dịch, số ký tự tối đa)]. Trả về danh sách cùng độ dài; câu nào LLM không trả
+    về (hoặc trả rỗng) thì giữ nguyên bản cũ — caller vẫn còn nhánh tăng tốc tối đa làm lưới an toàn.
+    Trước đây gọi `resummarize` cho TỪNG câu: ~32% số câu bị rút gọn -> hàng trăm lời gọi mỗi bài.
+    """
+    if not items:
+        return []
+    target_name = _natural_language_name(target_lang)
+    numbered = {str(i + 1): {"text": text, "max_chars": max_chars} for i, (text, max_chars) in enumerate(items)}
+    prompt = f"""## Role
+Ban la bien tap vien rut gon loi thoai cho video giao duc bang {target_name}.
+
+## Task
+Moi dong duoi day qua dai so voi thoi luong noi cho phep. Rut gon tung dong sao cho KHONG vuot
+"max_chars" ky tu, bo bot tu dem/lap lai, GIU NGUYEN thong tin va y nghia giao duc cot loi.
+Khong gop hay tach dong.
+
+## INPUT
+{json.dumps(numbered, ensure_ascii=False, indent=2)}
+
+## Output CHI JSON, khong them chu nao khac, dung dinh dang:
+{{"1": "dong 1 da rut gon", "2": "dong 2 da rut gon", ...}}
+""".strip()
+    result = await gemini.generate(prompt, thinking_level=_thinking())
+    mapped = _extract_json(result.text)
+    out: list[str] = []
+    for i, (text, _max) in enumerate(items):
+        value = mapped.get(str(i + 1))
+        out.append(value.strip().strip('"') if isinstance(value, str) and value.strip() else text)
+    return out
 
 
 async def resummarize(text: str, target_lang: str) -> str:
@@ -131,5 +170,5 @@ lap lai khong can thiet, GIU NGUYEN thong tin va y nghia giao duc cot loi.
 
 ## Output CHI van ban da rut gon, KHONG giai thich, KHONG dua vao dau ngoac kep.
 """.strip()
-    result = await gemini.generate(prompt)
+    result = await gemini.generate(prompt, thinking_level=_thinking())
     return result.text.strip().strip('"')

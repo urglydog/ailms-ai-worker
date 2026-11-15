@@ -1,18 +1,15 @@
-"""BR-DUB-03 — Adaptive Speech Rate, ĐẶC BIỆT là trần `MAX_RESUMMARIZE_ATTEMPTS`.
+"""BR-DUB-03 — Adaptive Speech Rate, bản tối ưu tốc độ/chi phí (15/11/2026).
 
-Văn bản BR-DUB-03 gốc không có điều kiện dừng cho vòng lặp Re-summarization —
-`doc/SETUP_GIAIDOAN5.md` mục 4 yêu cầu bắt buộc phải thêm trần, nếu không có nguy cơ
-lặp vô hạn khi câu đã quá ngắn mà R vẫn > 1.3. Test ở đây xác nhận vòng lặp DỪNG
-đúng sau đúng số lần cho phép và KHÔNG BAO GIỜ chạy vô hạn.
+Chiều của R: code tính `R = T_exp/T_orig` (audio thực tế / khung gốc) — xem docstring
+`dubbing_service._synthesize_segments`. R > 1.0 nghĩa là audio DÀI hơn khung, cần rút ngắn.
 
-Lưu ý về chiều của R: xem comment trong `dubbing_service._synthesize_with_adaptive_rate`
-— code tính `R = T_exp/T_orig` (audio thực tế / khung thời gian gốc), NGƯỢC với công
-thức "R = T_orig/T_exp" viết trong tài liệu, vì áp dụng đúng y văn bản sẽ khiến nhánh
-"tăng tốc" kích hoạt khi audio đã NGẮN hơn khung gốc — vô nghĩa và mâu thuẫn với chính
-thuật toán gốc VideoLingo (`core/_8_2_dub_chunks.py`). Các test dưới đây dùng chiều đã
-sửa: R > 1.0 nghĩa là audio DÀI hơn khung gốc, cần rút ngắn.
+Khác bản cũ:
+  · tăng tốc bằng FFmpeg `atempo` trên file có sẵn — KHÔNG gọi lại TTS chỉ để đổi `rate`;
+  · rút gọn CẢ LÔ câu quá dài trong 1 lời gọi Gemini (`resummarize_batch`), không gọi từng câu;
+  · các câu được tổng hợp song song.
 """
 
+import asyncio
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
@@ -21,126 +18,117 @@ from app.models import Segment
 from app.providers.azure_tts import SynthesisResult
 from app.services import dubbing_service
 
+VOICE = "vi-VN-HoaiMyNeural"
 
-def _synth_result(duration_sec: float) -> SynthesisResult:
+
+def _res(duration_sec: float) -> SynthesisResult:
     return SynthesisResult(file_path="x.mp3", duration_sec=duration_sec, applied_rate=Decimal("1.0"), was_summarized=False)
 
 
-async def test_r_at_or_below_1_keeps_normal_speed_without_padding_sentence(tmp_path):
-    """13/11/2026 (N1): câu ngắn hơn khung KHÔNG được đệm lặng trong file câu — khoảng lặng do
-    `place_on_timeline` dựng theo mốc tuyệt đối, để câu bị lùi giờ hấp thụ được độ trễ."""
-    segment = Segment(seq=1, start=0.0, end=5.0, text="cau ngan")  # T_orig = 5s
-    # audio thuc te 3s <= T_orig(5s) -> R = 3/5 = 0.6 <= 1.0
-    synthesize_mock = AsyncMock(return_value=_synth_result(3.0))
-    resummarize_mock = AsyncMock()
-    pad_silence_mock = AsyncMock()
-
-    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
-         patch("app.services.translation.resummarize", resummarize_mock), \
-         patch("app.audio_utils.pad_silence", pad_silence_mock):
-        result, final_text, was_summarized = await dubbing_service._synthesize_with_adaptive_rate(
-            segment, "cau ngan", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
-        )
-
-    assert was_summarized is False
-    resummarize_mock.assert_not_awaited()
-    assert synthesize_mock.await_count == 1  # khong tong hop lai
-    pad_silence_mock.assert_not_awaited()
+def _tts_by_text(durations: dict[str, float]) -> AsyncMock:
+    """TTS giả: độ dài audio phụ thuộc NỘI DUNG câu (để bản rút gọn ngắn hơn)."""
+    return AsyncMock(side_effect=lambda text, voice, path, **kw: _res(durations[text]))
 
 
-async def test_r_between_1_and_1_3_applies_rate_flag_without_resummarize(tmp_path):
-    segment = Segment(seq=2, start=0.0, end=10.0, text="cau vua")  # T_orig = 10s
-    # audio thuc te 11s -> R = 11/10 = 1.1 (trong khoang 1.0 < R <= 1.3) -> can tang toc
-    synthesize_mock = AsyncMock(return_value=_synth_result(11.0))
-    resummarize_mock = AsyncMock()
-
-    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
-         patch("app.services.translation.resummarize", resummarize_mock):
-        await dubbing_service._synthesize_with_adaptive_rate(
-            segment, "cau vua", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
-        )
-
-    resummarize_mock.assert_not_awaited()
-    assert synthesize_mock.await_count == 2  # 1 do luong ban dau + 1 lan ap dung rate
-    second_call = synthesize_mock.await_args_list[-1]
-    assert second_call.kwargs.get("rate") == "+10%"
+async def _run(segments, texts, tmp_path, tts_mock, batch_mock=None, tempo_mock=None):
+    batch_mock = batch_mock or AsyncMock(side_effect=lambda items, lang: [t for t, _ in items])
+    tempo_mock = tempo_mock or AsyncMock()
+    paths = [tmp_path / f"s{i}.mp3" for i in range(len(segments))]
+    with patch("app.providers.azure_tts.synthesize", tts_mock), \
+         patch("app.services.translation.resummarize_batch", batch_mock), \
+         patch("app.audio_utils.change_tempo", tempo_mock):
+        out = await dubbing_service._synthesize_segments(segments, texts, VOICE, paths, "vi-VN")
+    return out, batch_mock, tempo_mock
 
 
-async def test_r_above_1_3_stops_after_max_resummarize_attempts_and_applies_30_percent(tmp_path, monkeypatch):
-    """Test QUAN TRỌNG NHẤT: xác nhận vòng lặp Re-summarization KHÔNG chạy vô hạn."""
+async def test_fits_frame_single_tts_call_no_tempo(tmp_path):
+    seg = Segment(seq=1, start=0.0, end=5.0, text="x")
+    tts = _tts_by_text({"ngan": 3.0})                              # R = 0.6
+    out, batch, tempo = await _run([seg], ["ngan"], tmp_path, tts)
+
+    assert tts.await_count == 1
+    batch.assert_not_awaited()
+    tempo.assert_not_awaited()
+    assert out[0][0].applied_rate == Decimal("1.0") and out[0][2] is False
+
+
+async def test_slightly_long_is_sped_up_locally_not_resynthesized(tmp_path):
+    seg = Segment(seq=2, start=0.0, end=10.0, text="x")
+    tts = _tts_by_text({"vua": 11.0})                              # R = 1.1
+    out, batch, tempo = await _run([seg], ["vua"], tmp_path, tts)
+
+    assert tts.await_count == 1                                    # KHONG goi lai TTS de doi rate
+    batch.assert_not_awaited()
+    assert abs(tempo.await_args.args[1] - 1.1) < 1e-9
+    assert out[0][0].applied_rate == Decimal("1.1")
+    assert abs(out[0][0].duration_sec - 10.0) < 1e-6
+
+
+async def test_too_long_sentences_are_shortened_in_one_batch_call(tmp_path):
+    segs = [Segment(seq=i, start=0.0, end=5.0, text="x") for i in range(3)]
+    tts = _tts_by_text({"dai0": 8.0, "dai1": 8.0, "ok": 4.0, "gon0": 5.5, "gon1": 5.5})
+    batch = AsyncMock(return_value=["gon0", "gon1"])
+    out, batch, tempo = await _run(segs, ["dai0", "dai1", "ok"], tmp_path, tts, batch_mock=batch)
+
+    assert batch.await_count == 1                                  # 1 loi goi cho ca lo
+    items = batch.await_args.args[0]
+    assert [t for t, _ in items] == ["dai0", "dai1"]
+    assert all(max_chars >= 1 for _, max_chars in items)
+    assert tts.await_count == 3 + 2                                # 3 lan dau + 2 cau rut gon
+    assert [o[1] for o in out] == ["gon0", "gon1", "ok"]
+    assert [o[2] for o in out] == [True, True, False]
+
+
+async def test_resummarize_rounds_are_capped_then_max_tempo(tmp_path, monkeypatch):
+    """Vòng rút gọn KHÔNG chạy vô hạn: tối đa `max_resummarize_attempts`, sau đó tăng tốc trần ×1.3."""
     monkeypatch.setattr(settings, "max_resummarize_attempts", 2)
+    seg = Segment(seq=3, start=0.0, end=5.0, text="x")
+    tts = AsyncMock(return_value=_res(8.0))                         # R = 1.6, khong bao gio cai thien
+    batch = AsyncMock(side_effect=lambda items, lang: [t + "!" for t, _ in items])
+    out, batch, tempo = await _run([seg], ["dai"], tmp_path, tts, batch_mock=batch)
 
-    segment = Segment(seq=3, start=0.0, end=5.0, text="cau qua dai can rut gon")  # T_orig = 5s
-    # audio thuc te 8s -> R = 8/5 = 1.6 > 1.3, KHONG DOI du sau moi lan resummarize (mock co dinh)
-    synthesize_mock = AsyncMock(return_value=_synth_result(8.0))
-    resummarize_mock = AsyncMock(side_effect=lambda text, lang: text + " (rut gon)")
-
-    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
-         patch("app.services.translation.resummarize", resummarize_mock):
-        result, final_text, was_summarized = await dubbing_service._synthesize_with_adaptive_rate(
-            segment, "cau qua dai can rut gon", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
-        )
-
-    # Dung DUNG BANG so lan cho phep, khong hon (moi lan van R > 1.3 vi mock khong bao gio cai thien)
-    assert resummarize_mock.await_count == settings.max_resummarize_attempts == 2
-    assert was_summarized is True
-
-    # 1 lan do ban dau + 2 lan trong vong lap + 1 lan ap dung rate toi da cuoi cung
-    assert synthesize_mock.await_count == 1 + settings.max_resummarize_attempts + 1
-
-    last_call = synthesize_mock.await_args_list[-1]
-    assert last_call.kwargs.get("rate") == dubbing_service.MAX_TTS_RATE == "+30%"
+    assert batch.await_count == 2
+    assert tts.await_count == 1 + 2
+    assert abs(tempo.await_args.args[1] - 1.3) < 1e-9
+    assert out[0][0].applied_rate == Decimal("1.3") and out[0][2] is True
 
 
-async def test_r_recovers_within_attempts_stops_resummarize_loop_early(tmp_path):
-    """Nếu R về dưới 1.3 sau 1 lần rút gọn thì KHÔNG được rút gọn thêm lần nữa."""
-    segment = Segment(seq=4, start=0.0, end=5.0, text="cau dai")  # T_orig = 5s
-
-    # Lan 1: audio 8s -> R=1.6>1.3. Sau 1 lan resummarize, audio con 5.5s -> R=1.1<=1.3 -> dung.
-    durations = iter([8.0, 5.5])
-    synthesize_mock = AsyncMock(side_effect=lambda *a, **k: _synth_result(next(durations, 5.5)))
-    resummarize_mock = AsyncMock(side_effect=lambda text, lang: text + " (rut gon)")
-
-    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
-         patch("app.services.translation.resummarize", resummarize_mock):
-        await dubbing_service._synthesize_with_adaptive_rate(
-            segment, "cau dai", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
-        )
-
-    assert resummarize_mock.await_count == 1  # dung ngay khi R da <= 1.3, khong lam het so lan cho phep
-
-
-async def test_short_frame_skips_resummarize_and_uses_max_rate(tmp_path, monkeypatch):
-    """11/11/2026: khung < min_resummarize_frame_sec -> KHONG goi LLM rut gon, van long tieng o +30%."""
+async def test_short_frame_skips_llm_and_uses_max_tempo(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "min_resummarize_frame_sec", 2.0)
-    segment = Segment(seq=5, start=0.0, end=1.2, text="Thank you.")  # T_orig = 1.2s
-    synthesize_mock = AsyncMock(return_value=_synth_result(2.4))   # R = 2.0 > 1.3
-    resummarize_mock = AsyncMock()
+    seg = Segment(seq=5, start=0.0, end=1.2, text="Thank you.")
+    tts = _tts_by_text({"Cam on cac ban.": 2.4})                   # R = 2.0
+    out, batch, tempo = await _run([seg], ["Cam on cac ban."], tmp_path, tts)
 
-    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
-         patch("app.services.translation.resummarize", resummarize_mock):
-        _result, final_text, was_summarized = await dubbing_service._synthesize_with_adaptive_rate(
-            segment, "Cam on cac ban.", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
-        )
-
-    resummarize_mock.assert_not_awaited()
-    assert was_summarized is False and final_text == "Cam on cac ban."
-    assert synthesize_mock.await_count == 2                      # 1 lan do + 1 lan o rate toi da
-    assert synthesize_mock.await_args_list[-1].kwargs.get("rate") == dubbing_service.MAX_TTS_RATE
+    batch.assert_not_awaited()
+    assert tts.await_count == 1
+    assert abs(tempo.await_args.args[1] - 1.3) < 1e-9
+    assert out[0][1] == "Cam on cac ban." and out[0][2] is False
 
 
-async def test_frame_at_threshold_still_resummarizes(tmp_path, monkeypatch):
-    monkeypatch.setattr(settings, "min_resummarize_frame_sec", 2.0)
-    monkeypatch.setattr(settings, "max_resummarize_attempts", 2)
-    segment = Segment(seq=6, start=0.0, end=2.0, text="x")       # T_orig = 2.0s (khong < nguong)
-    durations = iter([4.0, 2.2])                                 # R=2.0 -> sau 1 lan rut gon R=1.1
-    synthesize_mock = AsyncMock(side_effect=lambda *a, **k: _synth_result(next(durations, 2.2)))
-    resummarize_mock = AsyncMock(side_effect=lambda text, lang: text)
+async def test_batch_failure_falls_back_to_tempo(tmp_path):
+    seg = Segment(seq=6, start=0.0, end=5.0, text="x")
+    tts = AsyncMock(return_value=_res(8.0))
+    batch = AsyncMock(side_effect=RuntimeError("gemini down"))
+    out, _batch, tempo = await _run([seg], ["dai"], tmp_path, tts, batch_mock=batch)
 
-    with patch("app.providers.azure_tts.synthesize", synthesize_mock), \
-         patch("app.services.translation.resummarize", resummarize_mock):
-        await dubbing_service._synthesize_with_adaptive_rate(
-            segment, "x", "vi-VN-HoaiMyNeural", tmp_path / "out.mp3", "vi-VN",
-        )
+    assert tts.await_count == 1
+    assert out[0][0].applied_rate == Decimal("1.3")
 
-    assert resummarize_mock.await_count == 1
+
+async def test_tts_runs_concurrently_up_to_limit(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "tts_concurrency", 3)
+    running = 0
+    peak = 0
+
+    async def slow_tts(text, voice, path, **kw):
+        nonlocal running, peak
+        running += 1
+        peak = max(peak, running)
+        await asyncio.sleep(0.01)
+        running -= 1
+        return _res(1.0)
+
+    segs = [Segment(seq=i, start=0.0, end=5.0, text="x") for i in range(10)]
+    await _run(segs, ["a"] * 10, tmp_path, AsyncMock(side_effect=slow_tts))
+
+    assert peak == 3

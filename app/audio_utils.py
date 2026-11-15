@@ -162,6 +162,20 @@ async def place_on_timeline(
     )
 
 
+async def change_tempo(path: str | Path, factor: float) -> None:
+    """Tăng tốc 1 file câu tại chỗ bằng FFmpeg `atempo` (giữ cao độ giọng).
+
+    Thay cho việc gọi lại Azure TTS chỉ để đổi `rate` (hiệu năng dubbing, S2): đã có file và đã đo
+    độ dài ở lần tổng hợp đầu, nên tăng tốc cục bộ — không tốn thêm request lẫn ký tự TTS.
+    """
+    if factor <= 1.0:
+        return
+    src = Path(path)
+    tmp = src.with_name(src.stem + "_tempo" + src.suffix)
+    await _ffmpeg("-i", str(src), "-filter:a", f"atempo={factor:.4f}", str(tmp))
+    tmp.replace(src)
+
+
 async def _ffmpeg(*args: str) -> None:
     process = await asyncio.create_subprocess_exec(
         "ffmpeg", "-y", "-loglevel", "error", *args,
