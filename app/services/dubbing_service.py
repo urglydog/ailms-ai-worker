@@ -21,8 +21,10 @@ Luồng đầy đủ khớp `lms-dubbing-pipeline`:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import shutil
+import time
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
@@ -41,6 +43,7 @@ MIN_SPEECH_RATIO = 0.10          # BR-DUB-10
 R_UPPER_BOUND = Decimal("1.3")   # BR-DUB-03
 R_LOWER_BOUND = Decimal("1.0")
 MAX_TTS_RATE = "+30%"            # Mức tối đa của nhánh BR-DUB-03 khi hết lượt re-summarize
+_MAX_TEMPO = Decimal("1.3")       # cùng mức +30%, áp bằng FFmpeg atempo thay vì gọi lại TTS
 
 
 class SkippedPipelineError(Exception):
@@ -232,6 +235,7 @@ async def _process_chunk_once(
     job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
     source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
 ) -> tuple[Path, int]:
+    t_start = time.monotonic()
     detected_language: str | None = None
     generate_source_dtos = False
 
@@ -280,6 +284,7 @@ async def _process_chunk_once(
         )
         return empty_audio, 0
 
+    t_asr = time.monotonic()
     if ctx.target_transcript_available:
         # Bản dịch ngôn ngữ đích đã có sẵn (thường do UC24/25 sinh học liệu tạo trước khi ai bấm
         # lồng tiếng) — bỏ qua HẲN bước dịch Gemini (BR-DUB-02), tiết kiệm 2 lượt gọi/chunk.
@@ -290,27 +295,34 @@ async def _process_chunk_once(
         await redis_client.publish_progress(
             job_id, lesson_id, stage="TRANSLATE", chunkIndex=chunk.index, totalChunks=total_chunks,
         )
-        translated_texts = await translation.translate_batch(
-            segments, ctx.source_language or detected_language or "unknown", ctx.target_language,
-        )
+        # Chunk chạy lại (BR-CHUNK-04) dùng lại bản dịch lần trước — không trả tiền dịch 2 lần.
+        cache_file = work_dir / f"chunk_{chunk.index}_translated.json"
+        translated_texts = _read_json_list(cache_file, len(segments))
+        if translated_texts is None:
+            cps = await _voice_chars_per_sec(ctx.voice_name)
+            max_chars = [max(4, int(cps * seg.duration * _TARGET_R)) for seg in segments] if cps else None
+            translated_texts = await translation.translate_batch(
+                segments, ctx.source_language or detected_language or "unknown", ctx.target_language,
+                max_chars=max_chars,
+            )
+            cache_file.write_text(json.dumps(translated_texts, ensure_ascii=False), encoding="utf-8")
 
     await redis_client.publish_progress(
         job_id, lesson_id, stage="TTS", chunkIndex=chunk.index, totalChunks=total_chunks,
     )
-    sentence_paths: list[Path] = []
-    desired_onsets: list[float] = []   # mốc gốc của câu, tính TƯƠNG ĐỐI từ đầu chunk
+    t_translated = time.monotonic()
+    sentence_paths = [work_dir / f"chunk_{chunk.index}_seg_{seg.seq}.mp3" for seg in segments]
+    # mốc gốc của câu, tính TƯƠNG ĐỐI từ đầu chunk
+    desired_onsets = [max(0.0, seg.start - chunk.start_sec) for seg in segments]
     target_dtos: list[dict] = []
     source_dtos: list[dict] | None = [] if generate_source_dtos else None
 
-    for seg, text in zip(segments, translated_texts):
-        desired_onsets.append(max(0.0, seg.start - chunk.start_sec))
+    synthesized = await _synthesize_segments(
+        segments, translated_texts, ctx.voice_name, sentence_paths, ctx.target_language,
+    )
+    t_tts = time.monotonic()
 
-        out_path = work_dir / f"chunk_{chunk.index}_seg_{seg.seq}.mp3"
-        result, final_text, was_summarized = await _synthesize_with_adaptive_rate(
-            seg, text, ctx.voice_name, out_path, ctx.target_language,
-        )
-        sentence_paths.append(out_path)
-
+    for seg, (result, final_text, was_summarized) in zip(segments, synthesized):
         target_dtos.append(backend_client.segment_to_json(
             seg.seq, Decimal(str(seg.start)), Decimal(str(seg.end)), final_text,
             speech_rate=result.applied_rate, was_summarized=was_summarized,
@@ -355,74 +367,194 @@ async def _process_chunk_once(
             audio_utils.MAX_CHUNK_TEMPO,
         )
 
+    t_timeline = time.monotonic()
     audio_url = await _upload_chunk_audio(chunk_audio, ctx, chunk)
     await backend_client.upsert_chunk_completed(
         job_id, chunk.index, start_sec=chunk.start_sec, end_sec=chunk.end_sec, audio_file_url=audio_url,
         detected_source_language=detected_language, source_segments=source_dtos, target_segments=target_dtos,
     )
+    t_end = time.monotonic()
+    # Hiệu năng dubbing (bước 0): thời gian từng bước của chunk — để biết thời gian thật sự đi đâu.
+    log.info(
+        "TIMING job=%s chunk=%s cau=%s asr=%.1fs dich=%.1fs tts=%.1fs ghep=%.1fs upload=%.1fs tong=%.1fs",
+        job_id, chunk.index, len(segments), t_asr - t_start, t_translated - t_asr, t_tts - t_translated,
+        t_timeline - t_tts, t_end - t_timeline, t_end - t_start,
+    )
 
     return chunk_audio, len(segments) if generate_source_dtos else 0
+
+
+async def _synthesize_segments(
+    segments: list[Segment], texts: list[str], voice_name: str, out_paths: list[Path], target_language: str,
+) -> list[tuple[azure_tts.SynthesisResult, str, bool]]:
+    """BR-DUB-03 (Adaptive Speech Rate) cho CẢ chunk — viết lại cho tốc độ và chi phí (15/11/2026).
+
+    Trước đây mỗi câu chạy tuần tự và gọi TTS trung bình 2,7 lần (đo NCKH: 2.097 lần/787 câu):
+    1 lần đo, 1 lần sau mỗi lần rút gọn, thêm 1 lần CHỈ để đổi `rate`; rút gọn gọi Gemini từng câu.
+    Giờ:
+      1. Tổng hợp mọi câu SONG SONG (`tts_concurrency`, S1).
+      2. Câu có R > 1.3 (và khung ≥ `min_resummarize_frame_sec`): rút gọn CẢ LÔ trong 1 lời gọi
+         Gemini (S4), tổng hợp lại song song; lặp tối đa `max_resummarize_attempts` vòng.
+      3. Câu còn R > 1.0: tăng tốc bằng FFmpeg `atempo` trên file có sẵn, trần ×1.3 (S2) — không
+         gọi lại TTS. Câu R ≤ 1.0 giữ nguyên (khoảng lặng do `place_on_timeline` dựng).
+    R = T_exp / T_orig (xem `_speech_rate`; chiều đã đảo so với văn bản BR gốc, giữ 3 mốc 1.0/1.3).
+    """
+    n = len(segments)
+    if n == 0:
+        return []
+    tts_sem = asyncio.Semaphore(max(1, settings.tts_concurrency))
+
+    async def tts(i: int) -> azure_tts.SynthesisResult:
+        # Chunk chạy lại: câu đã có file giọng hợp lệ cho ĐÚNG văn bản này thì dùng lại, không gọi
+        # Azure lần nữa. Sidecar bị xoá trước khi file bị tăng tốc nên file trong cache luôn là bản gốc.
+        cached = _read_tts_cache(out_paths[i], current[i])
+        if cached is not None:
+            return cached
+        async with tts_sem:
+            res = await azure_tts.synthesize(current[i], voice_name, str(out_paths[i]))
+        _write_tts_cache(out_paths[i], current[i], res.duration_sec)
+        return res
+
+    current = list(texts)
+    summarized = [False] * n
+    results = list(await asyncio.gather(*(tts(i) for i in range(n))))
+    t_orig = [Decimal(str(seg.duration)) for seg in segments]
+    await _record_voice_chars_per_sec(voice_name, current, results)
+
+    for _round in range(settings.max_resummarize_attempts):
+        over = [
+            i for i in range(n)
+            if _speech_rate(t_orig[i], results[i].duration_sec) > R_UPPER_BOUND
+            and float(t_orig[i]) >= settings.min_resummarize_frame_sec
+        ]
+        if not over:
+            break
+        # Số ký tự tối đa để về R ≈ 1.25 (chừa biên dưới trần 1.3), ước lượng theo tỉ lệ ký tự/giây
+        # của chính câu vừa đọc.
+        items = [
+            (current[i], max(1, int(len(current[i]) * 1.25 * float(t_orig[i]) / max(results[i].duration_sec, 0.01))))
+            for i in over
+        ]
+        try:
+            shortened = await translation.resummarize_batch(items, target_language)
+        except Exception as exc:  # rút gọn là tối ưu, lỗi thì rơi xuống nhánh tăng tốc tối đa
+            log.warning("Rut gon theo lo that bai (%s cau) — dung tang toc: %s", len(over), exc)
+            break
+        changed = [i for i, text in zip(over, shortened) if text and text != current[i]]
+        for i in changed:
+            current[i] = shortened[over.index(i)]
+            summarized[i] = True
+        if not changed:
+            break
+        for i, res in zip(changed, await asyncio.gather(*(tts(i) for i in changed))):
+            results[i] = res
+
+    tempo_sem = asyncio.Semaphore(max(1, settings.tempo_concurrency))
+    max_factor = float(_MAX_TEMPO)
+
+    async def fit(i: int) -> azure_tts.SynthesisResult:
+        r = _speech_rate(t_orig[i], results[i].duration_sec)
+        if r <= R_LOWER_BOUND:
+            return azure_tts.SynthesisResult(
+                file_path=str(out_paths[i]), duration_sec=results[i].duration_sec,
+                applied_rate=Decimal("1.0"), was_summarized=summarized[i],
+            )
+        if r > R_UPPER_BOUND:
+            log.warning(
+                "Segment seq=%s van R=%.2f > 1.3 sau rut gon — tang toc toi da x%s (BR-DUB-03), "
+                "can Admin xem qua UC45/UC46", segments[i].seq, r, _MAX_TEMPO,
+            )
+        factor = min(float(r), max_factor)
+        _tts_cache_path(out_paths[i]).unlink(missing_ok=True)
+        async with tempo_sem:
+            await audio_utils.change_tempo(out_paths[i], factor)
+        return azure_tts.SynthesisResult(
+            file_path=str(out_paths[i]), duration_sec=results[i].duration_sec / factor,
+            applied_rate=Decimal(str(round(factor, 2))), was_summarized=summarized[i],
+        )
+
+    final = await asyncio.gather(*(fit(i) for i in range(n)))
+    return [(final[i], current[i], summarized[i]) for i in range(n)]
 
 
 async def _synthesize_with_adaptive_rate(
     segment: Segment, text: str, voice_name: str, out_path: Path, target_language: str,
 ) -> tuple[azure_tts.SynthesisResult, str, bool]:
-    """BR-DUB-03 với trần an toàn `MAX_RESUMMARIZE_ATTEMPTS` (doc/SETUP_GIAIDOAN5.md
-    mục 4 — văn bản BR gốc không có điều kiện dừng, nếu lặp y nguyên sẽ có nguy cơ vô
-    hạn khi câu đã quá ngắn mà R vẫn > 1.3):
+    """Giữ chữ ký cũ cho script thực nghiệm NCKH (`NCKH/experiments/run_experiment.py`) — chạy
+    `_synthesize_segments` cho 1 câu. Lưu ý: số liệu trong bài báo đo bằng bản CŨ (tăng tốc bằng
+    `rate` của Azure, rút gọn từng câu); muốn tái lập đúng số liệu đó phải checkout commit cũ."""
+    return (await _synthesize_segments([segment], [text], voice_name, [out_path], target_language))[0]
 
-        lần lặp = 0
-        while R > 1.3 và lần lặp < MAX_RESUMMARIZE_ATTEMPTS:
-            gọi LLM rút gọn thêm; tính lại R; lần lặp += 1
-        nếu R vẫn > 1.3 sau khi hết số lần cho phép:
-            chấp nhận rate = +30% (mức tối đa của nhánh BR-DUB-03); ghi log cảnh báo
-    """
-    t_orig = Decimal(str(segment.duration))
-    current_text = text
-    was_summarized = False
 
-    result = await azure_tts.synthesize(current_text, voice_name, str(out_path))
-    r = _speech_rate(t_orig, result.duration_sec)
-    # LƯU Ý (đối chiếu với bản Word gốc trước khi bảo vệ): tài liệu (DEVELOPMENT_PLAN.md,
-    # skill lms-dubbing-pipeline, business-rules.md) đều viết công thức "R = T_orig/T_exp"
-    # nhưng NẾU áp dụng đúng y văn bản đó thì nhánh "1.0 < R ≤ 1.3 → tăng tốc" chỉ xảy ra
-    # khi audio tổng hợp NGẮN hơn T_orig — tăng tốc audio vốn đã ngắn là vô nghĩa, và mâu
-    # thuẫn với chính core/_8_2_dub_chunks.py (VideoLingo gốc): họ tăng tốc khi
-    # est_dur (~T_exp) VƯỢT QUÁ khung thời gian gốc. `_speech_rate()` dưới đây vì vậy tính
-    # R = T_exp / T_orig (audio thực tế / khung gốc) — giữ NGUYÊN 3 mốc 1.0/1.3 và hành
-    # động ở mỗi nhánh đúng như tài liệu, chỉ đảo chiều tỉ số để hành vi có ý nghĩa.
+_TARGET_R = 1.15                  # bản dịch nhắm R ≈ 1.15: phần dư nhỏ tăng tốc cục bộ được, không cần rút gọn
+_CPS_KEY = "dubbing:tts_cps:{voice}"
 
-    attempts = 0
-    # Khung quá ngắn (vd "Thank you." ~1 s): rút gọn hầu như không đưa được về khung, chỉ tốn
-    # lời gọi LLM -> bỏ qua, đi thẳng xuống nhánh tăng tốc tối đa; phần dư mượn khoảng lặng sau.
-    max_attempts = settings.max_resummarize_attempts
-    if float(t_orig) < settings.min_resummarize_frame_sec:
-        max_attempts = 0
-    while r > R_UPPER_BOUND and attempts < max_attempts:
-        current_text = await translation.resummarize(current_text, target_language)
-        was_summarized = True
-        result = await azure_tts.synthesize(current_text, voice_name, str(out_path))
-        r = _speech_rate(t_orig, result.duration_sec)
-        attempts += 1
 
-    if r > R_UPPER_BOUND:
-        log.warning(
-            "Segment seq=%s van R=%.2f > 1.3 sau %s lan rut gon (tran %s) - chap nhan rate %s (BR-DUB-03), "
-            "can Admin xem qua UC45/UC46",
-            segment.seq, r, attempts, settings.max_resummarize_attempts, MAX_TTS_RATE,
+async def _voice_chars_per_sec(voice_name: str) -> float | None:
+    """Tốc độ đọc (ký tự/giây) đã đo của giọng này ở các job trước — None nếu chưa có."""
+    try:
+        raw = await redis_client.get_client().get(_CPS_KEY.format(voice=voice_name))
+        return float(raw) if raw else None
+    except Exception as exc:  # chỉ là tối ưu: Redis lỗi thì dịch không kèm giới hạn ký tự như cũ
+        log.warning("Khong doc duoc toc do doc cua giong %s: %s", voice_name, exc)
+        return None
+
+
+async def _record_voice_chars_per_sec(voice_name: str, texts: list[str], results: list[azure_tts.SynthesisResult]) -> None:
+    """Đo tốc độ đọc thật của giọng từ lượt TTS đầu, lưu (làm mượt) để job sau ước `max_chars`.
+    Không cần bảng tốc độ theo ngôn ngữ (BR-DUB-07: không hardcode danh sách ngôn ngữ)."""
+    chars = sum(len(t) for t, r in zip(texts, results) if r.duration_sec > 0.3)
+    secs = sum(r.duration_sec for r in results if r.duration_sec > 0.3)
+    if chars < 50 or secs <= 0:
+        return
+    measured = chars / secs
+    try:
+        old = await _voice_chars_per_sec(voice_name)
+        value = measured if old is None else 0.7 * old + 0.3 * measured
+        await redis_client.get_client().set(_CPS_KEY.format(voice=voice_name), f"{value:.3f}")
+    except Exception as exc:
+        log.warning("Khong luu duoc toc do doc cua giong %s: %s", voice_name, exc)
+
+
+def _read_json_list(path: Path, expected_len: int) -> list[str] | None:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if isinstance(data, list) and len(data) == expected_len and all(isinstance(x, str) and x for x in data):
+        return data
+    return None
+
+
+def _tts_cache_path(audio_path: Path) -> Path:
+    return audio_path.with_name(audio_path.name + ".json")
+
+
+def _read_tts_cache(audio_path: Path, text: str) -> azure_tts.SynthesisResult | None:
+    try:
+        meta = json.loads(_tts_cache_path(audio_path).read_text(encoding="utf-8"))
+        if meta.get("text") != text or audio_path.stat().st_size == 0:
+            return None
+        return azure_tts.SynthesisResult(
+            file_path=str(audio_path), duration_sec=float(meta["duration_sec"]),
+            applied_rate=Decimal("1.0"), was_summarized=False,
         )
-        result = await azure_tts.synthesize(current_text, voice_name, str(out_path), rate=MAX_TTS_RATE)
-    elif r > R_LOWER_BOUND:
-        result = await azure_tts.synthesize(current_text, voice_name, str(out_path), rate=azure_tts.compute_rate_flag(r))
-    # R <= 1.0: KHÔNG đệm lặng vào file câu nữa (13/11/2026, NCKH N1). Khoảng lặng được dựng
-    # ở bước ghép `audio_utils.place_on_timeline` theo mốc tuyệt đối; đệm sẵn trong file câu làm
-    # câu bị lùi giờ không "nhả" được độ trễ cho câu sau và buộc phải tăng tốc cả đoạn nhiều hơn.
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
 
-    return result, current_text, was_summarized
+
+def _write_tts_cache(audio_path: Path, text: str, duration_sec: float) -> None:
+    try:
+        if audio_path.stat().st_size > 0:
+            _tts_cache_path(audio_path).write_text(
+                json.dumps({"text": text, "duration_sec": duration_sec}, ensure_ascii=False), encoding="utf-8",
+            )
+    except OSError:
+        pass
 
 
 def _speech_rate(t_orig: Decimal, actual_duration_sec: float) -> Decimal:
-    """R = T_exp / T_orig — xem ghi chú trong `_synthesize_with_adaptive_rate` về lý do
+    """R = T_exp / T_orig — xem ghi chú trong `_synthesize_segments` về lý do
     đảo chiều so với công thức "R = T_orig/T_exp" viết trong tài liệu.
     """
     if t_orig <= 0:

@@ -89,3 +89,14 @@ def test_short_unpadded_sentence_lets_next_return_to_original_onset():
     # N1: cau 0 tran 1 s, cau 1 ngan hon khung (khong dem) -> cau 2 ve dung moc goc ngay.
     onsets = audio_utils.plan_onsets([0.0, 2.0, 5.0], [3.0, 1.0, 1.0])
     assert onsets == [0.0, 3.0, 5.0]
+
+
+@needs_ffmpeg
+@pytest.mark.asyncio
+async def test_change_tempo_shortens_file_in_place(tmp_path):
+    """Hiệu năng dubbing (S2): tăng tốc cục bộ thay cho gọi lại TTS chỉ để đổi `rate`."""
+    p = _tone(tmp_path, "s", 2.6)
+    await audio_utils.change_tempo(p, 1.3)
+    assert abs(await audio_utils.measure_duration_sec(p) - 2.0) < 0.1
+    await audio_utils.change_tempo(p, 1.0)          # <= 1.0: khong lam gi
+    assert abs(await audio_utils.measure_duration_sec(p) - 2.0) < 0.1
