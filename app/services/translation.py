@@ -71,50 +71,67 @@ noi dung, khong them binh luan rieng. Giu dung so luong dong dau vao.
 """.strip()
 
 
-def _build_adapt_prompt(direct: dict[str, str], durations_sec: dict[str, float], target_lang: str) -> str:
+def _build_dub_prompt(segments: list[Segment], max_chars: list[int | None], source_lang: str, target_lang: str) -> str:
+    source_name = _natural_language_name(source_lang)
     target_name = _natural_language_name(target_lang)
-    combined = {
-        key: {"text": direct.get(key, ""), "budget_sec": round(durations_sec.get(key, 0.0), 1)}
-        for key in direct
-    }
-    combined_json = json.dumps(combined, ensure_ascii=False, indent=2)
+    lines = {}
+    for i, seg in enumerate(segments):
+        item: dict = {"text": seg.text, "budget_sec": round(seg.duration, 1)}
+        if max_chars[i]:
+            item["max_chars"] = max_chars[i]
+        lines[str(i + 1)] = item
     return f"""## Role
-Ban la bien tap vien phu de/loi thoai cho video giao duc bang {target_name}.
+Ban la bien dich vien kiem bien tap loi thoai long tieng video bai giang, dich {source_name} sang {target_name}.
 
 ## Task
-Voi moi dong duoi day, viet lai ban dich cho tu nhien va de nghe khi doc thanh loi
-(dung cho Text-to-Speech), GIU NGUYEN y nghia giao duc cot loi. "budget_sec" la thoi
-luong noi cua cau goc de tham khao — co gang dien dat GON de vua thoi luong do NHUNG
-TUYET DOI khong duoc hy sinh do ro rang hay lam mat y nghia chi de chay theo thoi
-luong.
+Voi MOI dong duoi day, dich sang {target_name} va viet luon thanh loi noi TU NHIEN, de nghe khi
+doc bang Text-to-Speech:
+- Dung nghia, khong bo sot y, giu thuat ngu chuyen mon; khong them binh luan.
+- "budget_sec" la thoi luong noi cua cau goc: dien dat GON de doc vua thoi luong do.
+- Neu co "max_chars": ban dich KHONG duoc vuot so ky tu nay (bo tu dem/lap, KHONG bo y chinh).
+- Giu dung so dong, khong gop hay tach dong, khong bo dong nao.
 
 ## INPUT
-{combined_json}
+{json.dumps(lines, ensure_ascii=False, indent=2)}
 
 ## Output CHI JSON, khong them chu nao khac, dung dinh dang:
-{{"1": "ban dich da bien tap dong 1", ...}}
+{{"1": "ban dich dong 1", "2": "ban dich dong 2", ...}}
 """.strip()
 
 
-async def translate_batch(segments: list[Segment], source_lang: str, target_lang: str) -> list[str]:
-    """Dịch toàn bộ câu trong MỘT chunk 10 phút (BR-CHUNK-02) theo batch — 2 lời gọi
-    Gemini cho cả chunk, không phải 2 lời gọi cho mỗi câu.
+async def translate_batch(
+    segments: list[Segment], source_lang: str, target_lang: str, max_chars: list[int | None] | None = None,
+) -> list[str]:
+    """Dịch toàn bộ câu trong MỘT chunk 10 phút (BR-CHUNK-02) — 1 lời gọi Gemini cho cả chunk.
+
+    15/11/2026: gộp "dịch sát nghĩa" + "biên tập cho tự nhiên/vừa thời lượng" (trước là 2 lời gọi,
+    bản dịch sát nghĩa chỉ để làm dự phòng) thành 1 lời gọi; "3 bước" của pipeline dịch là 3 giai
+    đoạn nghiệp vụ, không bắt buộc là 3 request. `max_chars` (tuỳ chọn, ước theo tốc độ đọc đo được
+    của giọng) giúp bản dịch vừa khung NGAY từ đầu -> ít câu phải rút gọn và đọc lại TTS.
     """
     if not segments:
         return []
+    limits = list(max_chars) if max_chars and len(max_chars) == len(segments) else [None] * len(segments)
 
-    numbered = {str(i + 1): seg.text for i, seg in enumerate(segments)}
-    direct_result = await gemini.generate(_build_direct_prompt(numbered, source_lang, target_lang), thinking_level=_thinking())
-    direct_map = _extract_json(direct_result.text)
+    result = await gemini.generate(_build_dub_prompt(segments, limits, source_lang, target_lang), thinking_level=_thinking())
+    mapped = _extract_json(result.text)
+    out = [_as_text(mapped.get(str(i + 1))) for i in range(len(segments))]
+    # Gemini (nhất là khi suy nghĩ ở mức thấp) đôi khi bỏ sót vài dòng cuối -> câu rỗng, Azure trả
+    # file 0 byte làm hỏng cả chunk (job 30, 15/11/2026). Dịch lại riêng các dòng thiếu trong 1 lời
+    # gọi; vẫn thiếu thì giữ câu gốc để chunk không bao giờ có câu rỗng.
+    missing = [i for i, text in enumerate(out) if not text]
+    if missing:
+        retry_map = _extract_json((await gemini.generate(
+            _build_direct_prompt({str(k + 1): segments[i].text for k, i in enumerate(missing)}, source_lang, target_lang),
+            thinking_level=_thinking(),
+        )).text)
+        for k, i in enumerate(missing):
+            out[i] = _as_text(retry_map.get(str(k + 1))) or segments[i].text.strip()
+    return out
 
-    durations = {str(i + 1): seg.duration for i, seg in enumerate(segments)}
-    adapt_result = await gemini.generate(_build_adapt_prompt(direct_map, durations, target_lang), thinking_level=_thinking())
-    adapt_map = _extract_json(adapt_result.text)
 
-    return [
-        (adapt_map.get(str(i + 1)) or direct_map.get(str(i + 1)) or "").strip()
-        for i in range(len(segments))
-    ]
+def _as_text(value: object) -> str:
+    return value.strip() if isinstance(value, str) else ""
 
 
 async def resummarize_batch(items: list[tuple[str, int]], target_lang: str) -> list[str]:

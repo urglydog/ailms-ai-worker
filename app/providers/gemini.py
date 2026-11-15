@@ -448,6 +448,70 @@ async def embed_content(text: str) -> list[float]:
     raise ProviderInvalidResponse("Max retries exceeded for Gemini embedContent.")
 
 
+_EMBED_BATCH_SIZE = 100   # giới hạn số request trong 1 lần batchEmbedContents
+
+
+async def embed_contents(texts: list[str]) -> list[list[float]]:
+    """Embedding NHIỀU đoạn văn bằng `batchEmbedContents` — 1 request cho tối đa 100 đoạn.
+
+    Trước đây `tutor_indexing` gọi `embed_content` tuần tự từng câu: 90 câu = 90 request (~30 s
+    mỗi bài, đo job 29). Cùng chính sách key pool/retry với `embed_content`.
+    """
+    out: list[list[float]] = []
+    for start in range(0, len(texts), _EMBED_BATCH_SIZE):
+        out.extend(await _batch_embed(texts[start:start + _EMBED_BATCH_SIZE]))
+    return out
+
+
+async def _batch_embed(texts: list[str]) -> list[list[float]]:
+    client = get_client()
+    pool = get_key_pool()
+    if not pool.slots:
+        raise ProviderInvalidResponse("No Gemini API keys/models configured.")
+    model_ref = f"models/{settings.gemini_embedding_model}"
+    payload = {"requests": [
+        {"model": model_ref, "content": {"parts": [{"text": t}]}, "outputDimensionality": settings.embedding_dimensions}
+        for t in texts
+    ]}
+
+    for _attempt in range(_MAX_TRANSIENT_RETRIES):
+        slot = pool.get_slot()
+        if not slot:
+            raise ProviderInvalidResponse("No active Gemini slot available (all in cooldown).")
+        key = slot["key"]
+        await _throttle_rpm()
+        url = f"{_BASE_URL}/{model_ref}:batchEmbedContents?key={key}"
+        try:
+            resp = await client.post(url, json=payload, timeout=60.0)
+            if resp.status_code == 200:
+                pool.reset_failure(key, slot["model"])
+                vectors = [e.get("values") for e in resp.json().get("embeddings", [])]
+                if len(vectors) != len(texts) or not all(vectors):
+                    raise ProviderInvalidResponse("Gemini batchEmbedContents tra ve thieu vector.")
+                return vectors
+            if resp.status_code == 429:
+                pool.mark_cool_down(key, slot["model"], 60)
+                continue
+            if resp.status_code in (400, 403):
+                error_status, error_message = _parse_gemini_error_body(resp)
+                if _is_key_error(resp.status_code, error_status, error_message):
+                    pool.mark_invalid(key, slot["model"])
+                    continue
+                raise ProviderInvalidResponse(
+                    f"Gemini batchEmbedContents tu choi request: {error_message or resp.text[:200]}"
+                )
+            if _is_credit_exhausted(resp):
+                logger.error(f"Gemini batchEmbedContents HET CREDIT (402): {resp.text[:200]}")
+                pool.mark_cool_down(key, slot["model"], 3600, reason="402-credit")
+                continue
+            pool.mark_failure(key, slot["model"])
+        except httpx.RequestError as exc:
+            logger.error(f"Gemini batchEmbedContents network error: {exc}")
+            pool.mark_failure(key, slot["model"])
+
+    raise ProviderInvalidResponse("Max retries exceeded for Gemini batchEmbedContents.")
+
+
 def _parse_response(payload: dict, model: str) -> LlmResult | FunctionCall:
     """Chuyển JSON của Gemini thành dataclass; sai định dạng thì raise."""
     try:

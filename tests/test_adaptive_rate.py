@@ -36,7 +36,8 @@ async def _run(segments, texts, tmp_path, tts_mock, batch_mock=None, tempo_mock=
     paths = [tmp_path / f"s{i}.mp3" for i in range(len(segments))]
     with patch("app.providers.azure_tts.synthesize", tts_mock), \
          patch("app.services.translation.resummarize_batch", batch_mock), \
-         patch("app.audio_utils.change_tempo", tempo_mock):
+         patch("app.audio_utils.change_tempo", tempo_mock), \
+         patch("app.services.dubbing_service._record_voice_chars_per_sec", AsyncMock()):
         out = await dubbing_service._synthesize_segments(segments, texts, VOICE, paths, "vi-VN")
     return out, batch_mock, tempo_mock
 
@@ -132,3 +133,35 @@ async def test_tts_runs_concurrently_up_to_limit(tmp_path, monkeypatch):
     await _run(segs, ["a"] * 10, tmp_path, AsyncMock(side_effect=slow_tts))
 
     assert peak == 3
+
+
+async def test_retry_reuses_cached_tts_files(tmp_path):
+    """Chunk chạy lại: câu đã có file giọng cho đúng văn bản -> không gọi Azure lần nữa."""
+    seg = Segment(seq=7, start=0.0, end=5.0, text="x")
+
+    async def real_tts(text, voice, path, **kw):
+        with open(path, "wb") as f:
+            f.write(b"ID3fake")
+        return _res(3.0)
+
+    tts = AsyncMock(side_effect=real_tts)
+    await _run([seg], ["ngan"], tmp_path, tts)
+    await _run([seg], ["ngan"], tmp_path, tts)       # lan chay lai
+    assert tts.await_count == 1
+
+    await _run([seg], ["khac"], tmp_path, tts)       # van ban doi -> phai doc lai
+    assert tts.await_count == 2
+
+
+async def test_sped_up_file_is_not_reused_from_cache(tmp_path):
+    seg = Segment(seq=8, start=0.0, end=10.0, text="x")
+
+    async def real_tts(text, voice, path, **kw):
+        with open(path, "wb") as f:
+            f.write(b"ID3fake")
+        return _res(11.0)                             # R = 1.1 -> bi tang toc tai cho
+
+    tts = AsyncMock(side_effect=real_tts)
+    await _run([seg], ["vua"], tmp_path, tts)
+    await _run([seg], ["vua"], tmp_path, tts)
+    assert tts.await_count == 2                      # file da doi toc do -> khong dung lai

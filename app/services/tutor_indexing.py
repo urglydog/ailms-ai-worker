@@ -16,9 +16,10 @@ async def index_segments(lesson_id: int, language: str | None, segments: list[Se
     if not segments:
         return
 
+    # 1 request batchEmbedContents cho tối đa 100 câu, thay vì 1 request mỗi câu (15/11/2026).
+    vectors = await gemini.embed_contents([seg.text for seg in segments])
     rows: list[supabase_vector.EmbeddingRow] = []
-    for seg in segments:
-        vector = await gemini.embed_content(seg.text)
+    for seg, vector in zip(segments, vectors):
         rows.append(
             supabase_vector.EmbeddingRow(
                 segment_id=seg.seq,

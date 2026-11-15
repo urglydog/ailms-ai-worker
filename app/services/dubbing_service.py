@@ -21,6 +21,7 @@ Luồng đầy đủ khớp `lms-dubbing-pipeline`:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import shutil
 import time
@@ -294,9 +295,17 @@ async def _process_chunk_once(
         await redis_client.publish_progress(
             job_id, lesson_id, stage="TRANSLATE", chunkIndex=chunk.index, totalChunks=total_chunks,
         )
-        translated_texts = await translation.translate_batch(
-            segments, ctx.source_language or detected_language or "unknown", ctx.target_language,
-        )
+        # Chunk chạy lại (BR-CHUNK-04) dùng lại bản dịch lần trước — không trả tiền dịch 2 lần.
+        cache_file = work_dir / f"chunk_{chunk.index}_translated.json"
+        translated_texts = _read_json_list(cache_file, len(segments))
+        if translated_texts is None:
+            cps = await _voice_chars_per_sec(ctx.voice_name)
+            max_chars = [max(4, int(cps * seg.duration * _TARGET_R)) for seg in segments] if cps else None
+            translated_texts = await translation.translate_batch(
+                segments, ctx.source_language or detected_language or "unknown", ctx.target_language,
+                max_chars=max_chars,
+            )
+            cache_file.write_text(json.dumps(translated_texts, ensure_ascii=False), encoding="utf-8")
 
     await redis_client.publish_progress(
         job_id, lesson_id, stage="TTS", chunkIndex=chunk.index, totalChunks=total_chunks,
@@ -396,13 +405,21 @@ async def _synthesize_segments(
     tts_sem = asyncio.Semaphore(max(1, settings.tts_concurrency))
 
     async def tts(i: int) -> azure_tts.SynthesisResult:
+        # Chunk chạy lại: câu đã có file giọng hợp lệ cho ĐÚNG văn bản này thì dùng lại, không gọi
+        # Azure lần nữa. Sidecar bị xoá trước khi file bị tăng tốc nên file trong cache luôn là bản gốc.
+        cached = _read_tts_cache(out_paths[i], current[i])
+        if cached is not None:
+            return cached
         async with tts_sem:
-            return await azure_tts.synthesize(current[i], voice_name, str(out_paths[i]))
+            res = await azure_tts.synthesize(current[i], voice_name, str(out_paths[i]))
+        _write_tts_cache(out_paths[i], current[i], res.duration_sec)
+        return res
 
     current = list(texts)
     summarized = [False] * n
     results = list(await asyncio.gather(*(tts(i) for i in range(n))))
     t_orig = [Decimal(str(seg.duration)) for seg in segments]
+    await _record_voice_chars_per_sec(voice_name, current, results)
 
     for _round in range(settings.max_resummarize_attempts):
         over = [
@@ -448,6 +465,7 @@ async def _synthesize_segments(
                 "can Admin xem qua UC45/UC46", segments[i].seq, r, _MAX_TEMPO,
             )
         factor = min(float(r), max_factor)
+        _tts_cache_path(out_paths[i]).unlink(missing_ok=True)
         async with tempo_sem:
             await audio_utils.change_tempo(out_paths[i], factor)
         return azure_tts.SynthesisResult(
@@ -466,6 +484,73 @@ async def _synthesize_with_adaptive_rate(
     `_synthesize_segments` cho 1 câu. Lưu ý: số liệu trong bài báo đo bằng bản CŨ (tăng tốc bằng
     `rate` của Azure, rút gọn từng câu); muốn tái lập đúng số liệu đó phải checkout commit cũ."""
     return (await _synthesize_segments([segment], [text], voice_name, [out_path], target_language))[0]
+
+
+_TARGET_R = 1.15                  # bản dịch nhắm R ≈ 1.15: phần dư nhỏ tăng tốc cục bộ được, không cần rút gọn
+_CPS_KEY = "dubbing:tts_cps:{voice}"
+
+
+async def _voice_chars_per_sec(voice_name: str) -> float | None:
+    """Tốc độ đọc (ký tự/giây) đã đo của giọng này ở các job trước — None nếu chưa có."""
+    try:
+        raw = await redis_client.get_client().get(_CPS_KEY.format(voice=voice_name))
+        return float(raw) if raw else None
+    except Exception as exc:  # chỉ là tối ưu: Redis lỗi thì dịch không kèm giới hạn ký tự như cũ
+        log.warning("Khong doc duoc toc do doc cua giong %s: %s", voice_name, exc)
+        return None
+
+
+async def _record_voice_chars_per_sec(voice_name: str, texts: list[str], results: list[azure_tts.SynthesisResult]) -> None:
+    """Đo tốc độ đọc thật của giọng từ lượt TTS đầu, lưu (làm mượt) để job sau ước `max_chars`.
+    Không cần bảng tốc độ theo ngôn ngữ (BR-DUB-07: không hardcode danh sách ngôn ngữ)."""
+    chars = sum(len(t) for t, r in zip(texts, results) if r.duration_sec > 0.3)
+    secs = sum(r.duration_sec for r in results if r.duration_sec > 0.3)
+    if chars < 50 or secs <= 0:
+        return
+    measured = chars / secs
+    try:
+        old = await _voice_chars_per_sec(voice_name)
+        value = measured if old is None else 0.7 * old + 0.3 * measured
+        await redis_client.get_client().set(_CPS_KEY.format(voice=voice_name), f"{value:.3f}")
+    except Exception as exc:
+        log.warning("Khong luu duoc toc do doc cua giong %s: %s", voice_name, exc)
+
+
+def _read_json_list(path: Path, expected_len: int) -> list[str] | None:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if isinstance(data, list) and len(data) == expected_len and all(isinstance(x, str) and x for x in data):
+        return data
+    return None
+
+
+def _tts_cache_path(audio_path: Path) -> Path:
+    return audio_path.with_name(audio_path.name + ".json")
+
+
+def _read_tts_cache(audio_path: Path, text: str) -> azure_tts.SynthesisResult | None:
+    try:
+        meta = json.loads(_tts_cache_path(audio_path).read_text(encoding="utf-8"))
+        if meta.get("text") != text or audio_path.stat().st_size == 0:
+            return None
+        return azure_tts.SynthesisResult(
+            file_path=str(audio_path), duration_sec=float(meta["duration_sec"]),
+            applied_rate=Decimal("1.0"), was_summarized=False,
+        )
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _write_tts_cache(audio_path: Path, text: str, duration_sec: float) -> None:
+    try:
+        if audio_path.stat().st_size > 0:
+            _tts_cache_path(audio_path).write_text(
+                json.dumps({"text": text, "duration_sec": duration_sec}, ensure_ascii=False), encoding="utf-8",
+            )
+    except OSError:
+        pass
 
 
 def _speech_rate(t_orig: Decimal, actual_duration_sec: float) -> Decimal:

@@ -36,7 +36,19 @@ _TOKEN_TTL_SEC = 9 * 60
 _client: httpx.AsyncClient | None = None
 _token: str | None = None
 _token_fetched_at: float = 0.0
-_token_lock = asyncio.Lock()
+# Mỗi task Celery chạy `asyncio.run` -> event loop MỚI; Lock gắn với loop đầu tiên nó bị tranh chấp.
+# Từ khi TTS chạy song song (15/11/2026), job thứ 2 trong cùng tiến trình lỗi "bound to a different
+# event loop" (job 32) -> tạo Lock riêng cho từng loop.
+_token_locks: dict[int, asyncio.Lock] = {}
+
+
+def _token_lock() -> asyncio.Lock:
+    loop_id = id(asyncio.get_running_loop())
+    lock = _token_locks.get(loop_id)
+    if lock is None:
+        _token_locks.clear()          # loop cũ đã đóng, không giữ lock của nó
+        lock = _token_locks[loop_id] = asyncio.Lock()
+    return lock
 
 
 @dataclass(frozen=True)
@@ -95,7 +107,7 @@ async def _issue_token() -> str:
 async def _get_token() -> str:
     """Cache token, tự làm mới khi gần hết hạn — tránh gọi `/issueToken` mỗi câu thoại."""
     global _token, _token_fetched_at
-    async with _token_lock:
+    async with _token_lock():
         now = time.monotonic()
         if _token is None or (now - _token_fetched_at) > _TOKEN_TTL_SEC:
             _token = await _issue_token()
