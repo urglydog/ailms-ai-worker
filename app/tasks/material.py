@@ -20,6 +20,7 @@ import json
 from decimal import Decimal
 
 from app import redis_client
+from app import usage as usage_mod
 from app.celery_app import celery_app
 from app.http import backend_client
 from app.models import Segment
@@ -123,6 +124,7 @@ async def _run_and_cleanup(generation_id: int) -> dict:
             return_exceptions=True,
         )
 
+@usage_mod.tagged("MATERIAL", already_logged=True)
 async def _generate_mindmap(text: str, language: str) -> str | None:
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot so do tu duy (Mindmap) bang Mermaid.js cho noi dung bai hoc sau day.
@@ -167,6 +169,7 @@ async def _generate_mindmap(text: str, language: str) -> str | None:
         
     return None
 
+@usage_mod.tagged("MATERIAL", already_logged=True)
 async def _generate_flashcards(text: str, language: str) -> tuple[list[dict], dict] | None:
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot bo Flashcards (The ghi nho) cho noi dung bai hoc sau day.
@@ -206,6 +209,7 @@ async def _generate_flashcards(text: str, language: str) -> tuple[list[dict], di
         
     return None
 
+@usage_mod.tagged("MATERIAL", already_logged=True)
 async def _generate_quizzes(text: str, language: str) -> tuple[list[dict], dict] | None:
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot bo cau hoi trac nghiem (Quiz) cho noi dung bai hoc sau day.

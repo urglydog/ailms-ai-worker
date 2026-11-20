@@ -19,6 +19,7 @@ import logging
 
 import httpx
 
+from app import usage as usage_mod
 from app.config import settings
 from app.providers.base import ProviderInvalidResponse, build_client
 
@@ -84,7 +85,7 @@ class KeyPoolManager:
             if slot["status"] == "COOL_DOWN" and now > slot["cool_down_until"]:
                 slot["status"] = "ACTIVE"
                 slot["failures"] = 0
-                logger.info(f"Slot {slot['key'][:8]}.../{slot['model']} phuc hoi khoi cooldown.")
+                logger.info(f"Slot ****{slot['key'][-4:]}/{slot['model']} phuc hoi khoi cooldown.")
                 return slot
             if self.cursor == start:
                 break
@@ -96,7 +97,7 @@ class KeyPoolManager:
                 slot["status"] = "COOL_DOWN"
                 slot["cool_down_until"] = time.time() + duration_sec
                 active = self._active_count()
-                logger.warning(f"Slot {key[:8]}.../{model} bi {reason} → cooldown {duration_sec}s. Con {active} slot active.")
+                logger.warning(f"Slot ****{key[-4:]}/{model} bi {reason} → cooldown {duration_sec}s. Con {active} slot active.")
                 break
 
     def mark_failure(self, key: str, model: str) -> None:
@@ -109,7 +110,7 @@ class KeyPoolManager:
 
     def mark_invalid(self, key: str, model: str) -> None:
         self.mark_cool_down(key, model, 3600, reason="key loi (400/403)")
-        logger.error(f"Slot {key[:8]}.../{model} bi block (400/403) → cooldown 1h.")
+        logger.error(f"Slot ****{key[-4:]}/{model} bi block (400/403) → cooldown 1h.")
 
     def reset_failure(self, key: str, model: str) -> None:
         for slot in self.slots:
@@ -122,7 +123,7 @@ class KeyPoolManager:
         now = time.time()
         return [
             {
-                "key_preview": s["key"][:8] + "...",
+                "key_preview": "****" + s["key"][-4:],
                 "model": s["model"],
                 "status": s["status"],
                 "in_cooldown": s["status"] == "COOL_DOWN" and s["cool_down_until"] > now,
@@ -195,6 +196,8 @@ class LlmResult:
     model: str
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    # Token "suy nghĩ" ẩn: không nằm trong completion_tokens nhưng Google vẫn tính tiền như token đầu ra.
+    thinking_tokens: int = 0
 
     @property
     def total_tokens(self) -> int:
@@ -278,17 +281,19 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
         url = f"{_BASE_URL}/models/{model}:generateContent?key={key}"
 
         if attempt > 0:
-            logger.info(f"Retry #{attempt}: dang thu slot {key[:8]}.../{model}")
+            logger.info(f"Retry #{attempt}: dang thu slot ****{key[-4:]}/{model}")
 
         try:
             resp = await client.post(url, json=payload, timeout=60.0)
 
             if resp.status_code == 200:
                 pool.reset_failure(key, model)
-                return _parse_response(resp.json(), model)
+                body = resp.json()
+                _report_text_usage(body, model)
+                return _parse_response(body, model)
 
             if resp.status_code == 429:
-                logger.warning(f"429 quota exceeded: {key[:8]}.../{model} → rotate sang slot tiep theo")
+                logger.warning(f"429 quota exceeded: ****{key[-4:]}/{model} → rotate sang slot tiep theo")
                 pool.mark_cool_down(key, model, 60, reason="429")
                 continue
 
@@ -314,17 +319,17 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
             if _is_credit_exhausted(resp):
                 # 11/11/2026: hết credit trả trước (402) trước đây rơi vào nhánh 5xx, log chỉ báo
                 # "network error"/"cooldown" gây hiểu nhầm. Khoá slot 1h, log rõ để Admin nạp tiền.
-                logger.error(f"Gemini HET CREDIT (402) {key[:8]}.../{model}: {resp.text[:200]}")
+                logger.error(f"Gemini HET CREDIT (402) ****{key[-4:]}/{model}: {resp.text[:200]}")
                 pool.mark_cool_down(key, model, 3600, reason="402-credit")
                 continue
 
             # 5xx hoặc lỗi khác
-            logger.warning(f"Gemini loi {resp.status_code} ({key[:8]}.../{model}): {resp.text[:200]}")
+            logger.warning(f"Gemini loi {resp.status_code} (****{key[-4:]}/{model}): {resp.text[:200]}")
             pool.mark_failure(key, model)
             continue
 
         except httpx.RequestError as exc:
-            logger.error(f"Gemini network error ({key[:8]}.../{model}): {exc}")
+            logger.error(f"Gemini network error (****{key[-4:]}/{model}): {exc}")
             pool.mark_failure(key, model)
             continue
 
@@ -417,6 +422,7 @@ async def embed_content(text: str) -> list[float]:
                 values = resp.json().get("embedding", {}).get("values")
                 if not values:
                     raise ProviderInvalidResponse("Gemini embedContent tra ve rong.")
+                _report_embedding_usage(settings.gemini_embedding_model, [text])
                 return values
             if resp.status_code == 429:
                 pool.mark_cool_down(key, slot["model"], 60)
@@ -488,6 +494,7 @@ async def _batch_embed(texts: list[str]) -> list[list[float]]:
                 vectors = [e.get("values") for e in resp.json().get("embeddings", [])]
                 if len(vectors) != len(texts) or not all(vectors):
                     raise ProviderInvalidResponse("Gemini batchEmbedContents tra ve thieu vector.")
+                _report_embedding_usage(settings.gemini_embedding_model, texts)
                 return vectors
             if resp.status_code == 429:
                 pool.mark_cool_down(key, slot["model"], 60)
@@ -512,6 +519,34 @@ async def _batch_embed(texts: list[str]) -> list[list[float]]:
     raise ProviderInvalidResponse("Max retries exceeded for Gemini batchEmbedContents.")
 
 
+def _report_embedding_usage(model: str, texts: list[str]) -> None:
+    """Nhúng dữ liệu: API không trả số token nên ghi số ước lượng (đánh dấu estimated) để vẫn thấy được chi phí. Không bao giờ ném lỗi."""
+    try:
+        usage_mod.report_gemini(
+            model=model,
+            prompt_tokens=sum(usage_mod.estimate_tokens(t) for t in texts),
+            completion_tokens=0,
+            embedding=True,
+            estimated=True,
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _report_text_usage(payload: dict, model: str) -> None:
+    """Báo số token thật (gồm token suy nghĩ) của một lệnh sinh văn bản về BE để theo dõi chi phí. Không bao giờ ném lỗi."""
+    try:
+        usage = payload.get("usageMetadata", {}) or {}
+        usage_mod.report_gemini(
+            model=model,
+            prompt_tokens=int(usage.get("promptTokenCount", 0)),
+            completion_tokens=int(usage.get("candidatesTokenCount", 0)),
+            thinking_tokens=int(usage.get("thoughtsTokenCount", 0)),
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def _parse_response(payload: dict, model: str) -> LlmResult | FunctionCall:
     """Chuyển JSON của Gemini thành dataclass; sai định dạng thì raise."""
     try:
@@ -532,6 +567,7 @@ def _parse_response(payload: dict, model: str) -> LlmResult | FunctionCall:
             model=model,
             prompt_tokens=int(usage.get("promptTokenCount", 0)),
             completion_tokens=int(usage.get("candidatesTokenCount", 0)),
+            thinking_tokens=int(usage.get("thoughtsTokenCount", 0)),
         )
     except (KeyError, IndexError, TypeError) as exc:
         raise ProviderInvalidResponse(f"Gemini tra ve du lieu khong dung dinh dang: {exc}") from exc

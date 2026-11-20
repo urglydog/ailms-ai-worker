@@ -9,6 +9,7 @@ Móc vào `CourseService.create/update` (be/) qua hàng đợi `lms:course-embed
 
 from __future__ import annotations
 
+from app import usage as usage_mod
 from app.providers import gemini, supabase_vector
 
 # Giới hạn độ dài text đưa vào embedContent — phòng khóa học có mô tả/nhiều
@@ -24,6 +25,7 @@ def build_embedding_text(
     return text[:_MAX_CONTENT_CHARS]
 
 
+@usage_mod.tagged("EMBEDDING_COURSE")
 async def index_course(
     course_id: int, title: str, description: str | None,
     chapter_titles: list[str], lesson_titles: list[str],

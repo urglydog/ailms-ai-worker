@@ -373,6 +373,11 @@ async def finish_material_generation(
     await _request("POST", f"/api/internal/materials/{generation_id}/finish", json_body=payload)
 
 
+async def report_ai_usage(body: dict) -> None:
+    """Báo mức dùng AI (token/giây âm thanh) cho BE tính chi phí. BE tự tính tiền từ cấu hình đơn giá — không gửi số tiền."""
+    await _request("POST", "/api/internal/ai-usage", json_body=body)
+
+
 async def report_prompt_security_flag(
     *, source: str, user_email: str | None, matched_pattern: str, message_snapshot: str
 ) -> None:

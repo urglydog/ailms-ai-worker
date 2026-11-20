@@ -23,6 +23,7 @@ import re
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
+from app import usage as usage_mod
 from app.providers import gemini
 from app.providers.base import ProviderInvalidResponse
 
@@ -97,6 +98,7 @@ Respond with ONLY a JSON object, no markdown fences, no extra text:
 
 @router.post("/analyze-frame", response_model=AnalyzeFrameRes, status_code=status.HTTP_200_OK)
 async def analyze_frame(request: AnalyzeFrameReq) -> AnalyzeFrameRes:
+    usage_mod.set_tag("PROCTORING_FRAME")
     # BUG THẬT (26/09/2026): payload ảnh không hợp lệ trước đây đi thẳng tới Gemini, bị Google từ
     # chối với 400 — nhưng do gemini.py trước đó coi MỌI 400 là "key có vấn đề" nên đã khoá oan 1
     # key khoẻ mạnh 1 tiếng (xem fix ở gemini.py::_execute_request). Chặn payload sai NGAY TỪ ĐÂY
@@ -165,6 +167,7 @@ single flowing paragraph. Example:
 
 @router.post("/assess-risk", response_model=AssessRiskRes, status_code=status.HTTP_200_OK)
 async def assess_risk(request: AssessRiskReq) -> AssessRiskRes:
+    usage_mod.set_tag("PROCTORING_RISK")
     prompt = (
         f"Violation counts by type: {json.dumps(request.violation_counts, ensure_ascii=False)}\n"
         f"Exam duration: {request.duration_sec} seconds\n"
