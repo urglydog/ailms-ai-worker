@@ -2,6 +2,7 @@ import logging
 import json
 from celery import shared_task
 
+from app.config import settings
 from app.providers import gemini
 from app.http import backend_client
 import asyncio
@@ -21,6 +22,7 @@ async def _moderate_review(review_id: int, text: str) -> None:
         res = await gemini.generate_conversation(
             [{"role": "user", "parts": [{"text": text}]}],
             system_instruction=SYSTEM_PROMPT,
+            thinking_level=settings.aux_thinking_level or None,
             response_mime_type="application/json",
             response_schema={
                 "type": "OBJECT",

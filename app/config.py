@@ -99,6 +99,11 @@ class Settings(BaseSettings):
     # Mức "suy nghĩ" của Gemini cho dịch/rút gọn lời thoại (S7). Rỗng = mặc định của model (như cũ).
     # Model Gemini 3.x nhận "minimal" | "low" | "medium" | "high"; token suy nghĩ ẩn VẪN tính tiền.
     dubbing_thinking_level: str = ""
+    # Mức "suy nghĩ" cho các tính năng đơn giản khác (21/11/2026). Đo thật: mặc định model suy nghĩ ~1-1,7 lần lượng chữ trả về và token này vẫn tính tiền như token ra. Rỗng = mặc định
+    # của model (hành vi cũ) — đặt biến môi trường tương ứng thành rỗng để tắt từng nhóm. Gia sư hỏi đáp, Discovery, trợ lý giảng viên, giám sát thi, kế hoạch học KHÔNG đổi.
+    material_thinking_level: str = "low"          # mindmap / flashcard / quiz: cấu trúc hóa từ transcript có sẵn
+    quiz_explain_thinking_level: str = "low"      # giải thích đáp án quiz: ngắn, đã có đủ ngữ cảnh trong prompt
+    aux_thinking_level: str = "minimal"           # đặt tiêu đề hội thoại, kiểm duyệt đánh giá: phân loại/tóm tắt rất ngắn
 
     # Thư mục file trung gian. Phải dọn sau mỗi job, tối đa 24 giờ (BR-STORAGE-01).
     temp_dir: str = "/tmp/lms-processing"

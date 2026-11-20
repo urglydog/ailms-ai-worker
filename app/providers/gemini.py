@@ -366,7 +366,15 @@ async def generate_conversation(
         # Giới hạn token "suy nghĩ" ẩn (vẫn tính tiền) cho việc đơn giản như dịch/rút gọn câu.
         generation_config = payload.setdefault("generationConfig", {})
         generation_config["thinkingConfig"] = {"thinkingLevel": thinking_level}
-    return await _execute_request(payload)
+    try:
+        return await _execute_request(payload)
+    except ProviderInvalidResponse as exc:
+        # Model không hỗ trợ `thinkingLevel` (vd đổi sang model đời cũ): bỏ giới hạn suy nghĩ và gọi lại 1 lần thay vì làm hỏng cả tính năng.
+        if thinking_level and "thinking" in str(exc).lower():
+            logger.warning("Model khong nhan thinkingLevel=%s — goi lai khong gioi han suy nghi.", thinking_level)
+            payload.get("generationConfig", {}).pop("thinkingConfig", None)
+            return await _execute_request(payload)
+        raise
 
 
 async def generate(

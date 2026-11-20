@@ -90,6 +90,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 from app import usage as usage_mod
+from app.config import settings
 from app.http import backend_client
 from app.providers import gemini, supabase_vector
 from app.providers.base import ProviderInvalidResponse
@@ -498,7 +499,9 @@ async def answer_quiz_explanation(question: str, language: str | None = None) ->
     Fix: tách hẳn 1 nhánh riêng cho quiz-explain, KHÔNG gọi `get_tutor_context`/RAG nào cả — prompt
     từ `QuizService.java` đã tự chứa đủ câu hỏi/đáp án/lựa chọn, không cần ngữ cảnh bài giảng nào.
     """
-    result = await gemini.generate(question, system_instruction=_QUIZ_EXPLAIN_SYSTEM_INSTRUCTION)
+    result = await gemini.generate(
+        question, system_instruction=_QUIZ_EXPLAIN_SYSTEM_INSTRUCTION, thinking_level=settings.quiz_explain_thinking_level or None,
+    )
     return TutorAnswer(
         answer=result.text.strip(),
         cited_timestamps=[],
@@ -532,7 +535,7 @@ Dat 1 tieu de THAT NGAN GON (toi da 6 tu, tieng Viet co dau) tom tat dung chu de
 tra ve DUNG tieu de — khong dau ngoac kep, khong dau cham cuoi cau, khong giai thich gi them,
 khong xuong dong."""
     try:
-        result = await gemini.generate(prompt)
+        result = await gemini.generate(prompt, thinking_level=settings.aux_thinking_level or None)
     except Exception:
         return _FALLBACK_TITLE
     title = result.text.strip().strip('"').strip("'").strip()

@@ -20,6 +20,7 @@ import json
 from decimal import Decimal
 
 from app import redis_client
+from app.config import settings
 from app import usage as usage_mod
 from app.celery_app import celery_app
 from app.http import backend_client
@@ -146,7 +147,7 @@ async def _generate_mindmap(text: str, language: str) -> str | None:
     """
     
     for attempt in range(2):
-        response = await gemini.generate(prompt)
+        response = await gemini.generate(prompt, thinking_level=settings.material_thinking_level or None)
         # Extract markdown block if any
         code = response.text.strip()
         if code.startswith("```mermaid"):
@@ -184,7 +185,7 @@ async def _generate_flashcards(text: str, language: str) -> tuple[list[dict], di
     """
     
     for attempt in range(2):
-        response = await gemini.generate(prompt)
+        response = await gemini.generate(prompt, thinking_level=settings.material_thinking_level or None)
         content = response.text.strip()
         if content.startswith("```json"):
             content = content[7:]
@@ -225,7 +226,7 @@ async def _generate_quizzes(text: str, language: str) -> tuple[list[dict], dict]
     """
     
     for attempt in range(2):
-        response = await gemini.generate(prompt)
+        response = await gemini.generate(prompt, thinking_level=settings.material_thinking_level or None)
         content = response.text.strip()
         if content.startswith("```json"):
             content = content[7:]
