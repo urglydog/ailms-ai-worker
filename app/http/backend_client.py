@@ -311,6 +311,8 @@ class MaterialContext:
     quantity_level: str | None
     difficulty_level: str | None
     lessons: list[MaterialLessonContext]
+    # Số bài của cả khóa đã có transcript gốc — để tính tỷ lệ số lượng câu/thẻ cho phạm vi hẹp (BR-MAT-05). None với BE bản cũ.
+    course_lesson_count: int | None = None
 
 async def get_material_context(generation_id: int) -> MaterialContext:
     response = await _request("GET", f"/api/internal/materials/{generation_id}/context")
@@ -336,6 +338,7 @@ async def get_material_context(generation_id: int) -> MaterialContext:
         quantity_level=payload.get("quantityLevel"),
         difficulty_level=payload.get("difficultyLevel"),
         lessons=lessons,
+        course_lesson_count=payload.get("courseLessonCount"),
     )
 
 

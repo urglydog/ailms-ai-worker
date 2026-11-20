@@ -26,7 +26,7 @@ from app.celery_app import celery_app
 from app.http import backend_client
 from app.models import Segment
 from app.providers import gemini, supabase_vector
-from app.services import translation
+from app.services import material_options, translation
 
 log = logging.getLogger(__name__)
 
@@ -82,8 +82,10 @@ async def _run_and_cleanup(generation_id: int) -> dict:
             await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong co transcript de sinh hoc lieu")
             return {"status": "FAILED", "reason": "No transcripts"}
 
+        ratio = material_options.scope_ratio(len(context.lessons), context.course_lesson_count)
+
         if context.material_type == "MINDMAP":
-            result = await _generate_mindmap(full_text, context.language)
+            result = await _generate_mindmap(full_text, context.language, context.quantity_level)
             if result:
                 mermaid_code, usage = result
                 await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", mermaid_code=mermaid_code, usage_metadata=usage)
@@ -92,7 +94,7 @@ async def _run_and_cleanup(generation_id: int) -> dict:
                 await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Mermaid hop le sau 2 lan thu")
                 return {"status": "FAILED", "reason": "Mermaid invalid"}
         elif context.material_type == "FLASHCARD":
-            result = await _generate_flashcards(full_text, context.language)
+            result = await _generate_flashcards(full_text, context.language, context.quantity_level, ratio)
             if result:
                 flashcards, usage = result
                 await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", flashcards=flashcards, usage_metadata=usage)
@@ -101,7 +103,7 @@ async def _run_and_cleanup(generation_id: int) -> dict:
                 await backend_client.finish_material_generation(generation_id, outcome="FAILED", error_message="Khong the sinh Flashcard hop le sau 2 lan thu")
                 return {"status": "FAILED", "reason": "Flashcards invalid"}
         elif context.material_type == "QUIZ":
-            result = await _generate_quizzes(full_text, context.language)
+            result = await _generate_quizzes(full_text, context.language, context.quantity_level, context.difficulty_level, ratio)
             if result:
                 quizzes, usage = result
                 await backend_client.finish_material_generation(generation_id, outcome="COMPLETED", quizzes=quizzes, usage_metadata=usage)
@@ -126,13 +128,14 @@ async def _run_and_cleanup(generation_id: int) -> dict:
         )
 
 @usage_mod.tagged("MATERIAL", already_logged=True)
-async def _generate_mindmap(text: str, language: str) -> str | None:
+async def _generate_mindmap(text: str, language: str, quantity: str | None = None) -> str | None:
+    depth_line = material_options.mindmap_depth_line(quantity) or "Do sau toi da 4-5 cap."
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot so do tu duy (Mindmap) bang Mermaid.js cho noi dung bai hoc sau day.
     Yeu cau:
     1. Chi tra ve ma nguon Mermaid, khong giai thich gi them.
     2. Su dung cu phap flowchart cua Mermaid (bat dau bang 'flowchart TD').
-    3. Do sau toi da 4-5 cap.
+    3. {depth_line}
     4. Noi dung phai ngan gon, suc tich.
     5. QUAN TRONG: TOAN BO NOI DUNG TRONG MINDMAP PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).
     6. QUAN TRONG: KHONG DUOC phep su dung markdown syntax trong text cua node:
@@ -171,14 +174,17 @@ async def _generate_mindmap(text: str, language: str) -> str | None:
     return None
 
 @usage_mod.tagged("MATERIAL", already_logged=True)
-async def _generate_flashcards(text: str, language: str) -> tuple[list[dict], dict] | None:
+async def _generate_flashcards(
+    text: str, language: str, quantity: str | None = None, ratio: float = 1.0,
+) -> tuple[list[dict], dict] | None:
+    extra = material_options.numbered(5, material_options.flashcard_clauses(quantity, ratio))
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot bo Flashcards (The ghi nho) cho noi dung bai hoc sau day.
     Yeu cau:
     1. Chi tra ve JSON Array, khong giai thich gi them.
     2. Moi the co "front_text" (cau hoi/thuat ngu) va "back_text" (giai thich/dinh nghia).
     3. Dinh dang JSON chinh xac: [{{"front_text": "...", "back_text": "..."}}, ...]
-    4. QUAN TRONG: TOAN BO NOI DUNG FLASHCARDS PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).
+    4. QUAN TRONG: TOAN BO NOI DUNG FLASHCARDS PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).{extra}
     
     Noi dung:
     {text[:500000]}
@@ -211,7 +217,10 @@ async def _generate_flashcards(text: str, language: str) -> tuple[list[dict], di
     return None
 
 @usage_mod.tagged("MATERIAL", already_logged=True)
-async def _generate_quizzes(text: str, language: str) -> tuple[list[dict], dict] | None:
+async def _generate_quizzes(
+    text: str, language: str, quantity: str | None = None, difficulty: str | None = None, ratio: float = 1.0,
+) -> tuple[list[dict], dict] | None:
+    extra = material_options.numbered(6, material_options.quiz_clauses(quantity, difficulty, ratio))
     prompt = f"""
     Ban la mot chuyen gia giao duc. Hay tao mot bo cau hoi trac nghiem (Quiz) cho noi dung bai hoc sau day.
     Yeu cau:
@@ -219,7 +228,7 @@ async def _generate_quizzes(text: str, language: str) -> tuple[list[dict], dict]
     2. Moi cau hoi co "content" (noi dung cau hoi), "options" (mang DUNG 4 phuong an), "correct_answer" (chuoi nguyen van 1 trong 4 phuong an), "topic_tag" (1 chu de ngan gon nhat bang chu thuong, vi du: 'vong lap for'), va "video_timestamp" (giay, uoc luong thoi diem trong video ma cau hoi nay de cap den).
     3. KHONG sinh giai thich (explanation).
     4. Dinh dang JSON chinh xac: [{{"content": "...", "options": ["A", "B", "C", "D"], "correct_answer": "...", "topic_tag": "...", "video_timestamp": 120}}, ...]
-    5. QUAN TRONG: TOAN BO NOI DUNG QUIZ PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).
+    5. QUAN TRONG: TOAN BO NOI DUNG QUIZ PHAI DUOC DICH SANG NGON NGU CO MA CODE: '{language}' (Vi du: 'zh-CN' la Tieng Trung, 'en-US' la Tieng Anh, 'vi-VN' la Tieng Viet).{extra}
     
     Noi dung:
     {text[:500000]}
