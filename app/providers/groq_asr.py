@@ -17,6 +17,7 @@ from pathlib import Path
 
 import httpx
 
+from app import usage as usage_mod
 from app.config import settings
 from app.providers.base import ProviderInvalidResponse, build_client, map_http_error
 
@@ -119,7 +120,12 @@ async def transcribe(audio_path: str) -> TranscriptionResult:
         response.raise_for_status()
     except httpx.HTTPError as exc:
         raise map_http_error(exc) from exc
-    return _parse_response(response.json())
+    result = _parse_response(response.json())
+    try:
+        usage_mod.report_groq_audio(model=settings.groq_asr_model, audio_seconds=result.duration_sec)
+    except Exception:  # noqa: BLE001 — ghi nhận chi phí không được làm hỏng việc bóc băng
+        pass
+    return result
 
 
 def _parse_response(payload: dict) -> TranscriptionResult:

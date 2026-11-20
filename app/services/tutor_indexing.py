@@ -8,10 +8,12 @@ thuộc ngôn ngữ lồng tiếng nào đã chọn.
 
 from __future__ import annotations
 
+from app import usage as usage_mod
 from app.models import Segment
 from app.providers import gemini, supabase_vector
 
 
+@usage_mod.tagged("EMBEDDING_TUTOR")
 async def index_segments(lesson_id: int, language: str | None, segments: list[Segment]) -> None:
     if not segments:
         return

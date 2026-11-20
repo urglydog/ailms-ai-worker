@@ -89,6 +89,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 
+from app import usage as usage_mod
 from app.http import backend_client
 from app.providers import gemini, supabase_vector
 from app.providers.base import ProviderInvalidResponse
@@ -337,6 +338,7 @@ class Attachment:
     data_base64: str
 
 
+@usage_mod.tagged("TUTOR_CHAT")
 async def _answer_for_lesson(
     lesson_id: int, question: str, history: list[dict] | None, attachments: list[Attachment] | None,
     language: str | None,
@@ -382,6 +384,7 @@ async def _answer_for_lesson(
     )
 
 
+@usage_mod.tagged("TUTOR_CHAT")
 async def _answer_for_course(
     course_lessons: list[backend_client.CourseLesson], current_lesson_id: int, question: str,
     history: list[dict] | None, attachments: list[Attachment] | None, language: str | None,
@@ -483,6 +486,7 @@ QUY TAC VAN PHONG — TUAN THU NGHIEM:
 - Toi da 3-4 cau, chi giai thich dap an dung/sai, khong them loi binh luan ngoai le."""
 
 
+@usage_mod.tagged("TUTOR_QUIZ_EXPLAIN")
 async def answer_quiz_explanation(question: str, language: str | None = None) -> TutorAnswer:
     """(12/10/2026, bug thật) — Trước đây `lesson_id=-1` (sentinel "không gắn bài học nào") vẫn bị
     route qua `answer_single_lesson()` → `_answer_for_lesson()`, hàm này LUÔN gọi
@@ -506,6 +510,7 @@ async def answer_quiz_explanation(question: str, language: str | None = None) ->
 _FALLBACK_TITLE = "Cuộc trò chuyện mới"
 
 
+@usage_mod.tagged("TUTOR_TITLE")
 async def generate_title(question: str, answer: str) -> str:
     """UC30 mở rộng — đặt tên ngắn cho 1 cuộc trò chuyện dựa trên lượt hỏi-đáp ĐẦU TIÊN, giống
     ChatGPT/Gemini tự gợi ý tiêu đề. Chỉ 1 lượt gọi Gemini đơn giản (không cần lịch sử, không

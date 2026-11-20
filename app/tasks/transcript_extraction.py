@@ -26,6 +26,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from app import audio_utils, media
+from app import usage as usage_mod
 from app.celery_app import celery_app
 from app.config import settings
 from app.http import backend_client
@@ -37,6 +38,7 @@ from app.services.dubbing_service import MIN_SPEECH_RATIO, split_into_chunks
 log = logging.getLogger(__name__)
 
 
+@usage_mod.tagged("TRANSCRIPT_EXTRACTION")
 async def _extract_source_transcript(lesson_id: int, video_source: str, video_url: str, duration_sec: int) -> dict:
     work_dir = Path(settings.temp_dir) / f"transcript_{lesson_id}"
     work_dir.mkdir(parents=True, exist_ok=True)

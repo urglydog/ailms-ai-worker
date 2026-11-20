@@ -19,6 +19,7 @@ import logging
 from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, Field
 
+from app import usage as usage_mod
 from app.providers import gemini
 from app.http import backend_client
 from app.services import security_heuristics
@@ -215,6 +216,7 @@ async def _handle_function_call(
 
 @router.post("/chat", response_model=InstructorChatResponse, status_code=status.HTTP_200_OK)
 async def instructor_chat(request: InstructorChatRequest) -> InstructorChatResponse:
+    usage_mod.set_tag("INSTRUCTOR_AI")
     """Instructor AI Assistant — backend đã xác thực role trước khi gọi vào đây."""
     # Guard: chỉ chấp nhận request từ backend proxy (caller_role phải là INSTRUCTOR)
     if request.caller_role != "INSTRUCTOR":

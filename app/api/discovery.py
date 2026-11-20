@@ -24,6 +24,7 @@ import httpx
 from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, Field
 
+from app import usage as usage_mod
 from app.providers import gemini, supabase_vector
 from app.http import backend_client
 from app.config import settings
@@ -131,6 +132,7 @@ def _build_search_tool(categories: list[dict]) -> dict:
 
 @router.post("/chat", response_model=DiscoveryChatResponse, status_code=status.HTTP_200_OK)
 async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
+    usage_mod.set_tag("DISCOVERY_CHAT")
     """Handler 2 bước: Bước 1 gọi AI trích xuất intent, Bước 2 lấy data thật gọi AI lần 2 để trả lời."""
     matched_pattern = security_heuristics.scan(request.message)
     if matched_pattern:

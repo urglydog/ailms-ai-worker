@@ -15,6 +15,7 @@ import re
 
 from langcodes import Language
 
+from app import usage as usage_mod
 from app.config import settings
 from app.models import Segment
 from app.providers import gemini
@@ -99,6 +100,7 @@ doc bang Text-to-Speech:
 """.strip()
 
 
+@usage_mod.tagged("DUBBING_TRANSLATE")
 async def translate_batch(
     segments: list[Segment], source_lang: str, target_lang: str, max_chars: list[int | None] | None = None,
 ) -> list[str]:
@@ -134,6 +136,7 @@ def _as_text(value: object) -> str:
     return value.strip() if isinstance(value, str) else ""
 
 
+@usage_mod.tagged("DUBBING_TRANSLATE")
 async def resummarize_batch(items: list[tuple[str, int]], target_lang: str) -> list[str]:
     """Rút gọn NHIỀU câu trong MỘT lời gọi Gemini (hiệu năng dubbing, S4).
 
@@ -168,6 +171,7 @@ Khong gop hay tach dong.
     return out
 
 
+@usage_mod.tagged("DUBBING_TRANSLATE")
 async def resummarize(text: str, target_lang: str) -> str:
     """BR-DUB-03 nhánh R > 1.3 — rút gọn bản dịch, giữ nguyên ý nghĩa cốt lõi.
 

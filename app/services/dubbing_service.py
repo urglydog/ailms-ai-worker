@@ -30,6 +30,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from app import audio_utils, media, redis_client
+from app import usage as usage_mod
 from app.config import settings
 from app.http import backend_client
 from app.models import Segment
@@ -94,6 +95,7 @@ def clamp_stt_segments(stt_segments, audio_len_sec: float) -> list[tuple[float, 
     return out
 
 
+@usage_mod.tagged("DUBBING_TRANSCRIBE")
 async def run_dubbing_pipeline(
     job_id: int, lesson_id: int, video_url: str, target_language: str, celery_task_id: str | None = None,
 ) -> dict:
