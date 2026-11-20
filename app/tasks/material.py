@@ -161,7 +161,7 @@ async def _generate_mindmap(text: str, language: str) -> str | None:
         
         # Simple validation
         if code.startswith("flowchart") or code.startswith("graph"):
-            usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens}
+            usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens, "thinkingTokens": response.thinking_tokens, "model": response.model}
             return code, usage
             
         log.warning(f"Mermaid code khong hop le lan {attempt + 1}, dang thu lai. Code: {code}")
@@ -199,7 +199,7 @@ async def _generate_flashcards(text: str, language: str) -> tuple[list[dict], di
         try:
             data = json.loads(content)
             if isinstance(data, list) and len(data) > 0 and "front_text" in data[0] and "back_text" in data[0]:
-                usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens}
+                usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens, "thinkingTokens": response.thinking_tokens, "model": response.model}
                 return data, usage
         except json.JSONDecodeError:
             pass
@@ -240,7 +240,7 @@ async def _generate_quizzes(text: str, language: str) -> tuple[list[dict], dict]
         try:
             data = json.loads(content)
             if isinstance(data, list) and len(data) > 0 and "content" in data[0] and "options" in data[0] and len(data[0]["options"]) == 4 and "correct_answer" in data[0] and "topic_tag" in data[0] and "video_timestamp" in data[0]:
-                usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens}
+                usage = {"promptTokens": response.prompt_tokens, "completionTokens": response.completion_tokens, "totalTokens": response.total_tokens, "thinkingTokens": response.thinking_tokens, "model": response.model}
                 return data, usage
         except json.JSONDecodeError:
             pass
