@@ -54,3 +54,16 @@ async def upload_file(local_path: str | Path, key: str, *, content_type: str = "
         return f"https://{settings.b2_endpoint}/{settings.b2_bucket_name}/{key}"
 
     return await asyncio.to_thread(_upload)
+
+
+async def download_file(key: str, local_path: str | Path) -> bool:
+    """Tải 1 object từ B2 về file. Trả False nếu object chưa có (hoặc tải lỗi) — dùng làm cache."""
+    def _download() -> bool:
+        try:
+            _get_client().download_file(settings.b2_bucket_name, key, str(local_path))
+            return Path(local_path).stat().st_size > 0
+        except Exception:
+            Path(local_path).unlink(missing_ok=True)
+            return False
+
+    return await asyncio.to_thread(_download)

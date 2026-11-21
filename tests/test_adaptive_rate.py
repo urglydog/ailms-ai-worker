@@ -165,3 +165,27 @@ async def test_sped_up_file_is_not_reused_from_cache(tmp_path):
     await _run([seg], ["vua"], tmp_path, tts)
     await _run([seg], ["vua"], tmp_path, tts)
     assert tts.await_count == 2                      # file da doi toc do -> khong dung lai
+
+
+async def test_punctuation_only_sentence_skips_tts_and_becomes_silence(tmp_path):
+    """Job 33: câu chỉ có "." -> Azure trả 0 byte làm hỏng chunk. Giờ không gọi TTS."""
+    seg = Segment(seq=9, start=0.0, end=2.0, text=".")
+    tts = AsyncMock()
+    with patch("app.audio_utils.write_silence", AsyncMock()) as silence:
+        out, _batch, tempo = await _run([seg], ["."], tmp_path, tts)
+    tts.assert_not_awaited()
+    silence.assert_awaited_once()
+    assert out[0][0].duration_sec < 0.5
+
+
+async def test_empty_azure_audio_becomes_silence(tmp_path):
+    seg = Segment(seq=10, start=0.0, end=2.0, text="x")
+
+    async def empty_tts(text, voice, path, **kw):
+        open(path, "wb").close()
+        return _res(1.0)
+
+    with patch("app.audio_utils.write_silence", AsyncMock()) as silence:
+        out, _batch, _tempo = await _run([seg], ["hello"], tmp_path, AsyncMock(side_effect=empty_tts))
+    silence.assert_awaited_once()
+    assert out[0][0].duration_sec < 0.5

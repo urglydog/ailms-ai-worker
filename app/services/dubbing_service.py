@@ -35,7 +35,7 @@ from app.config import settings
 from app.http import backend_client
 from app.models import Segment
 from app.providers import azure_tts, groq_asr
-from app.services import translation, tutor_indexing
+from app.services import background_music, translation, tutor_indexing
 from app.storage import upload_file
 
 log = logging.getLogger(__name__)
@@ -102,6 +102,7 @@ async def run_dubbing_pipeline(
     """Điểm vào duy nhất — gọi từ `app/tasks/dubbing.py::run_pipeline` qua `asyncio.run`."""
     work_dir = Path(settings.temp_dir) / f"job_{job_id}"
     work_dir.mkdir(parents=True, exist_ok=True)
+    music_task: asyncio.Task | None = None
 
     try:
         ctx = await backend_client.get_context(job_id)
@@ -122,6 +123,8 @@ async def run_dubbing_pipeline(
         chunks = split_into_chunks(duration_sec, settings.chunk_minutes)
         await backend_client.start_job(job_id, total_chunks=len(chunks), celery_task_id=celery_task_id)
 
+        # M2: tách nhạc nền chạy NỀN song song với các chunk (None nếu tắt BGM_SEPARATION).
+        music_task = background_music.start_separation(source_audio, work_dir, lesson_id, ctx.video_url)
         reuse_source = ctx.source_transcript_available
         next_seq = 1
         chunk_audio_paths: list[Path] = []
@@ -131,6 +134,7 @@ async def run_dubbing_pipeline(
             try:
                 chunk_audio, consumed_seq = await _process_chunk_with_retry(
                     job_id, lesson_id, ctx, chunk, len(chunks), source_audio, work_dir, reuse_source, next_seq,
+                    music_task,
                 )
                 next_seq += consumed_seq
                 chunk_audio_paths.append(chunk_audio)
@@ -199,6 +203,9 @@ async def run_dubbing_pipeline(
         await redis_client.publish_progress(job_id, lesson_id, status="FAILED")
         raise
     finally:
+        if music_task is not None and not music_task.done():
+            music_task.cancel()  # job dừng sớm (lỗi/skip) thì không chờ Modal nữa
+        await background_music.wait_pending_uploads()  # lưu cache nhạc lên B2 phải xong trước khi xoá file
         # BR-STORAGE-01: dọn ngay sau job — cleanup_temp_files() (Celery beat) chỉ là
         # lưới an toàn cho thư mục mồ côi khi worker crash giữa chừng.
         shutil.rmtree(work_dir, ignore_errors=True)
@@ -207,6 +214,7 @@ async def run_dubbing_pipeline(
 async def _process_chunk_with_retry(
     job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
     source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
+    music_task: asyncio.Task | None = None,
 ) -> tuple[Path, int]:
     """BR-CHUNK-04 — retry tối đa `MAX_RETRY` lần, exponential backoff. `SKIPPED`
     (raise `SkippedPipelineError`) KHÔNG được retry — phải bubble lên ngay.
@@ -216,6 +224,7 @@ async def _process_chunk_with_retry(
         try:
             return await _process_chunk_once(
                 job_id, lesson_id, ctx, chunk, total_chunks, source_audio, work_dir, reuse_source, next_seq,
+                music_task,
             )
         except SkippedPipelineError:
             raise
@@ -236,6 +245,7 @@ async def _process_chunk_with_retry(
 async def _process_chunk_once(
     job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
     source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
+    music_task: asyncio.Task | None = None,
 ) -> tuple[Path, int]:
     t_start = time.monotonic()
     detected_language: str | None = None
@@ -370,6 +380,8 @@ async def _process_chunk_once(
         )
 
     t_timeline = time.monotonic()
+    await background_music.mix_into_chunk(chunk_audio, music_task, chunk.start_sec, chunk.end_sec, work_dir)
+    t_music = time.monotonic()
     audio_url = await _upload_chunk_audio(chunk_audio, ctx, chunk)
     await backend_client.upsert_chunk_completed(
         job_id, chunk.index, start_sec=chunk.start_sec, end_sec=chunk.end_sec, audio_file_url=audio_url,
@@ -378,9 +390,9 @@ async def _process_chunk_once(
     t_end = time.monotonic()
     # Hiệu năng dubbing (bước 0): thời gian từng bước của chunk — để biết thời gian thật sự đi đâu.
     log.info(
-        "TIMING job=%s chunk=%s cau=%s asr=%.1fs dich=%.1fs tts=%.1fs ghep=%.1fs upload=%.1fs tong=%.1fs",
+        "TIMING job=%s chunk=%s cau=%s asr=%.1fs dich=%.1fs tts=%.1fs ghep=%.1fs nhac=%.1fs upload=%.1fs tong=%.1fs",
         job_id, chunk.index, len(segments), t_asr - t_start, t_translated - t_asr, t_tts - t_translated,
-        t_timeline - t_tts, t_end - t_timeline, t_end - t_start,
+        t_timeline - t_tts, t_music - t_timeline, t_end - t_music, t_end - t_start,
     )
 
     return chunk_audio, len(segments) if generate_source_dtos else 0
@@ -412,8 +424,15 @@ async def _synthesize_segments(
         cached = _read_tts_cache(out_paths[i], current[i])
         if cached is not None:
             return cached
+        if not _has_speakable_text(current[i]):
+            # Whisper đôi khi trả câu chỉ có dấu câu ("." ở đoạn nhạc — job 33): Azure trả file 0 byte
+            # làm hỏng cả chunk. Không gọi TTS, đặt khoảng lặng ngắn thay cho câu đó.
+            return await _silent_result(out_paths[i])
         async with tts_sem:
             res = await azure_tts.synthesize(current[i], voice_name, str(out_paths[i]))
+        if out_paths[i].exists() and out_paths[i].stat().st_size == 0:
+            log.warning("Azure tra audio rong cho cau seq=%s (%r) — thay bang khoang lang", segments[i].seq, current[i])
+            return await _silent_result(out_paths[i])
         _write_tts_cache(out_paths[i], current[i], res.duration_sec)
         return res
 
@@ -526,6 +545,20 @@ def _read_json_list(path: Path, expected_len: int) -> list[str] | None:
     if isinstance(data, list) and len(data) == expected_len and all(isinstance(x, str) and x for x in data):
         return data
     return None
+
+
+_SILENT_SEC = 0.1
+
+
+def _has_speakable_text(text: str) -> bool:
+    return any(ch.isalnum() for ch in text)
+
+
+async def _silent_result(path: Path) -> azure_tts.SynthesisResult:
+    await audio_utils.write_silence(path, _SILENT_SEC)
+    return azure_tts.SynthesisResult(
+        file_path=str(path), duration_sec=_SILENT_SEC, applied_rate=Decimal("1.0"), was_summarized=False,
+    )
 
 
 def _tts_cache_path(audio_path: Path) -> Path:

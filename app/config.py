@@ -99,6 +99,15 @@ class Settings(BaseSettings):
     # Mức "suy nghĩ" của Gemini cho dịch/rút gọn lời thoại (S7). Rỗng = mặc định của model (như cũ).
     # Model Gemini 3.x nhận "minimal" | "low" | "medium" | "high"; token suy nghĩ ẩn VẪN tính tiền.
     dubbing_thinking_level: str = ""
+    # M2 (thử nghiệm) — giữ nhạc nền: "modal" = tách bằng Demucs trên Modal (cần token Modal);
+    # rỗng = tắt (như cũ). Xem `app/services/background_music.py`.
+    bgm_separation: str = ""
+    bgm_modal_app: str = "lms-demucs"
+    bgm_wait_timeout_sec: int = 600
+    # Giữ NGUYÊN âm lượng nhạc gốc; giọng lồng tiếng được chỉnh to bằng giọng gốc thay vì hạ nhạc.
+    bgm_music_volume: float = 1.0
+    # Tự hạ nhạc khi có lời — chỉ bật nếu nghe thấy giọng gốc còn sót trong phần nhạc tách ra.
+    bgm_ducking: bool = False
     # Mức "suy nghĩ" cho các tính năng đơn giản khác (21/11/2026). Đo thật: mặc định model suy nghĩ ~1-1,7 lần lượng chữ trả về và token này vẫn tính tiền như token ra. Rỗng = mặc định
     # của model (hành vi cũ) — đặt biến môi trường tương ứng thành rỗng để tắt từng nhóm. Gia sư hỏi đáp, Discovery, trợ lý giảng viên, giám sát thi, kế hoạch học KHÔNG đổi.
     material_thinking_level: str = "low"          # mindmap / flashcard / quiz: cấu trúc hóa từ transcript có sẵn
