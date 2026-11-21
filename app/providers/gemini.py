@@ -19,11 +19,20 @@ import logging
 
 import httpx
 
+from app import log_redaction
 from app import usage as usage_mod
 from app.config import settings
 from app.providers.base import ProviderInvalidResponse, build_client
 
 _BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
+
+# Che khóa ở log của httpx/httpcore (xem app/log_redaction.py) — phòng thủ thêm ngoài việc khóa đi trong header.
+log_redaction.install()
+
+
+def _auth_headers(key: str) -> dict[str, str]:
+    """Khóa API đi trong header, KHÔNG đặt trong URL: `httpx` ghi INFO nguyên URL của mỗi request nên khóa trong URL bị in ra log."""
+    return {"x-goog-api-key": key}
 
 logger = logging.getLogger(__name__)
 
@@ -278,13 +287,13 @@ async def _execute_request(payload: dict) -> LlmResult | FunctionCall:
         key = slot["key"]
         model = slot["model"]
         await _throttle_rpm()
-        url = f"{_BASE_URL}/models/{model}:generateContent?key={key}"
+        url = f"{_BASE_URL}/models/{model}:generateContent"
 
         if attempt > 0:
             logger.info(f"Retry #{attempt}: dang thu slot ****{key[-4:]}/{model}")
 
         try:
-            resp = await client.post(url, json=payload, timeout=60.0)
+            resp = await client.post(url, json=payload, headers=_auth_headers(key), timeout=60.0)
 
             if resp.status_code == 200:
                 pool.reset_failure(key, model)
@@ -422,9 +431,9 @@ async def embed_content(text: str) -> list[float]:
             raise ProviderInvalidResponse("No active Gemini slot available (all in cooldown).")
         key = slot["key"]
         await _throttle_rpm()
-        url = f"{_BASE_URL}/models/{settings.gemini_embedding_model}:embedContent?key={key}"
+        url = f"{_BASE_URL}/models/{settings.gemini_embedding_model}:embedContent"
         try:
-            resp = await client.post(url, json=payload, timeout=30.0)
+            resp = await client.post(url, json=payload, headers=_auth_headers(key), timeout=30.0)
             if resp.status_code == 200:
                 pool.reset_failure(key, slot["model"])
                 values = resp.json().get("embedding", {}).get("values")
@@ -494,9 +503,9 @@ async def _batch_embed(texts: list[str]) -> list[list[float]]:
             raise ProviderInvalidResponse("No active Gemini slot available (all in cooldown).")
         key = slot["key"]
         await _throttle_rpm()
-        url = f"{_BASE_URL}/{model_ref}:batchEmbedContents?key={key}"
+        url = f"{_BASE_URL}/{model_ref}:batchEmbedContents"
         try:
-            resp = await client.post(url, json=payload, timeout=60.0)
+            resp = await client.post(url, json=payload, headers=_auth_headers(key), timeout=60.0)
             if resp.status_code == 200:
                 pool.reset_failure(key, slot["model"])
                 vectors = [e.get("values") for e in resp.json().get("embeddings", [])]

@@ -91,9 +91,9 @@ class Settings(BaseSettings):
     # nghiệm: 51,8% lời gọi rút gọn rơi vào câu ngắn mà rút gọn 2 lần vẫn chạm trần → tốn credit vô ích.
     # Đặt 0 để tắt (luôn rút gọn như cũ).
     min_resummarize_frame_sec: float = 2.0
-    # Hiệu năng dubbing (S1): số câu tổng hợp giọng CÙNG LÚC trong 1 chunk. Azure Speech S0 cho
-    # ~100 request/10 s qua REST nên 8 là an toàn; đặt 1 để quay về chạy tuần tự như cũ.
-    tts_concurrency: int = 8
+    # Hiệu năng dubbing (S1): số câu tổng hợp giọng CÙNG LÚC trong 1 chunk. Azure Speech S0 cho 30 request/giây (mỗi request ~1 s) nên 16 luồng ≈ 16 request/giây là an toàn
+    # (nâng từ 8 lên 16 ngày 21/11/2026); gặp lỗi 429 thì đặt TTS_CONCURRENCY=8 trong .env; đặt 1 để quay về chạy tuần tự như cũ.
+    tts_concurrency: int = 16
     # Số tiến trình FFmpeg `atempo` chạy cùng lúc (CPU-bound, máy chủ 2 vCPU).
     tempo_concurrency: int = 2
     # Mức "suy nghĩ" của Gemini cho dịch/rút gọn lời thoại (S7). Rỗng = mặc định của model (như cũ).
