@@ -24,6 +24,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app import usage as usage_mod
+from app.config import settings
 from app.providers import gemini
 from app.providers.base import ProviderInvalidResponse
 
@@ -118,7 +119,7 @@ async def analyze_frame(request: AnalyzeFrameReq) -> AnalyzeFrameRes:
         }
     ]
     try:
-        result = await gemini.generate_conversation(contents)
+        result = await gemini.generate_conversation(contents, thinking_level=settings.proctoring_frame_thinking_level or None)
         if isinstance(result, gemini.FunctionCall):
             raise ProviderInvalidResponse("Gemini tra ve FunctionCall thay vi text cho phan tich khung hinh")
         data = _extract_json(result.text)
@@ -175,7 +176,9 @@ async def assess_risk(request: AssessRiskReq) -> AssessRiskRes:
         "Assess the cheating risk level for this session."
     )
     try:
-        result = await gemini.generate(prompt, system_instruction=_RISK_SYSTEM_INSTRUCTION)
+        result = await gemini.generate(
+            prompt, system_instruction=_RISK_SYSTEM_INSTRUCTION, thinking_level=settings.proctoring_risk_thinking_level or None,
+        )
         data = _extract_json(result.text)
         risk_level = str(data.get("risk_level", "LOW")).upper()
         if risk_level not in ("LOW", "MEDIUM", "HIGH"):

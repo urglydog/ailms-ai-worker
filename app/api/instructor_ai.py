@@ -20,6 +20,7 @@ from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel, Field
 
 from app import usage as usage_mod
+from app.config import settings
 from app.providers import gemini
 from app.http import backend_client
 from app.services import security_heuristics
@@ -234,6 +235,7 @@ async def instructor_chat(request: InstructorChatRequest) -> InstructorChatRespo
             prompt=request.message,
             tools=instructor_tools,
             system_instruction=INSTRUCTOR_SYSTEM_PROMPT,
+            thinking_level=settings.instructor_ai_thinking_level or None,
         )
     except Exception as e:
         log.error(f"Gemini call failed in instructor AI: {e}")
@@ -252,7 +254,9 @@ async def instructor_chat(request: InstructorChatRequest) -> InstructorChatRespo
             "một cách ngắn gọn, dễ hiểu và actionable."
         )
         try:
-            summary_res = await gemini.generate(summary_prompt, system_instruction=INSTRUCTOR_SYSTEM_PROMPT)
+            summary_res = await gemini.generate(
+                summary_prompt, system_instruction=INSTRUCTOR_SYSTEM_PROMPT, thinking_level=settings.instructor_ai_thinking_level or None,
+            )
             return InstructorChatResponse(reply=summary_res.text, data=fn_data)
         except Exception:
             return InstructorChatResponse(

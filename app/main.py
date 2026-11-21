@@ -17,12 +17,14 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import redis_client
+from app import log_redaction
 from app.api import admin, discovery, health, instructor_ai, live_admin, proctoring, tutor, study_plan
 from app.http import backend_client
 from app.providers import azure_tts, gemini, groq_asr, supabase_vector
 from app.tasks.dubbing import run_pipeline
 
 logging.basicConfig(level=logging.INFO)
+log_redaction.install()
 log = logging.getLogger(__name__)
 
 

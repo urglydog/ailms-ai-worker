@@ -98,3 +98,40 @@ async def test_mindmap_uses_the_material_level_by_default():
         await material._generate_mindmap("noi dung", "vi-VN")
 
     assert seen == ["low"]
+
+
+# ---- Mở rộng 21/11/2026: Discovery, trợ lý giảng viên, kế hoạch học, giám sát thi ----
+
+def test_extended_feature_defaults_are_low_and_tutor_chat_is_untouched():
+    assert settings.discovery_thinking_level == "minimal"
+    assert settings.instructor_ai_thinking_level == "minimal"
+    assert settings.study_plan_thinking_level == "low"
+    assert settings.proctoring_risk_thinking_level == "minimal"
+    assert settings.proctoring_frame_thinking_level == "low"
+
+
+@pytest.mark.asyncio
+async def test_generate_with_tools_forwards_the_thinking_level():
+    seen: dict = {}
+
+    async def fake_conv(contents, **kw):
+        seen.update(kw)
+        return _ok()
+
+    with patch.object(gemini, "generate_conversation", side_effect=fake_conv):
+        await gemini.generate_with_tools("x", [{"functionDeclarations": []}], thinking_level="low")
+        assert seen["thinking_level"] == "low"
+        await gemini.generate_with_tools("x", [{"functionDeclarations": []}])
+        assert seen["thinking_level"] is None
+
+
+def test_tutor_chat_calls_do_not_set_a_thinking_level():
+    """Gia sư AI hỏi đáp phải giữ mức suy nghĩ mặc định của model (cần suy luận); chỉ tiêu đề và giải thích quiz được hạ."""
+    import inspect
+
+    source = inspect.getsource(tutor_service)
+    chat_start = source.index("async def _answer_with_context") if "async def _answer_with_context" in source else 0
+    # Hai lệnh generate_conversation (hỏi đáp có/không có ngữ cảnh) không được truyền thinking_level.
+    for chunk in source.split("gemini.generate_conversation(")[1:]:
+        call = chunk.split(")\n", 1)[0]
+        assert "thinking_level" not in call
