@@ -148,7 +148,8 @@ async def chat(request: DiscoveryChatRequest) -> DiscoveryChatResponse:
         res = await gemini.generate_with_tools(
             prompt=request.message,
             tools=[_build_search_tool(categories)],
-            system_instruction=SYSTEM_INSTRUCTION
+            system_instruction=SYSTEM_INSTRUCTION,
+            thinking_level=settings.discovery_thinking_level or None,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI Request Failed: {e}")
@@ -269,7 +270,8 @@ Tuyệt đối KHÔNG tự bịa ra khóa học không có trong danh sách trê
             try:
                 final_res = await gemini.generate(
                     prompt=prompt2,
-                    system_instruction="Bạn là trợ lý tư vấn khóa học thân thiện, chuyên nghiệp."
+                    system_instruction="Bạn là trợ lý tư vấn khóa học thân thiện, chuyên nghiệp.",
+                    thinking_level=settings.discovery_thinking_level or None,
                 )
                 reply_text = final_res.text
             except Exception as e:
