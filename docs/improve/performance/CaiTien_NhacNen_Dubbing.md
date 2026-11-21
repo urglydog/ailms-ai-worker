@@ -131,7 +131,7 @@ DUBBING_THINKING_LEVEL=minimal
 ```bash
 docker compose up -d --build ai-worker
 ```
-Nếu `ai-beat` dùng chung image thì build luôn: `docker compose up -d --build ai-worker ai-beat`.
+`ai-beat` cũng build từ `../ai-worker`, nên build luôn cho đồng bộ: `docker compose up -d --build ai-worker ai-beat`.
 
 **Bước 3: kiểm tra.**
 ```bash
