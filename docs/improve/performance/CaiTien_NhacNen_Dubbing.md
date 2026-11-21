@@ -103,7 +103,70 @@ Mọi lỗi ở bước tách hoặc trộn nhạc chỉ được ghi cảnh bá
 - `tests/test_groq_word_onsets.py`: mốc câu lấy theo từ đầu tiên.
 - `tests/test_adaptive_rate.py`: câu chỉ có dấu câu, và Azure trả audio rỗng.
 
-## 6. Việc có thể làm tiếp
+## 6. Triển khai lên server (checklist cho người hoặc AI thực hiện)
+
+Chỉ **ai-worker** thay đổi; be và fe giữ nguyên. Thực hiện tuần tự, xong bước nào kiểm tra bước đó.
+
+**Bước 0: lấy code.** Chỉ làm sau khi nhánh `feat/dubbing` đã được merge vào `develop` (hoặc nhánh đang deploy). Trong thư mục `project/ai-worker`:
+```bash
+git pull
+```
+Kiểm tra code đã có tính năng mới (phải in ra một số lớn hơn 0):
+```bash
+grep -c "background_music" app/services/dubbing_service.py
+```
+
+**Bước 1: thêm biến vào `project/ai-worker/.env` trên server.**
+- Dùng **cùng token Modal với máy local**. Xin giá trị token từ người quản lý dự án; tuyệt đối không commit token và không in ra log.
+```
+BGM_SEPARATION=modal
+MODAL_TOKEN_ID=ak-...
+MODAL_TOKEN_SECRET=as-...
+DUBBING_THINKING_LEVEL=minimal
+```
+- Nếu dòng nào đã có thì sửa giá trị, không thêm dòng trùng.
+- Các biến `BGM_*` khác đã có mặc định (xem mục 4), không bắt buộc.
+
+**Bước 2: build lại image worker.** `requirements-app.txt` có thêm thư viện `modal`, nên **phải build**; chỉ `restart` thì không nạp được thư viện mới lẫn `.env` mới. Trong thư mục chứa `docker-compose.yml` (thường là `project/be`):
+```bash
+docker compose up -d --build ai-worker
+```
+Nếu `ai-beat` dùng chung image thì build luôn: `docker compose up -d --build ai-worker ai-beat`.
+
+**Bước 3: kiểm tra.**
+```bash
+docker exec lms_ai_worker printenv BGM_SEPARATION
+docker exec lms_ai_worker python -c "import modal; modal.Function.from_name('lms-demucs','separate').hydrate(); print('modal ok')"
+```
+- Lệnh thứ nhất phải in `modal`.
+- Lệnh thứ hai phải in `modal ok`.
+- Nếu lỗi kiểu *not found*: token sai tài khoản, hoặc app `lms-demucs` chưa được deploy trên tài khoản đó.
+
+**Bước 4: chạy thử một bài có nhạc nền**, rồi xem log:
+```bash
+docker logs -f lms_ai_worker | grep -E "BGM|TIMING"
+```
+Log phải có các dòng:
+- `BGM tach nhac xong` (lần đầu của bài), hoặc `BGM dung lai nhac da tach tren B2` (bài đã tách trước đó);
+- `BGM do to ... -> chinh ... dB`;
+- `BGM tron nhac chunk ...`.
+
+**Không cần làm:**
+- **Deploy lại hàm trên Modal:** `lms-demucs` đã deploy (GPU T4) trên tài khoản sở hữu token và dùng chung cho mọi máy. Chỉ deploy lại khi sửa `modal_apps/demucs_separator.py`.
+- **Cấu hình B2:** nhạc lưu vào cùng bucket, dưới thư mục `bgm/`, dùng key B2 hiện có.
+- **Sửa be hoặc fe.**
+
+**Nếu có sự cố:**
+- **Muốn tắt nhanh tính năng:** đặt `BGM_SEPARATION=` (để trống), rồi chạy `docker compose up -d ai-worker`. Job lồng tiếng sẽ chạy như cũ, không có nhạc nền.
+- **Gặp lỗi 429 từ Azure khi nhiều job chạy cùng lúc:** `TTS_CONCURRENCY` mặc định giờ là 16, trong khi giới hạn của gói S0 là 30 request mỗi giây cho cả tài nguyên. Hạ xuống bằng cách đặt `TTS_CONCURRENCY=8`.
+- **Log có `BGM tach nhac that bai`:**
+  - kiểm tra token;
+  - kiểm tra tài khoản Modal đã thêm thẻ chưa (không có thẻ thì không chạy được GPU);
+  - kiểm tra credit còn lại.
+
+  Job vẫn hoàn thành, chỉ không có nhạc nền.
+
+## 7. Việc có thể làm tiếp
 
 - **Bỏ qua tách nhạc cho bài không có nhạc nền:** kiểm tra năng lượng âm thanh trong các khoảng không có lời, không có nhạc thì không gọi GPU.
 - **Giảm thời gian Modal giữ máy sau mỗi lần gọi:** trang giá nhắc có thể bị tính phí khoảng 60 s máy chờ; điểm này chưa kiểm chứng. Mỗi job chỉ gọi tách nhạc một lần nên không cần giữ máy lâu.
