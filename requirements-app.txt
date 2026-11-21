@@ -65,3 +65,6 @@ tenacity==9.0.0        # retry có exponential backoff (BR-CHUNK-04)
 # (services/translation.py) — dùng dữ liệu ISO 639 chuẩn, KHÔNG tự liệt kê bảng tên
 # ngôn ngữ (BR-DUB-07 cấm hardcode danh sách ngôn ngữ ở bất kỳ đâu).
 langcodes==3.4.1
+
+# M2 nhạc nền: gọi hàm Demucs đã deploy trên Modal (app/services/background_music.py)
+modal==1.6.4

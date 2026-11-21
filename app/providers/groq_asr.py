@@ -128,6 +128,22 @@ async def transcribe(audio_path: str) -> TranscriptionResult:
     return result
 
 
+_WORD_TOLERANCE_SEC = 0.05
+
+
+def _first_word_start(words: list[WordTimestamp], seg_start: float, seg_end: float) -> float:
+    """Mốc bắt đầu câu = lúc TỪ ĐẦU TIÊN của câu được nói (21/11/2026).
+
+    Mốc cấp câu của Whisper hay gộp cả khoảng không lời phía trước vào câu (đo được: bài Crash
+    Course có nhạc intro, câu 1 ghi 0,0 s trong khi người nói bắt đầu sau đoạn nhạc) -> bản lồng
+    tiếng nói đè lên nhạc intro. Mốc cấp từ chính xác hơn nhiều; không có từ nào thì giữ mốc cũ.
+    """
+    for w in words:
+        if seg_start - _WORD_TOLERANCE_SEC <= w.start < seg_end:
+            return max(seg_start, w.start)
+    return seg_start
+
+
 def _parse_response(payload: dict) -> TranscriptionResult:
     """Chuyển JSON của Groq thành dataclass. Sai định dạng thì raise, không trả dict."""
     try:
@@ -136,7 +152,10 @@ def _parse_response(payload: dict) -> TranscriptionResult:
             for w in payload.get("words", [])
         ]
         segments = [
-            SttSegment(start=float(s["start"]), end=float(s["end"]), text=s["text"].strip())
+            SttSegment(
+                start=_first_word_start(words, float(s["start"]), float(s["end"])),
+                end=float(s["end"]), text=s["text"].strip(),
+            )
             for s in payload.get("segments", [])
             if s.get("text", "").strip()
         ]

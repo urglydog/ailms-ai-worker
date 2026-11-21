@@ -162,6 +162,15 @@ async def place_on_timeline(
     )
 
 
+async def write_silence(path: str | Path, duration_sec: float) -> None:
+    """Ghi 1 file mp3 im lặng — thay cho câu không có chữ để đọc (vd chỉ có dấu câu)."""
+
+    def _write() -> None:
+        AudioSegment.silent(duration=int(duration_sec * 1000)).export(str(path), format="mp3")
+
+    await asyncio.to_thread(_write)
+
+
 async def change_tempo(path: str | Path, factor: float) -> None:
     """Tăng tốc 1 file câu tại chỗ bằng FFmpeg `atempo` (giữ cao độ giọng).
 
