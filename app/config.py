@@ -104,6 +104,13 @@ class Settings(BaseSettings):
     material_thinking_level: str = "low"          # mindmap / flashcard / quiz: cấu trúc hóa từ transcript có sẵn
     quiz_explain_thinking_level: str = "low"      # giải thích đáp án quiz: ngắn, đã có đủ ngữ cảnh trong prompt
     aux_thinking_level: str = "minimal"           # đặt tiêu đề hội thoại, kiểm duyệt đánh giá: phân loại/tóm tắt rất ngắn
+    # Mở rộng 21/11/2026 cho các tính năng còn lại TRỪ Gia sư AI hỏi đáp (giữ mức mặc định để suy luận tốt). Đo thật: "minimal" luôn ra 0 token suy nghĩ còn "low" thất thường (0–600 token mỗi lệnh),
+    # nên việc chọn công cụ/viết lại số liệu có sẵn dùng "minimal"; việc cần cân nhắc hơn (lập kế hoạch, nhìn khung hình) dùng "low". Đặt rỗng để quay về mặc định của model.
+    discovery_thinking_level: str = "minimal"     # tìm khóa học bằng AI: chọn công cụ + viết câu trả lời ngắn
+    instructor_ai_thinking_level: str = "minimal" # trợ lý giảng viên: chọn công cụ + tóm tắt số liệu đã có
+    study_plan_thinking_level: str = "low"        # lập kế hoạch học: JSON theo schema cố định (cần xếp lịch)
+    proctoring_risk_thinking_level: str = "minimal"   # giám sát thi: đánh giá rủi ro từ số lần vi phạm
+    proctoring_frame_thinking_level: str = "low"      # giám sát thi: phân tích khung hình (ảnh) — thận trọng hơn
 
     # Thư mục file trung gian. Phải dọn sau mỗi job, tối đa 24 giờ (BR-STORAGE-01).
     temp_dir: str = "/tmp/lms-processing"

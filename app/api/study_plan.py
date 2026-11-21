@@ -99,7 +99,8 @@ async def generate_study_plan(req: AiWorkerStudyPlanReq):
         res = await gemini.generate_conversation(
             [{"role": "user", "parts": [{"text": prompt}]}],
             response_mime_type="application/json",
-            response_schema=schema
+            response_schema=schema,
+            thinking_level=settings.study_plan_thinking_level or None,
         )
         
         if isinstance(res, gemini.FunctionCall):

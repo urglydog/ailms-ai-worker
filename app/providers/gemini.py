@@ -399,10 +399,13 @@ async def generate(
     return res
 
 
-async def generate_with_tools(prompt: str, tools: list[dict], *, system_instruction: str | None = None) -> LlmResult | FunctionCall:
+async def generate_with_tools(
+    prompt: str, tools: list[dict], *, system_instruction: str | None = None, thinking_level: str | None = None,
+) -> LlmResult | FunctionCall:
     """Gọi Gemini ở chế độ Function Calling — dùng cho UC49 Course Discovery."""
     return await generate_conversation(
         [{"role": "user", "parts": [{"text": prompt}]}], system_instruction=system_instruction, tools=tools,
+        thinking_level=thinking_level,
     )
 
 
