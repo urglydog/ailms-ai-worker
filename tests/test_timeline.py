@@ -100,3 +100,71 @@ async def test_change_tempo_shortens_file_in_place(tmp_path):
     assert abs(await audio_utils.measure_duration_sec(p) - 2.0) < 0.1
     await audio_utils.change_tempo(p, 1.0)          # <= 1.0: khong lam gi
     assert abs(await audio_utils.measure_duration_sec(p) - 2.0) < 0.1
+
+
+# ---------------------------------------------------------------- 2 cách ghép cho cùng kết quả (22/11/2026)
+ENGINES = [audio_utils.place_on_timeline_pydub, audio_utils.place_on_timeline_ffmpeg]
+
+
+@needs_ffmpeg
+@pytest.mark.asyncio
+@pytest.mark.parametrize("engine", ENGINES, ids=["pydub", "ffmpeg"])
+async def test_engine_pads_to_exact_chunk_length(tmp_path, engine):
+    paths = [_tone(tmp_path, "a", 1.0), _tone(tmp_path, "b", 1.0)]
+    out = tmp_path / "chunk.mp3"
+    res = await engine(paths, [0.0, 5.0], 10.0, out)
+    assert res.tempo_applied == 1.0
+    assert abs(len(AudioSegment.from_file(out)) / 1000 - 10.0) < 0.1
+
+
+@needs_ffmpeg
+@pytest.mark.asyncio
+@pytest.mark.parametrize("engine", ENGINES, ids=["pydub", "ffmpeg"])
+async def test_engine_speeds_up_overlong_chunk(tmp_path, engine):
+    paths = [_tone(tmp_path, f"s{i}", 4.0) for i in range(3)]
+    out = tmp_path / "chunk.mp3"
+    res = await engine(paths, [0.0, 3.0, 6.0], 10.0, out)
+    assert res.raw_length_sec == pytest.approx(12.0, abs=0.1)
+    assert res.tempo_applied == pytest.approx(audio_utils.MAX_CHUNK_TEMPO)
+    assert res.max_delay_sec == pytest.approx(2.0, abs=0.1)
+    assert abs(len(AudioSegment.from_file(out)) / 1000 - 10.0) < 0.1
+
+
+@needs_ffmpeg
+@pytest.mark.asyncio
+async def test_ffmpeg_engine_places_sentences_where_pydub_does(tmp_path):
+    """Câu phải vang lên ĐÚNG mốc như cách cũ: so vị trí bắt đầu có tiếng trong 2 file xuất ra."""
+    paths = [_tone(tmp_path, f"s{i}", d) for i, d in enumerate([1.0, 2.5, 0.8])]
+    desired = [0.5, 1.0, 6.0]   # cau 1 bi lui vi cau 0 chua xong? khong: 0.5+1.0=1.5 > 1.0 -> lui toi 1.5
+    a, b = tmp_path / "a.mp3", tmp_path / "b.mp3"
+    ra = await audio_utils.place_on_timeline_pydub(paths, desired, 10.0, a)
+    rb = await audio_utils.place_on_timeline_ffmpeg(paths, desired, 10.0, b)
+    assert rb.max_delay_sec == pytest.approx(ra.max_delay_sec, abs=0.06)
+
+    def onsets(path):
+        audio = AudioSegment.from_file(path)
+        found, prev_loud = [], False
+        for ms in range(0, len(audio), 10):
+            loud = audio[ms:ms + 10].dBFS > -40
+            if loud and not prev_loud:
+                found.append(ms / 1000)
+            prev_loud = loud
+        return found
+
+    oa, ob = onsets(a), onsets(b)
+    assert len(oa) == len(ob)
+    assert all(abs(x - y) < 0.06 for x, y in zip(oa, ob))
+
+
+@pytest.mark.asyncio
+async def test_dispatcher_falls_back_to_pydub_when_ffmpeg_engine_fails(tmp_path, monkeypatch):
+    from unittest.mock import AsyncMock
+
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "timeline_engine", "ffmpeg")
+    monkeypatch.setattr(audio_utils, "place_on_timeline_ffmpeg", AsyncMock(side_effect=RuntimeError("boom")))
+    fallback = AsyncMock(return_value="ok")
+    monkeypatch.setattr(audio_utils, "place_on_timeline_pydub", fallback)
+    assert await audio_utils.place_on_timeline([tmp_path / "x.mp3"], [0.0], 5.0, tmp_path / "o.mp3") == "ok"
+    fallback.assert_awaited_once()

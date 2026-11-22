@@ -94,6 +94,9 @@ class Settings(BaseSettings):
     # Hiệu năng dubbing (S1): số câu tổng hợp giọng CÙNG LÚC trong 1 chunk. Azure Speech S0 cho 30 request/giây (mỗi request ~1 s) nên 16 luồng ≈ 16 request/giây là an toàn
     # (nâng từ 8 lên 16 ngày 21/11/2026); gặp lỗi 429 thì đặt TTS_CONCURRENCY=8 trong .env; đặt 1 để quay về chạy tuần tự như cũ.
     tts_concurrency: int = 16
+    # Cách ghép câu thành file audio của chunk (BR-CHUNK-05): "ffmpeg" = 1 lệnh FFmpeg cho cả chunk
+    # (nhanh, xem docs/improve/performance/SoSanh_GhepChunk.md), "pydub" = cách cũ (dự phòng).
+    timeline_engine: str = "ffmpeg"
     # Số tiến trình FFmpeg `atempo` chạy cùng lúc (CPU-bound, máy chủ 2 vCPU).
     tempo_concurrency: int = 2
     # Mức "suy nghĩ" của Gemini cho dịch/rút gọn lời thoại (S7). Rỗng = mặc định của model (như cũ).

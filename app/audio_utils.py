@@ -13,6 +13,7 @@ Dùng cho:
 from __future__ import annotations
 
 import asyncio
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -101,6 +102,131 @@ def plan_onsets(desired_onsets_sec: list[float], durations_sec: list[float]) -> 
 
 
 async def place_on_timeline(
+    segment_paths: list[str | Path],
+    desired_onsets_sec: list[float],
+    chunk_len_sec: float,
+    out_path: str | Path,
+    durations_sec: list[float] | None = None,
+) -> TimelineResult:
+    """Chọn cách ghép theo `TIMELINE_ENGINE` ("ffmpeg" | "pydub"); 2 cách cho cùng kết quả (BR-CHUNK-05).
+    "ffmpeg" lỗi thì tự quay về "pydub" — không bao giờ làm hỏng chunk vì đổi cách ghép."""
+    from app.config import settings
+
+    if settings.timeline_engine == "ffmpeg":
+        try:
+            return await place_on_timeline_ffmpeg(
+                segment_paths, desired_onsets_sec, chunk_len_sec, out_path, durations_sec,
+            )
+        except Exception as exc:
+            logging.getLogger(__name__).warning("Ghep bang 1 lenh FFmpeg that bai, dung cach cu (pydub): %s", exc)
+    return await place_on_timeline_pydub(segment_paths, desired_onsets_sec, chunk_len_sec, out_path)
+
+
+async def probe_audio(path: str | Path) -> tuple[float, int]:
+    """(độ dài giây, sample rate) đọc từ header bằng ffprobe — không giải mã cả file."""
+    process = await asyncio.create_subprocess_exec(
+        "ffprobe", "-v", "error", "-select_streams", "a:0",
+        "-show_entries", "stream=sample_rate:format=duration", "-of", "default=noprint_wrappers=1", str(path),
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+    )
+    out, err = await process.communicate()
+    if process.returncode != 0:
+        raise RuntimeError(f"ffprobe that bai ({path}): {err.decode(errors='ignore')[-300:]}")
+    fields = dict(line.split("=", 1) for line in out.decode().splitlines() if "=" in line)
+    return float(fields["duration"]), int(fields.get("sample_rate", 0) or 0)
+
+
+_PROBE_CONCURRENCY = 8
+
+
+async def place_on_timeline_ffmpeg(
+    segment_paths: list[str | Path],
+    desired_onsets_sec: list[float],
+    chunk_len_sec: float,
+    out_path: str | Path,
+    durations_sec: list[float] | None = None,
+) -> TimelineResult:
+    """Cùng thuật toán với `place_on_timeline_pydub` (mốc tuyệt đối -> tăng tốc cả đoạn tối đa
+    `MAX_CHUNK_TEMPO` -> cắt/đệm đúng độ dài chunk), nhưng dựng bằng MỘT lệnh FFmpeg (22/11/2026).
+
+    Cách cũ: mỗi câu pydub mở 1 tiến trình FFmpeg để giải mã (tuần tự, ~0,2 s/câu) rồi nối trong
+    Python (mỗi lần nối chép lại cả đoạn). Cách mới: tính mốc bằng đúng `plan_onsets`, rồi 1 lượt
+    FFmpeg nối [lặng, câu, lặng, câu, ...] (các câu không bao giờ chồng nhau nên chỉ cần NỐI), tăng
+    tốc và khớp độ dài trong cùng lượt.
+
+    Độ dài câu: dùng `durations_sec` caller đã đo sẵn lúc TTS (chính xác). KHÔNG dùng độ dài trong
+    header MP3 (ffprobe) — nó dư ~35–45 ms/câu vì tính cả phần đệm của bộ mã hoá, cộng dồn qua 190
+    câu sẽ lệch vài giây. Không có `durations_sec` thì giải mã song song để đo. Ngoài ra mỗi câu
+    được đệm/cắt về ĐÚNG ô thời gian của nó, nên sai số nhỏ không bao giờ dồn sang câu sau.
+    """
+    if len(segment_paths) != len(desired_onsets_sec):
+        raise ValueError("segment_paths va desired_onsets_sec phai cung do dai")
+    if not segment_paths:
+        raise ValueError("khong co cau nao de ghep")
+
+    sem = asyncio.Semaphore(_PROBE_CONCURRENCY)
+
+    async def probe(p: str | Path) -> tuple[float, int]:
+        async with sem:
+            return await probe_audio(p)
+
+    if durations_sec is not None and len(durations_sec) == len(segment_paths):
+        durations = [max(0.0, float(d)) for d in durations_sec]
+    else:
+        async def measure(p: str | Path) -> float:
+            async with sem:
+                return await measure_duration_sec(p)
+
+        durations = list(await asyncio.gather(*(measure(p) for p in segment_paths)))
+    sample_rate = (await probe(segment_paths[0]))[1] or 16000
+    onsets = plan_onsets(desired_onsets_sec, durations)
+    max_delay = max((on - max(0.0, want) for on, want in zip(onsets, desired_onsets_sec)), default=0.0)
+    raw_len = onsets[-1] + durations[-1]
+
+    tempo = 1.0
+    if raw_len > chunk_len_sec + 0.05 and chunk_len_sec > 0:
+        tempo = min(raw_len / chunk_len_sec, MAX_CHUNK_TEMPO)
+
+    fmt = f"aformat=sample_fmts=fltp:sample_rates={sample_rate}:channel_layouts=mono"
+    parts: list[str] = []
+    labels: list[str] = []
+    cursor = 0.0
+    for i, (onset, dur) in enumerate(zip(onsets, durations)):
+        gap = onset - cursor
+        if gap > 0.0005:
+            parts.append(f"anullsrc=r={sample_rate}:cl=mono,atrim=duration={gap:.6f},{fmt}[g{i}]")
+            labels.append(f"[g{i}]")
+        # đệm/cắt câu về đúng `dur` -> vị trí các câu sau không phụ thuộc độ dài giải mã thực tế
+        parts.append(f"[{i}:a]{fmt},apad=whole_dur={dur:.6f},atrim=end={dur:.6f}[s{i}]")
+        labels.append(f"[s{i}]")
+        cursor = onset + dur
+    chain = f"{''.join(labels)}concat=n={len(labels)}:v=0:a=1"
+    if tempo > 1.0:
+        chain += f",atempo={tempo:.4f}"
+    chain += f",apad=whole_dur={chunk_len_sec:.6f},atrim=end={chunk_len_sec:.6f}[out]"
+    parts.append(chain)
+
+    script = Path(str(out_path) + ".filter.txt")
+    script.write_text(";\n".join(parts), encoding="utf-8")
+    try:
+        inputs: list[str] = []
+        for p in segment_paths:
+            inputs += ["-i", str(p)]
+        await _ffmpeg(*inputs, "-/filter_complex", str(script), "-map", "[out]", str(out_path))
+    finally:
+        script.unlink(missing_ok=True)
+
+    # Đã apad + atrim về đúng chunk_len trong cùng lượt; KHÔNG đọc lại độ dài từ header MP3 (dư ~0,09 s
+    # do phần đệm của bộ mã hoá — độ dài giải mã thật đúng bằng chunk_len, xem SoSanh_GhepChunk.md).
+    return TimelineResult(
+        raw_length_sec=round(raw_len, 3),
+        final_length_sec=round(chunk_len_sec, 3),
+        max_delay_sec=round(max_delay, 3),
+        tempo_applied=round(tempo, 4),
+    )
+
+
+async def place_on_timeline_pydub(
     segment_paths: list[str | Path],
     desired_onsets_sec: list[float],
     chunk_len_sec: float,

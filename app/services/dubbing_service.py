@@ -365,6 +365,7 @@ async def _process_chunk_once(
     # (đo được +96 s ở bài 15 phút). Chunk luôn được khớp đúng độ dài để không lan sang chunk sau.
     timeline = await audio_utils.place_on_timeline(
         sentence_paths, desired_onsets, float(chunk.end_sec - chunk.start_sec), chunk_audio,
+        durations_sec=[result.duration_sec for result, _text, _summarized in synthesized],
     )
     if timeline.tempo_applied > 1.0 or timeline.max_delay_sec > 2.0:
         log.info(
