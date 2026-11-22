@@ -48,7 +48,35 @@ Chép thẳng MP3 có thể thêm khoảng 1 khung (26–50 ms) ở mỗi chỗ 
 | Bước cuối (`final`) | khoảng 23 s | **0,1 s** |
 | **Cả job** | **63 s** | **32,7 s** |
 
-Riêng phần đánh thức GPU **chưa đo được**, vì cần một bài chưa từng lồng tiếng (chưa có nhạc trên B2).
+**Lồng tiếng lần đầu, có đánh thức GPU:** job 44, bài 3465 "Tired of Doomscrolling?", 9 phút 13 giây, 112 câu, tiếng Việt, bài chưa từng lồng tiếng.
+
+Dòng TIMING:
+```
+asr=3.5s dich=14.9s tts=16.5s ghep=7.0s nhac=44.5s upload=21.9s tong=108.4s   final=0.1s
+```
+
+| Mốc | Thời điểm |
+|---|---|
+| Nhận job | 05:04:45 |
+| Tải xong audio gốc, bắt đầu xử lý | 05:04:50 (+5 s) |
+| GPU đã được đánh thức xong | 05:04:55 (mất 10,2 s, song song với tải audio) |
+| Tách nhạc xong (Demucs 63,5 s, tổng 78,5 s) | 05:06:09 |
+| Đo độ to và trộn xong (phần lồng tiếng chờ nhạc 36,6 s) | 05:06:17 |
+| Chunk tải lên xong, **job hoàn tất** | 05:06:39 (**113,8 s**) |
+
+So với lần lồng tiếng đầu trước đây:
+
+| | Job 38 (21/11, 6 phút 16 giây) | **Job 44 (22/11, 9 phút 13 giây)** |
+|---|---|---|
+| Cả job | 118 s | **113,8 s** |
+| Mỗi phút video | khoảng 18,8 s | **khoảng 12,3 s** (nhanh hơn khoảng 35%) |
+| Phần ngoài Demucs của bước tách nhạc (khởi động, gửi, nhận) | khoảng 20 s | **khoảng 15 s** |
+
+**Ghi chú:**
+- `ghep=7.0s` gồm cả việc tạo embedding và ghi Supabase cho Gia sư AI (chỉ có ở lần lồng tiếng đầu); riêng phần ghép audio khoảng 1–2 s.
+- `upload=21.9s` chạy cùng lúc với việc lưu nhạc lên B2 (26,2 s, chạy nền) trên mạng nhà, nên hai việc tranh nhau đường truyền. Trên server dự kiến nhanh hơn nhiều.
+- **Nút thắt còn lại của lần đầu là tách nhạc:** phần lồng tiếng xong trước và phải chờ thêm 36,6 s. Điểm 1 (tách nhạc song song trên nhiều GPU) sẽ xử lý chỗ này.
+- **Ước tính video 10 phút, lần đầu:** khoảng **2 phút**. Từ ngôn ngữ thứ 2 trở đi (dùng lại transcript và nhạc): khoảng **45–60 giây**, theo job 43 (32,7 s cho bài 6 phút).
 
 ## 3. Kiểm thử
 
