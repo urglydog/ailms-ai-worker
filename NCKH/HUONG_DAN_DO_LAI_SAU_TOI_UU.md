@@ -4,7 +4,10 @@
 > *"Đọc NCKH/HUONG_DAN_DO_LAI_SAU_TOI_UU.md rồi làm theo, hỏi tôi trước mỗi bước có đánh dấu ❓."*
 > Trả lời bằng **tiếng Việt**.
 >
-> Nên đọc kèm (chỉ để tra cứu, không cần đọc hết): `NCKH/CAP_NHAT_SAU_TOI_UU_DUBBING.md` (pipeline đã đổi gì),
+> **Bắt buộc đọc trước:** `NCKH/CAP_NHAT_SAU_TOI_UU_DUBBING.md` **mục 6** (kinh nghiệm đo đạc: đọc log TIMING,
+> xóa dữ liệu cũ, bẫy môi trường, bẫy khi đo độ khớp, số liệu tham khảo job 43–46 để tự kiểm tra số đo có hợp lý không).
+>
+> Nên đọc kèm (chỉ để tra cứu, không cần đọc hết): `NCKH/CAP_NHAT_SAU_TOI_UU_DUBBING.md` mục 1–5 (pipeline đã đổi gì),
 > `docs/improve/performance/SoSanh_GhepChunk.md` mục 6 (checklist build server), `NCKH/HUONG_DAN_NHOM.md` mục 3 và 9.2 (quy tắc chung).
 
 ## 0. Bối cảnh trong 5 dòng
@@ -20,18 +23,24 @@
 1. **Không sửa `paper/main.tex`**, không sửa code trong `app/` (trừ khi Sang đồng ý). Chỉ sửa và thêm file trong `NCKH/experiments/`.
 2. **Cố định cấu hình suốt đợt đo**: cùng một commit, cùng `.env`, cùng giọng đọc. Ghi tất cả vào `NOTES.md`.
 3. **Không trộn số cũ và số mới** trong cùng một bảng hay một phương án. Số cũ chỉ để tham chiếu và phải ghi rõ "bản `e5a8cb7`".
-4. **Server**: được build lại 3 container ai (`ai-api`, `ai-worker`, `ai-beat`) và chạy script đo trong `lms_ai_worker`. **Không đụng** DB schema, volume, `backend`, `frontend`. Chỉ đọc DB bằng SELECT. Xóa dữ liệu (bản lồng tiếng cũ của 4 bài thử nghiệm) chỉ khi ❓ Sang đồng ý.
+4. **Server**: được build lại 3 container ai (`ai-api`, `ai-worker`, `ai-beat`) và chạy script đo trong `lms_ai_worker`. **Không đụng** DB schema, volume, `backend`, `frontend`. Chỉ đọc DB bằng SELECT, **trừ một ngoại lệ đã được Sang cho phép (22/11)**: xóa dữ liệu lồng tiếng cũ của **đúng 4 bài thử nghiệm** (lesson 2284, 2285, 2286, 2288 trong khóa 92) bằng `NCKH/experiments/reset_lessons.sql` và `reset_lessons_cache.py` (mục 3, bước A6). Không xóa gì khác.
 5. **Bí mật**: không in, không commit `.env`, token Modal, key Gemini/Azure/Groq. Kiểm tra env bằng `printenv TÊN_BIẾN` cụ thể, **không** `printenv` toàn bộ.
 6. Không chọn lọc kết quả; lần chạy lỗi cũng ghi vào report kèm lý do.
 7. Commit và push lên nhánh **`NCKH`** khi xong, rồi nhắn Sang.
 
-## 2. Thông tin cần hỏi trước (❓ hỏi người dùng)
+## 2. Phân công: AI tự làm gì, hỏi Thiện gì
 
-- ❓ Đã merge `develop` mới nhất (có commit `c82339e` trở về sau) vào nhánh deploy trên server chưa? Server đang ở thư mục nào (`/var/lms/ai-worker`, `/var/lms/be`)?
-- ❓ `.env` trên server đã có `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` đúng tài khoản đã deploy hàm `lms-demucs` bản mới (commit `34052fb`) chưa? (Chỉ hỏi "đã có chưa".)
-- ❓ Credit Gemini còn bao nhiêu? Đợt đo ước khoảng 20–40K₫ (bản mới gọi LLM ít hơn nhiều so với 286 lời gọi của bản cũ).
-- ❓ Có cho phép xóa bản lồng tiếng và transcript cũ của 4 bài trong khóa 92 (lesson 2284, 2285, 2286, 2288) để đo lại "lần lồng tiếng đầu" không?
-- ❓ Có đang có job lồng tiếng thật nào chạy không (để không build/restart giữa chừng)?
+**AI tự làm (không cần hỏi):** merge code về server (bước A1), build lại container, kiểm tra cấu hình, xóa dữ liệu cũ
+của 4 bài (đã được Sang cho phép), chạy script đo, **theo dõi và kiểm tra các job lồng tiếng thật** qua log và DB
+(bước C4), viết REPORT, commit và push.
+
+**❓ Hỏi Thiện** (người đang ngồi ở server; không yêu cầu dán mật khẩu hay key vào chat):
+- ❓ Thư mục trên server: repo ai-worker ở đâu (thường `/var/lms/ai-worker`), file `docker-compose.yml` ở đâu (thường `/var/lms/be`), nhánh đang deploy là nhánh nào?
+- ❓ **`.env`**: đã có `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET` đúng tài khoản deploy hàm `lms-demucs` bản mới (commit `34052fb`) chưa? Key Gemini còn hạn không? (Chỉ hỏi "đã có chưa"; nếu cần sửa `.env`, AI chỉ ra dòng cần sửa để Thiện tự mở file sửa.)
+- ❓ **Credit Gemini** còn bao nhiêu? Đợt đo ước khoảng 20–40K₫. Dưới khoảng 50K₫ thì nhắc Thiện nạp trước.
+- ❓ User và tên database MySQL (mật khẩu Thiện tự nhập khi lệnh hỏi).
+- ❓ Có job lồng tiếng thật nào đang chạy không (để không build/tạo lại container giữa chừng)?
+- ❓ Ở bước C4: nhờ Thiện **bấm "Lồng tiếng" tiếng Việt trên web** cho từng bài khi AI báo sẵn sàng (AI không tự thao tác giao diện web); phần theo dõi và kiểm tra job thì AI tự làm.
 
 ## 3. Bước A — Build lại môi trường trên server
 
@@ -44,10 +53,18 @@ docker exec lms_ai_worker sh -c "ffmpeg -version | head -1; cat /etc/debian_vers
 docker exec lms_ai_worker printenv GEMINI_MODEL DUBBING_THINKING_LEVEL BGM_SEPARATION
 cd /var/lms/ai-worker && git log --oneline -1
 
-# A1. Lấy code mới (nhánh đang deploy, ví dụ develop)
-cd /var/lms/ai-worker && git pull
+# A1. Merge code mới về server (AI tự làm). Code chạy là code của nhánh đang checkout trong thư mục
+#     được gắn vào container (mục 6.4.2), nên phải đúng nhánh và đủ code mới.
+cd /var/lms/ai-worker
+git status --short                                     # có thay đổi chưa commit? -> dừng, ❓ hỏi Thiện, KHÔNG xóa
+git fetch origin
+git checkout develop && git pull --ff-only origin develop   # nhánh deploy (theo câu trả lời của Thiện)
+git merge --no-edit origin/NCKH                        # lấy script đo mới nhất (nếu đã có trong develop thì báo "Already up to date")
+#   Conflict -> dừng, `git merge --abort`, ❓ báo Thiện/Sang, không tự giải quyết conflict trong app/.
 git log --oneline -1                                   # ghi commit này vào NOTES
 grep -c "place_on_timeline_ffmpeg" app/audio_utils.py   # phải > 0
+grep -c "_prepare_chunk_with_retry" app/services/dubbing_service.py   # phải > 0 (bản có dây chuyền)
+ls NCKH/experiments/run_experiment_v2.py NCKH/experiments/reset_lessons.sql   # phải có
 grep -c "prefetch" app/services/dubbing_service.py      # phải > 0 (dây chuyền chunk)
 ```
 
@@ -83,13 +100,27 @@ docker inspect -f '{{.State.Status}} restarts={{.RestartCount}} oom={{.State.OOM
 - **Lưu ý:** `restart` **không** nạp lại `.env`; phải `up -d --force-recreate`.
 - Nếu một bước kiểm tra sai: dừng lại, ghi lỗi vào report, ❓ hỏi Sang.
 
-**A5. Ghi lại trạng thái tốc độ đọc của giọng** (ảnh hưởng `max_chars`):
+**A5. Gọi thử Gemini 1 lần** (bẫy key hết hạn/hết credit, mục 6.4.4) — nếu lỗi 401/402 thì dừng, ❓ báo Thiện:
 ```bash
-docker exec lms_redis redis-cli --scan --pattern 'dubbing:tts_cps:*'
-docker exec lms_redis redis-cli get 'dubbing:tts_cps:vi-VN-HoaiMyNeural'
-docker exec lms_redis redis-cli get 'dubbing:tts_cps:vi-VN-NamMinhNeural'
+docker exec -w /app lms_ai_worker python -c "import asyncio; from app.providers import gemini; print(asyncio.run(gemini.generate('Tra loi dung 1 tu: ok', thinking_level='minimal')).text)"
 ```
-Ghi giá trị vào NOTES. **Không xóa** các khóa này nếu chưa ❓ hỏi Sang (xem mục B, V4 lần 1/lần 2).
+
+**A6. Xóa dữ liệu cũ của 4 bài thử nghiệm** (đã được Sang cho phép; mục 6.3 của file cập nhật).
+Hệ thống dùng lại bản ký âm, bản dịch, bản lồng tiếng, nhạc đã tách và tốc độ đọc của giọng; bản ký âm cũ còn dùng
+**mốc đầu câu kiểu cũ**, nên không xóa thì Bảng 3, Bảng 4 đều sai.
+```bash
+# (1) MySQL — xem trước, xóa trong 1 transaction, kiểm tra lại (Thiện tự nhập mật khẩu)
+docker exec -i lms_mysql mysql -u <user> -p <db> < NCKH/experiments/reset_lessons.sql
+# (2) B2 nhạc đã tách + Redis: chạy dry-run trước, đọc danh sách, rồi mới --apply
+docker exec --user 1000:1001 -w /app lms_ai_worker python NCKH/experiments/reset_lessons_cache.py \
+    --lessons 2284,2285,2286,2288 --reset-cps --course-cache
+docker exec --user 1000:1001 -w /app lms_ai_worker python NCKH/experiments/reset_lessons_cache.py \
+    --lessons 2284,2285,2286,2288 --reset-cps --course-cache --apply
+```
+- Ghi vào NOTES: số dòng trước khi xóa (phần SELECT đầu file SQL), số object B2 đã xóa, **giá trị `tts_cps` trước khi xóa**.
+- Xóa `tts_cps` để lần V4 đầu (C1) đúng là "giọng chưa có số đo"; C2 là lần đã có số đo.
+- Lệnh SQL chỉ chạm đúng 4 lesson trên. Nếu `SELECT` đầu file cho thấy lesson khác hoặc số dòng bất thường → dừng, ❓ hỏi Thiện.
+- Embedding Gia sư AI trên Supabase của bài cũ vẫn còn (không ảnh hưởng số đo) — không cần xóa.
 
 ## 4. Bước B — Script đo (ĐÃ VIẾT SẴN, chỉ cần chạy thử)
 
@@ -143,8 +174,21 @@ Script đã làm sẵn các điểm sau (để AI đối chiếu khi đọc kế
 | C1 | **V1–V4** trên 4 bài (`videos.json`), toàn bộ độ dài, giữ audio | `run_experiment_v2.py --manifest NCKH/experiments/videos.json --run-id v3_r1 --keep-audio` rồi `analyze.py results/v3_r1` | Bảng 2 |
 | C2 | **V4 lần 2** (đã có `tts_cps` sau C1) | `--variants V4 --run-id v3_r2` | Bảng 2: báo **cả 2 lần** V4; Sang chọn lần chính |
 | C3 | **Độ trễ theo trục thời gian** | `check_full_length.py results/v3_r1 --variants V2,V4 --assembly new` và `drift_analysis.py` | Bảng 3 (dòng (c) mới) |
-| C4 | ❓ **4 job thật qua web** (lần lồng tiếng đầu, có ASR và tách nhạc): xóa bản lồng tiếng + transcript cũ của 4 lesson (nếu Sang cho phép), bấm lồng tiếng `vi-VN` từng bài, **chạy tuần tự từng bài** (không chạy song song với C1–C2) | Lấy số từ `server_job_stats.py` / `server_job_stats_ext.sql` + log `docker logs lms_ai_worker 2>&1 \| grep TIMING` | Bảng 4 |
+| C4 | **4 job thật qua web** (lần lồng tiếng đầu: dữ liệu cũ đã xóa ở A6, có ASR và tách nhạc). ❓ Nhờ Thiện bấm "Lồng tiếng" `vi-VN` **từng bài một**; AI tự theo dõi và kiểm tra (xem dưới). **Không chạy song song với C1–C2** | Log: `docker logs --timestamps --since <giờ bắt đầu> lms_ai_worker 2>&1 \| python3 -I NCKH/experiments/parse_worker_logs.py --out results/server_<ngày>/worker_logs.json`; DB: `server_job_stats.py` / `server_job_stats_ext.sql` | Bảng 4 |
 | C5 | **L4**: chọn 50 câu rút gọn mới của V4 (`sample_fidelity.py results/v3_r1 --n 50 --seed 42 --min-frame 2.0 --baseline V3`; dùng **V3** làm bản dịch đầy đủ vì đó là đúng văn bản V4 nhận trước khi rút gọn), tạo file chấm có cột câu gốc EN, bản dịch đầy đủ trước rút gọn, bản rút gọn, **không có điểm** | Gửi file cho **Sang và Thiện chấm độc lập**, sau đó thống nhất câu lệch (như lần trước) | Đoạn L4 |
+
+**C4 — AI tự theo dõi và kiểm tra từng job** (không cần Thiện làm gì ngoài bấm nút):
+1. Trước khi Thiện bấm: ghi giờ UTC hiện tại (`date -u +%FT%TZ`) làm mốc `--since`.
+2. Trong lúc chạy: `docker logs --timestamps -f --since <mốc> lms_ai_worker 2>&1 | grep -E "Bat dau pipeline|TIMING|BGM|HET CREDIT|401|Traceback|that bai"`
+   (dừng theo dõi khi thấy `TIMING job=N final=`). Kiểm tra trạng thái bằng SQL chỉ đọc:
+   `SELECT id, lesson_id, status, total_chunks, done_chunks, started_at, finished_at FROM ai_jobs WHERE lesson_id IN (2284,2285,2286,2288) ORDER BY id;`
+3. Sau mỗi job, tự đối chiếu (mục 6.1, 6.4, 6.6 của file cập nhật):
+   - `status = COMPLETED`, `done_chunks = total_chunks`, không có dòng lỗi.
+   - Chunk 0 có `asr` **lớn hơn 0** (nếu `asr=0.0s` là đã dùng lại bản ký âm → A6 chưa xóa đúng, dừng và báo).
+   - Có dòng `BGM tach nhac xong` (không phải `BGM dung lai nhac da tach tren B2` — nếu có là B2 chưa xóa).
+   - `ghep` vài giây mỗi chunk, `tts` dưới khoảng 60 s mỗi chunk 10 phút; lệch xa số tham khảo job 43–46 → nghi sai phiên bản/cấu hình, dừng và báo.
+   - `upload` > 30 s là bất thường (B2 treo): ghi chú; ❓ hỏi Thiện có chạy lại bài đó không (phải xóa lại dữ liệu bài đó bằng A6 trước khi chạy lại).
+4. Chỉ khi job trước xong và kiểm tra ổn mới báo Thiện bấm bài tiếp theo.
 
 Với C4, mỗi job ghi: thời lượng bài, số chunk, `processing_sec`, `first_chunk_sec`, thời gian giữa các chunk, trạng thái, số lần thử lại, và các dòng `TIMING` (asr, dịch, chờ chunk trước, tts, ghép, nhạc, tải lên). Bài > 10 phút (lec02, lec03, lec04) có nhiều chunk: kiểm tra dây chuyền chạy (có `cho_chunk_truoc` trong log).
 
