@@ -76,6 +76,8 @@ asr=0.0s dich=8.8s tts=13.5s ghep=1.4s nhac=65.2s upload=18.8s tong=107.8s
 
 - Nhanh hơn **8–17 lần** ở bước ghép, kết quả tương đương cách cũ, logic cốt lõi giữ nguyên, và có tự quay về cách cũ khi lỗi. **Đề xuất đưa vào luồng chính** với `TIMELINE_ENGINE=ffmpeg`.
 - **Nhược điểm đã biết:**
-  1. Một lệnh FFmpeg có hàng trăm đầu vào. FFmpeg 7 trong container chạy được; với các bản rất cũ chưa có cú pháp `-/filter_complex` thì sẽ tự quay về cách cũ.
-  2. Cần độ dài câu do caller truyền vào để tính mốc chính xác. Nếu không có thì hàm tự giải mã song song để đo, chậm hơn nhưng vẫn đúng.
-- **Kiểm thử:** `tests/test_timeline.py` chạy cho **cả hai cách** (đệm đủ độ dài, tăng tốc khi tràn, câu đặt đúng chỗ như cách cũ, tự quay về khi lỗi). Toàn bộ: **128 passed**, 6 skipped.
+  1. ~~Phụ thuộc phiên bản FFmpeg~~ **(đã xử lý)**: đồ thị bộ lọc giờ được **truyền thẳng trên dòng lệnh** (`-filter_complex`), nên chạy được cả FFmpeg 5.x (Debian 12) lẫn 7.x (Debian 13). Image dùng `python:3.11-slim` không ghim bản Debian, nên server có thể đang chạy bản cũ hơn máy local.
+     - Chunk 10 phút khoảng 190 câu thì đồ thị chỉ khoảng 25 KB, dưới xa giới hạn 128 KB cho một đối số dòng lệnh của Linux. Đo lại 190 câu: 2,9 s, độ dài đúng 600,000 s.
+     - Đồ thị vượt 100 000 ký tự thì ghi ra file và dùng `-filter_complex_script`, có từ bản 5.x tới 7.x. Có test riêng cho nhánh này.
+  2. ~~Cần độ dài câu từ caller~~ **(đã xử lý)**: luồng lồng tiếng (`dubbing_service.py`) truyền sẵn `durations_sec` lấy từ kết quả tạo giọng. Chỉ còn 2 script NCKH (`NCKH/experiments/check_full_length.py`, `mos_make_clips.py`) gọi mà không truyền; khi đó hàm tự giải mã để đo, chậm hơn nhưng vẫn đúng. Muốn tái lập đúng số liệu bài báo thì chạy các script đó với `TIMELINE_ENGINE=pydub`.
+- **Kiểm thử:** `tests/test_timeline.py` chạy cho **cả hai cách** (đệm đủ độ dài, tăng tốc khi tràn, câu đặt đúng chỗ như cách cũ, tự quay về khi lỗi). Toàn bộ: **129 passed**, 6 skipped.

@@ -168,3 +168,15 @@ async def test_dispatcher_falls_back_to_pydub_when_ffmpeg_engine_fails(tmp_path,
     monkeypatch.setattr(audio_utils, "place_on_timeline_pydub", fallback)
     assert await audio_utils.place_on_timeline([tmp_path / "x.mp3"], [0.0], 5.0, tmp_path / "o.mp3") == "ok"
     fallback.assert_awaited_once()
+
+
+@needs_ffmpeg
+@pytest.mark.asyncio
+async def test_ffmpeg_engine_uses_filter_file_for_huge_graphs(tmp_path, monkeypatch):
+    """Đồ thị quá dài -> ghi ra file (`-filter_complex_script`), kết quả vẫn đúng độ dài."""
+    monkeypatch.setattr(audio_utils, "_INLINE_FILTER_MAX_CHARS", 10)
+    paths = [_tone(tmp_path, "a", 1.0), _tone(tmp_path, "b", 1.0)]
+    out = tmp_path / "chunk.mp3"
+    await audio_utils.place_on_timeline_ffmpeg(paths, [0.0, 3.0], 6.0, out, durations_sec=[1.0, 1.0])
+    assert abs(len(AudioSegment.from_file(out)) / 1000 - 6.0) < 0.1
+    assert not list(tmp_path.glob("*.filter.txt"))      # file tam da duoc don

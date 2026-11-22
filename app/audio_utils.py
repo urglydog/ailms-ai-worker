@@ -137,6 +137,7 @@ async def probe_audio(path: str | Path) -> tuple[float, int]:
 
 
 _PROBE_CONCURRENCY = 8
+_INLINE_FILTER_MAX_CHARS = 100_000   # dưới giới hạn 131 072 byte/đối số (MAX_ARG_STRLEN) của Linux
 
 
 async def place_on_timeline_ffmpeg(
@@ -206,15 +207,22 @@ async def place_on_timeline_ffmpeg(
     chain += f",apad=whole_dur={chunk_len_sec:.6f},atrim=end={chunk_len_sec:.6f}[out]"
     parts.append(chain)
 
-    script = Path(str(out_path) + ".filter.txt")
-    script.write_text(";\n".join(parts), encoding="utf-8")
-    try:
-        inputs: list[str] = []
-        for p in segment_paths:
-            inputs += ["-i", str(p)]
-        await _ffmpeg(*inputs, "-/filter_complex", str(script), "-map", "[out]", str(out_path))
-    finally:
-        script.unlink(missing_ok=True)
+    graph = ";".join(parts)
+    inputs: list[str] = []
+    for p in segment_paths:
+        inputs += ["-i", str(p)]
+    if len(graph) <= _INLINE_FILTER_MAX_CHARS:
+        # Truyền thẳng trên dòng lệnh: chạy được với MỌI phiên bản FFmpeg (5.x của Debian 12 lẫn 7.x
+        # của Debian 13). Chunk 10 phút ~190 câu chỉ ~25 KB, dưới xa giới hạn 128 KB/đối số của Linux.
+        await _ffmpeg(*inputs, "-filter_complex", graph, "-map", "[out]", str(out_path))
+    else:
+        # Đồ thị quá dài (rất nhiều câu) -> ghi ra file. `-filter_complex_script` có ở 5.x–7.x.
+        script = Path(str(out_path) + ".filter.txt")
+        script.write_text(graph, encoding="utf-8")
+        try:
+            await _ffmpeg(*inputs, "-filter_complex_script", str(script), "-map", "[out]", str(out_path))
+        finally:
+            script.unlink(missing_ok=True)
 
     # Đã apad + atrim về đúng chunk_len trong cùng lượt; KHÔNG đọc lại độ dài từ header MP3 (dư ~0,09 s
     # do phần đệm của bộ mã hoá — độ dài giải mã thật đúng bằng chunk_len, xem SoSanh_GhepChunk.md).
