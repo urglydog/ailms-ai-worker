@@ -81,3 +81,74 @@ asr=0.0s dich=8.8s tts=13.5s ghep=1.4s nhac=65.2s upload=18.8s tong=107.8s
      - Đồ thị vượt 100 000 ký tự thì ghi ra file và dùng `-filter_complex_script`, có từ bản 5.x tới 7.x. Có test riêng cho nhánh này.
   2. ~~Cần độ dài câu từ caller~~ **(đã xử lý)**: luồng lồng tiếng (`dubbing_service.py`) truyền sẵn `durations_sec` lấy từ kết quả tạo giọng. Chỉ còn 2 script NCKH (`NCKH/experiments/check_full_length.py`, `mos_make_clips.py`) gọi mà không truyền; khi đó hàm tự giải mã để đo, chậm hơn nhưng vẫn đúng. Muốn tái lập đúng số liệu bài báo thì chạy các script đó với `TIMELINE_ENGINE=pydub`.
 - **Kiểm thử:** `tests/test_timeline.py` chạy cho **cả hai cách** (đệm đủ độ dài, tăng tốc khi tràn, câu đặt đúng chỗ như cách cũ, tự quay về khi lỗi). Toàn bộ: **129 passed**, 6 skipped.
+
+## 6. Build lại server lên bản mới nhất (checklist cho người hoặc AI thực hiện)
+
+Mục này **gộp cho mọi đợt tối ưu dubbing**: tốc độ, nhạc nền và cách ghép mới. Chỉ **ai-worker** thay đổi, gồm 3 service build từ thư mục `../ai-worker` là `ai-api`, `ai-worker` và `ai-beat`. **be và fe không cần build lại.**
+
+> **Vì sao nên build lại hẳn, kể cả khi code đã chạy:**
+> - Image worker build từ `python:3.11-slim`, **không ghim** bản Debian. Image build từ trước có thể vẫn là Debian 12 với FFmpeg 5.1; build mới sẽ ra Debian 13 với FFmpeg 7.1.
+> - Từ commit `f2caff6`, cách ghép mới **chạy được cả hai bản FFmpeg**, nên không build lại thì cũng không lỗi.
+> - Build lại vẫn nên làm để: (1) server và máy local cùng một môi trường; (2) cài thư viện `modal` mới thêm trong `requirements-app.txt`. Thiếu `modal` thì tách nhạc nền **không chạy**: job vẫn lồng tiếng nhưng không có nhạc.
+
+**Bước 0: chuẩn bị.**
+- Các nhánh `feat/dubbing` và `perf/timeline-ffmpeg` của ai-worker đã được merge vào nhánh đang deploy, ví dụ `develop`, rồi `main`.
+- Tìm thư mục chứa `docker-compose.yml`, thường là `project/be`.
+- Ghi lại phiên bản đang chạy để so sánh sau:
+```bash
+docker exec lms_ai_worker sh -c "ffmpeg -version | head -1; cat /etc/debian_version"
+```
+
+**Bước 1: lấy code mới.** Trong `project/ai-worker`:
+```bash
+git pull
+grep -c "place_on_timeline_ffmpeg" app/audio_utils.py
+```
+Lệnh thứ hai phải in ra một số lớn hơn 0.
+
+**Bước 2: cập nhật `project/ai-worker/.env`.**
+- Làm như mục 6, bước 1 của [CaiTien_NhacNen_Dubbing.md](CaiTien_NhacNen_Dubbing.md): `BGM_SEPARATION=modal`, `MODAL_TOKEN_ID`, `MODAL_TOKEN_SECRET`, `DUBBING_THINKING_LEVEL=minimal`.
+- Có thể thêm `TIMELINE_ENGINE=ffmpeg`. Đây đã là mặc định nên không bắt buộc.
+- Không commit `.env`, không in token ra log.
+
+**Bước 3: build lại từ base image mới nhất.** Trong thư mục chứa `docker-compose.yml`:
+```bash
+docker compose build --pull --no-cache ai-api ai-worker ai-beat
+docker compose up -d --force-recreate ai-api ai-worker ai-beat
+```
+- `--pull`: tải bản `python:3.11-slim` mới nhất (Debian 13).
+- `--no-cache`: cài lại toàn bộ, gồm FFmpeg mới qua `apt-get` và thư viện `modal`. Bỏ cờ này thì Docker có thể dùng lại lớp cài FFmpeg cũ.
+- `--force-recreate`: tạo lại container để nạp image mới và `.env` mới. Lệnh `restart` **không** nạp lại `.env`.
+- Build mất vài phút. Trong lúc build, job lồng tiếng đang chạy vẫn tiếp tục; container chỉ dừng khoảng vài giây ở bước `up`.
+- Có job đang chạy dở thì nên chờ nó xong rồi mới chạy bước `up`, để job không bị ngắt giữa chừng.
+
+**Bước 4: kiểm tra.**
+```bash
+docker exec lms_ai_worker sh -c "ffmpeg -version | head -1; cat /etc/debian_version"
+docker exec lms_ai_worker python -c "from app.config import settings; print(settings.timeline_engine, settings.bgm_separation)"
+docker exec lms_ai_worker python -c "import modal; modal.Function.from_name('lms-demucs','separate').hydrate(); print('modal ok')"
+```
+
+| Lệnh | Kết quả mong đợi |
+|---|---|
+| 1 | `ffmpeg version 7.x` và `13.x`. Nếu vẫn là 5.x thì chưa chạy `--pull`, nhưng vẫn chạy được. |
+| 2 | `ffmpeg modal` |
+| 3 | `modal ok` |
+
+**Bước 5: chạy thử một bài, rồi xem log.**
+```bash
+docker logs -f lms_ai_worker | grep -E "TIMING|BGM|Ghep bang 1 lenh"
+```
+- Dòng `TIMING ... ghep=...s` phải **nhỏ**: khoảng 1–3 s cho mỗi chunk. Trước đây là 10–40 s.
+- **Không** được có dòng `Ghep bang 1 lenh FFmpeg that bai`. Nếu có, nghĩa là đã tự quay về cách cũ; gửi lại đoạn log đó để xử lý.
+- Có các dòng `BGM tach nhac xong` (hoặc `BGM dung lai nhac da tach tren B2`) và `BGM tron nhac chunk ...`.
+
+**Bước 6: dọn image cũ (tùy chọn, giải phóng dung lượng đĩa).**
+```bash
+docker image prune -f
+```
+
+**Quay lại cách cũ nếu cần:**
+- Ghép lại bằng pydub: đặt `TIMELINE_ENGINE=pydub` trong `.env`, rồi chạy `docker compose up -d --force-recreate ai-worker`.
+- Tắt nhạc nền: để trống `BGM_SEPARATION`, rồi chạy lệnh tương tự.
+- Không cần build lại cho cả hai trường hợp.
