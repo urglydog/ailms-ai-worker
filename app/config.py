@@ -117,6 +117,13 @@ class Settings(BaseSettings):
     bgm_mix_bitrate: str = "96k"
     # Đánh thức GPU Modal ngay đầu job (song song với tải audio gốc).
     bgm_warm_up: bool = True
+    # Tách nhạc song song (22/11/2026): chia bài thành phần ~3 phút, mỗi phần 1 máy GPU, dư 5 s mỗi
+    # đầu, nối lại bằng trộn chéo 0,5 s. Đặt BGM_PIECE_SEC rất lớn (vd 100000) để quay về tách cả bài.
+    bgm_piece_sec: float = 180.0
+    bgm_piece_overlap_sec: float = 5.0
+    bgm_crossfade_sec: float = 0.5
+    bgm_max_parallel: int = 6
+    bgm_stitch_bitrate: str = "192k"
     # Mức "suy nghĩ" cho các tính năng đơn giản khác (21/11/2026). Đo thật: mặc định model suy nghĩ ~1-1,7 lần lượng chữ trả về và token này vẫn tính tiền như token ra. Rỗng = mặc định
     # của model (hành vi cũ) — đặt biến môi trường tương ứng thành rỗng để tắt từng nhóm. Gia sư hỏi đáp, Discovery, trợ lý giảng viên, giám sát thi, kế hoạch học KHÔNG đổi.
     material_thinking_level: str = "low"          # mindmap / flashcard / quiz: cấu trúc hóa từ transcript có sẵn

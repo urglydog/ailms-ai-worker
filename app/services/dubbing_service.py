@@ -113,7 +113,7 @@ async def run_dubbing_pipeline(
         await redis_client.publish_progress(job_id, lesson_id, stage="PREPARING")
         # Điểm 4 (22/11/2026): đánh thức GPU tách nhạc NGAY bây giờ để nó khởi động song song với việc
         # tải audio gốc (không chờ). Bài đã có nhạc trên B2 thì không đánh thức.
-        background_music.warm_up(lesson_id, ctx.video_url)
+        background_music.warm_up(lesson_id, ctx.video_url, ctx.duration_sec)
 
         source_path = work_dir / "source.wav"
 

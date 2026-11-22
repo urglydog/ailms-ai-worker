@@ -22,6 +22,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import logging
+import math
 import re
 import time
 from pathlib import Path
@@ -43,27 +44,30 @@ def start_separation(
 _warm_tasks: set[asyncio.Task] = set()
 
 
-def warm_up(lesson_id: int | None, video_url: str | None) -> asyncio.Task | None:
+def warm_up(lesson_id: int | None, video_url: str | None, duration_sec: float | None = None) -> asyncio.Task | None:
     """Đánh thức GPU trên Modal ngay đầu job (không chờ): container khởi động (~15–20 s) song song
     với việc tải audio gốc, đến lúc gửi file thật thì máy đã sẵn sàng. Bài đã có nhạc trên B2 thì bỏ
     qua (không cần GPU). Lỗi chỉ log — đây thuần là tối ưu."""
     if settings.bgm_separation != "modal" or not settings.bgm_warm_up:
         return None
-    task = asyncio.create_task(_warm(cache_prefix(lesson_id, video_url)))
+    n = len(plan_pieces(duration_sec)) if duration_sec else 1
+    task = asyncio.create_task(_warm(cache_prefix(lesson_id, video_url), n))
     _warm_tasks.add(task)
     task.add_done_callback(_warm_tasks.discard)
     return task
 
 
-async def _warm(prefix: str | None) -> None:
+async def _warm(prefix: str | None, n: int = 1) -> None:
     t0 = time.monotonic()
     try:
         if prefix and await storage.exists(f"{prefix}/vocals.mp3"):
             return
         import modal
 
-        await modal.Function.from_name(settings.bgm_modal_app, "separate").remote.aio(b"", ".mp3")
-        log.info("BGM da danh thuc GPU tach nhac: %.1fs", time.monotonic() - t0)
+        fn = modal.Function.from_name(settings.bgm_modal_app, "separate")
+        # Mỗi phần chạy trên 1 máy GPU riêng, máy nào cũng phải tự khởi động -> đánh thức đủ n máy.
+        await asyncio.gather(*(fn.remote.aio(b"", ".mp3") for _ in range(n)))
+        log.info("BGM da danh thuc %s may GPU tach nhac: %.1fs", n, time.monotonic() - t0)
     except Exception as exc:
         log.warning("BGM khong danh thuc duoc GPU (bo qua): %s", exc)
 
@@ -89,20 +93,32 @@ async def _separate(source_audio: Path, work_dir: Path, prefix: str | None = Non
         from app import source_audio as _src
 
         source_audio = await _src.ensure(source_audio)   # tối ưu B: audio gốc có thể chưa được tải
-        upload = work_dir / "bgm_source.mp3"
-        # gửi MP3 thay vì WAV: nhỏ hơn ~10 lần, Demucs vẫn tách tốt. 128 kbps thay cho 192 kbps
-        # (22/11/2026): bài 6 phút 9 MB -> 6 MB, chuyển mã vẫn ~2,5 s — gửi lên Modal nhanh hơn 1/3.
-        await audio_utils._ffmpeg(
-            "-i", str(source_audio), "-ac", "2", "-ar", "44100", "-b:a", settings.bgm_upload_bitrate, str(upload),
-        )
+        duration = (await audio_utils.probe_audio(source_audio))[0]
+        pieces = plan_pieces(duration)
         fn = modal.Function.from_name(settings.bgm_modal_app, "separate")
-        result = await fn.remote.aio(upload.read_bytes(), ".mp3")
-        music.write_bytes(result["music"])
-        if result.get("vocals"):
-            vocals.write_bytes(result["vocals"])
+
+        async def run_piece(i: int, core: tuple[float, float]) -> tuple[Path, Path, float]:
+            # gửi MP3 thay vì WAV: nhỏ hơn ~10 lần, Demucs vẫn tách tốt (128 kbps, 22/11/2026)
+            start, end = _padded(core, duration)
+            upload = work_dir / f"bgm_src_{i}.mp3"
+            await audio_utils._ffmpeg(
+                "-ss", f"{start:.3f}", "-to", f"{end:.3f}", "-i", str(source_audio),
+                "-ac", "2", "-ar", "44100", "-b:a", settings.bgm_upload_bitrate, str(upload),
+            )
+            result = await fn.remote.aio(upload.read_bytes(), ".mp3")
+            m, v = work_dir / f"bgm_music_{i}.mp3", work_dir / f"bgm_vocals_{i}.mp3"
+            m.write_bytes(result["music"])
+            v.write_bytes(result["vocals"])
+            return m, v, float(result.get("separate_sec", -1))
+
+        # Tách SONG SONG từng phần ~3 phút trên nhiều máy GPU (22/11/2026): trước đây gửi cả bài lên
+        # 1 GPU (Demucs ~7 s/phút audio), bài 9 phút phải chờ ~80 s và phần lồng tiếng ngồi chờ.
+        parts = await asyncio.gather(*(run_piece(i, core) for i, core in enumerate(pieces)))
+        await stitch_pieces([m for m, _, _ in parts], pieces, duration, music, settings.bgm_stitch_bitrate)
+        await stitch_pieces([v for _, v, _ in parts], pieces, duration, vocals, "96k")
         log.info(
-            "BGM tach nhac xong: tren Modal %.1fs, tong %.1fs",
-            result.get("separate_sec", -1), time.monotonic() - t0,
+            "BGM tach nhac xong: %s phan song song, Demucs lau nhat %.1fs, tong %.1fs",
+            len(pieces), max(sec for _, _, sec in parts), time.monotonic() - t0,
         )
         if prefix and vocals.exists():
             # Lưu cache lên B2 chạy NỀN — không bắt bước trộn chờ upload (job 40: chờ thêm ~150 s
@@ -114,6 +130,61 @@ async def _separate(source_audio: Path, work_dir: Path, prefix: str | None = Non
     except Exception as exc:
         log.warning("BGM tach nhac that bai sau %.1fs — giu ban long tieng khong nhac: %s", time.monotonic() - t0, exc)
         return None
+
+
+def plan_pieces(duration_sec: float | None) -> list[tuple[float, float]]:
+    """Chia [0, duration) thành n phần BẰNG NHAU dài khoảng `BGM_PIECE_SEC` (mặc định 3 phút).
+
+    n = ceil(duration / piece_sec), tối đa `BGM_MAX_PARALLEL`: bài 6 phút -> 3 phần, 9–10 phút -> 4.
+    Chia đều để các máy GPU xong gần cùng lúc (phần dài nhất quyết định thời gian chờ).
+    """
+    if not duration_sec or duration_sec <= 0:
+        return [(0.0, 0.0)]
+    n = max(1, min(settings.bgm_max_parallel, math.ceil(duration_sec / max(1.0, settings.bgm_piece_sec))))
+    step = duration_sec / n
+    return [(i * step, duration_sec if i == n - 1 else (i + 1) * step) for i in range(n)]
+
+
+def _padded(core: tuple[float, float], duration: float) -> tuple[float, float]:
+    """Phần gửi đi tách = lõi + dư `BGM_PIECE_OVERLAP_SEC` mỗi đầu (Demucs tách kém sát mép đoạn)."""
+    ov = settings.bgm_piece_overlap_sec
+    # Làm tròn tới mili-giây: lệnh cắt (`-ss/-to` với 3 chữ số thập phân) và bước nối dùng CÙNG một
+    # mốc -> các phần khớp nhau tới từng mẫu (không làm tròn thì lệch ~0,4 ms ở chỗ nối).
+    return round(max(0.0, core[0] - ov), 3), round(min(duration, core[1] + ov), 3)
+
+
+def stitch_graph(cores: list[tuple[float, float]], duration: float, xf: float, sample_rate: int = 44100) -> str:
+    """Đồ thị FFmpeg nối các phần: mỗi phần bỏ phần dư, giữ lõi + nửa khoảng trộn chéo ở mỗi chỗ nối,
+    rồi `acrossfade` (mỗi chỗ nối ăn mất đúng `xf` giây) -> tổng độ dài = tổng các lõi = `duration`."""
+    n = len(cores)
+    parts = []
+    for i, core in enumerate(cores):
+        padded_start, _ = _padded(core, duration)
+        keep_from = core[0] - padded_start - (xf / 2 if i > 0 else 0.0)
+        keep_to = core[1] - padded_start + (xf / 2 if i < n - 1 else 0.0)
+        label = "out" if n == 1 else f"p{i}"
+        # cắt theo SỐ MẪU (không theo giây làm tròn) để các phần khớp nhau tới từng mẫu
+        a0, a1 = round(max(0.0, keep_from) * sample_rate), round(keep_to * sample_rate)
+        parts.append(
+            f"[{i}:a]aresample={sample_rate},atrim=start_sample={a0}:end_sample={a1},asetpts=PTS-STARTPTS[{label}]"
+        )
+    prev = "p0"
+    for i in range(1, n):
+        label = "out" if i == n - 1 else f"x{i}"
+        parts.append(f"[{prev}][p{i}]acrossfade=ns={round(xf * sample_rate)}:c1=tri:c2=tri[{label}]")
+        prev = label
+    return ";".join(parts)
+
+
+async def stitch_pieces(
+    paths: list[Path], cores: list[tuple[float, float]], duration: float, out_path: Path, bitrate: str,
+) -> None:
+    """Nối các phần đã tách thành 1 file liền mạch đúng `duration`, không có tiếng "tách" ở chỗ nối."""
+    inputs: list[str] = []
+    for p in paths:
+        inputs += ["-i", str(p)]
+    graph = stitch_graph(cores, duration, settings.bgm_crossfade_sec)
+    await audio_utils._ffmpeg(*inputs, "-filter_complex", graph, "-map", "[out]", "-b:a", bitrate, str(out_path))
 
 
 _pending_uploads: set[asyncio.Task] = set()

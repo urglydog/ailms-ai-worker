@@ -6,6 +6,8 @@ from unittest.mock import AsyncMock, patch
 from app.config import settings
 from app.services import background_music
 
+from .test_timeline import needs_ffmpeg
+
 
 def test_disabled_by_default_returns_no_task(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "bgm_separation", "")
@@ -158,6 +160,7 @@ async def test_b2_upload_runs_in_background_and_does_not_block_mix(tmp_path, mon
     with patch.dict("sys.modules", {"modal": fake_modal}), \
          patch("app.audio_utils._ffmpeg", AsyncMock(side_effect=fake_ffmpeg)), \
          patch("app.storage.download_file", AsyncMock(return_value=False)), \
+         patch("app.audio_utils.probe_audio", AsyncMock(return_value=(100.0, 44100))), \
          patch("app.storage.upload_file", AsyncMock(side_effect=slow_upload)) as up:
         music = await asyncio.wait_for(background_music._separate(tmp_path / "src.wav", tmp_path, "bgm/1/x"), 2)
         assert music is not None                       # tra ve ngay, khong cho upload
@@ -194,3 +197,53 @@ async def test_warm_up_sends_empty_audio_to_modal(monkeypatch):
          patch("app.storage.exists", AsyncMock(return_value=False)):
         await background_music.warm_up(1, "https://youtu.be/x")
     assert calls == [b""]
+
+
+def test_plan_pieces_splits_evenly_around_three_minutes(monkeypatch):
+    monkeypatch.setattr(settings, "bgm_piece_sec", 180.0)
+    monkeypatch.setattr(settings, "bgm_max_parallel", 6)
+    assert len(background_music.plan_pieces(120)) == 1
+    assert len(background_music.plan_pieces(376)) == 3
+    assert len(background_music.plan_pieces(553)) == 4
+    p = background_music.plan_pieces(600)
+    assert len(p) == 4 and p[0] == (0.0, 150.0) and p[-1][1] == 600
+    assert len(background_music.plan_pieces(3 * 3600)) == 6          # tran BGM_MAX_PARALLEL
+
+
+@needs_ffmpeg
+async def test_stitched_pieces_reproduce_the_original_seamlessly(tmp_path, monkeypatch):
+    """Cắt 1 tín hiệu thật thành các phần có dư 5 s rồi nối lại: phải đúng độ dài và khớp bản gốc."""
+    import numpy as np
+    from pydub import AudioSegment
+    from pydub.generators import Sine
+
+    from app import audio_utils
+
+    monkeypatch.setattr(settings, "bgm_piece_sec", 20.0)
+    monkeypatch.setattr(settings, "bgm_piece_overlap_sec", 5.0)
+    monkeypatch.setattr(settings, "bgm_crossfade_sec", 0.5)
+    tone = Sine(440).to_audio_segment(duration=10_000) + Sine(660).to_audio_segment(duration=10_000) \
+        + Sine(330).to_audio_segment(duration=10_000) + Sine(550).to_audio_segment(duration=13_000)
+    src = tmp_path / "src.wav"
+    tone.set_channels(2).set_frame_rate(44100).export(str(src), format="wav")
+    duration = 43.0
+    cores = background_music.plan_pieces(duration)
+    assert len(cores) == 3
+    pieces = []
+    for i, core in enumerate(cores):
+        s, e = background_music._padded(core, duration)
+        p = tmp_path / f"p{i}.wav"
+        await audio_utils._ffmpeg("-ss", f"{s:.3f}", "-to", f"{e:.3f}", "-i", str(src), str(p))
+        pieces.append(p)
+    out = tmp_path / "out.wav"
+    await background_music.stitch_pieces(pieces, cores, duration, out, "128k")
+
+    a = AudioSegment.from_file(src).set_channels(1)
+    b = AudioSegment.from_file(out).set_channels(1)
+    assert abs(len(b) - len(a)) <= 30                                # dung do dai (<= 30 ms)
+    x = np.array(a.get_array_of_samples(), float)
+    y = np.array(b.get_array_of_samples(), float)
+    n = min(len(x), len(y))
+    x, y = x[:n], y[:n]
+    corr = float(x @ y / (np.linalg.norm(x) * np.linalg.norm(y)))
+    assert corr > 0.99                                               # khong lech pha / lech vi tri
