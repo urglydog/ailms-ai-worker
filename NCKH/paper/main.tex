@@ -30,7 +30,7 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \maketitle
 
 \begin{abstract}
-Các khóa học trực tuyến quốc tế phần lớn được giảng bằng tiếng nước ngoài, buộc người học Việt Nam vừa nghe vừa đọc phụ đề. Bài báo đề xuất một pipeline lồng tiếng tự động cho video bài giảng, tích hợp trong hệ thống quản lý học tập: nhận dạng giọng nói có mốc thời gian, dịch bằng mô hình ngôn ngữ lớn có giới hạn độ dài từng câu, tổng hợp giọng nói và ghép âm thanh theo vị trí của từng câu gốc. Đóng góp chính là thuật toán điều chỉnh tốc độ đọc thích ứng: hệ thống so thời lượng âm thanh tổng hợp của mỗi câu với khung thời gian gốc, rút gọn theo lô các câu vượt ngưỡng rồi tăng tốc tín hiệu tối đa ba mươi phần trăm; các câu được xếp theo mốc thời gian tuyệt đối để độ trễ không cộng dồn. Video được chia thành các đoạn mười phút xử lý độc lập. Thực nghiệm trên bốn bài giảng công nghệ thông tin, năm mươi phút, cho thấy \todo{số liệu bản 14/11, cập nhật sau khi đo lại} độ lệch thời lượng trung bình mỗi câu giảm từ 1,67 giây (dịch không ràng buộc) xuống 0,22 giây; âm thanh sau khi ghép có thời lượng đúng bằng video gốc với độ trễ tuyệt đối trung bình 2,1 giây, trong khi khoảng lặng cố định để trễ cộng dồn tới 96 giây ở bài mười lăm phút. Nghiên cứu chưa đánh giá cảm nhận của người nghe.
+Các khóa học trực tuyến quốc tế phần lớn được giảng bằng tiếng nước ngoài, buộc người học Việt Nam vừa nghe vừa đọc phụ đề. Bài báo đề xuất một pipeline lồng tiếng tự động cho video bài giảng, tích hợp trong hệ thống quản lý học tập: nhận dạng giọng nói có mốc thời gian, dịch bằng mô hình ngôn ngữ lớn có giới hạn độ dài từng câu, tổng hợp giọng nói và ghép âm thanh theo vị trí của từng câu gốc. Đóng góp chính là thuật toán điều chỉnh tốc độ đọc thích ứng: hệ thống so thời lượng âm thanh tổng hợp của mỗi câu với khung thời gian gốc, rút gọn theo lô các câu vượt ngưỡng rồi tăng tốc tín hiệu tối đa ba mươi phần trăm; các câu được xếp theo mốc thời gian tuyệt đối để độ trễ không cộng dồn. Video được chia thành các đoạn mười phút xử lý độc lập. Thực nghiệm trên bốn bài giảng công nghệ thông tin, năm mươi phút, cho thấy độ lệch thời lượng trung bình mỗi câu giảm từ 1,89 giây (dịch không ràng buộc) xuống 0,19 giây; âm thanh sau khi ghép có thời lượng đúng bằng video gốc với độ trễ tuyệt đối trung bình 0,40 giây. Trên hệ thống thật, mỗi phút video được xử lý trong khoảng mười sáu giây. Nghiên cứu chưa đánh giá cảm nhận của người nghe.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -193,7 +193,7 @@ Thay vì ghép âm thanh vào video (tốn thời gian mã hóa lại và nhân 
 \label{sec:exp}
 
 \subsection{Thiết lập thực nghiệm}
-Tập dữ liệu gồm bốn bài giảng tiếng Anh công khai thuộc lĩnh vực công nghệ thông tin (ba bài của loạt Crash Course Computer Science và 15 phút đầu bài giảng Stanford CS229), tổng thời lượng 50 phút, 787 câu, được lồng tiếng sang tiếng Việt. Các tham số của pipeline được liệt kê trong Bảng~\ref{tab:params}. Thực nghiệm gồm hai phần, đều chạy trên một máy chủ ảo (2 vCPU Intel Xeon Skylake, 3,7 GiB RAM, Ubuntu 22.04) dùng chung với hệ thống đang vận hành: (i) tập lệnh đo gọi trực tiếp các hàm của pipeline trên âm thanh của bốn bài giảng để so sánh bốn phương án (mỗi phương án một lần chạy); (ii) bốn tác vụ lồng tiếng thật qua nền tảng, mỗi bài một tác vụ, để đo số liệu vận hành. Bốn phương án so sánh gồm: dịch không ràng buộc độ dài với tốc độ đọc mặc định (V1); dịch có ngân sách thời lượng, tốc độ mặc định (V2); V2 thêm giới hạn số ký tự (\ref{eq:maxchars}) và tăng tốc \texttt{atempo} nhưng không rút gọn (V3); và phương án đề xuất đầy đủ (V4). Toàn bộ thực nghiệm dùng cùng một phiên bản mã nguồn (commit \todo{commit}), mô hình Gemini 3.6 Flash với mức suy nghĩ \texttt{minimal}, và bật tính năng giữ nhạc nền (Mục~\ref{sec:impl}). \todo{Định nghĩa V1--V4 ở trên là của bản pipeline hiện tại; số liệu trong Mục~\ref{sub:results} vẫn là của bản đo ngày 14/11 (dịch hai pha, tăng tốc bằng TTS, rút gọn từng câu) và sẽ được thay sau khi đo lại.}
+Tập dữ liệu gồm bốn bài giảng tiếng Anh công khai thuộc lĩnh vực công nghệ thông tin (ba bài của loạt Crash Course Computer Science và 15 phút đầu bài giảng Stanford CS229), tổng thời lượng 50 phút, 780 câu, được lồng tiếng sang tiếng Việt. Các tham số của pipeline được liệt kê trong Bảng~\ref{tab:params}. Thực nghiệm gồm hai phần, đều chạy trên một máy chủ ảo (2 vCPU Intel Xeon Skylake, 3,7 GiB RAM, Ubuntu 22.04) dùng chung với hệ thống đang vận hành: (i) tập lệnh đo gọi trực tiếp các hàm của pipeline trên âm thanh của bốn bài giảng để so sánh bốn phương án (mỗi phương án một lần chạy); (ii) bốn tác vụ lồng tiếng thật qua nền tảng, mỗi bài một tác vụ, để đo số liệu vận hành. Bốn phương án so sánh gồm: dịch không ràng buộc độ dài với tốc độ đọc mặc định (V1); dịch có ngân sách thời lượng, tốc độ mặc định (V2); V2 thêm giới hạn số ký tự (\ref{eq:maxchars}) và tăng tốc \texttt{atempo} nhưng không rút gọn (V3); và phương án đề xuất đầy đủ (V4). V3 và V4 dùng chung một bản dịch nên chỉ khác nhau ở bước rút gọn. Toàn bộ thực nghiệm dùng cùng một phiên bản mã nguồn (commit \texttt{0d866b9}), mô hình Gemini 3.6 Flash với mức suy nghĩ \texttt{minimal}, và bật tính năng giữ nhạc nền (Mục~\ref{sec:impl}). Tốc độ đọc $\hat{c}_v$ của giọng được xóa trước khi đo, nên hai bài chạy đầu tiên được dịch khi giọng chưa có số đo (không có giới hạn ký tự), hai bài còn lại dùng số đo từ bài trước; điều này phản ánh đúng hoạt động thật của hệ thống.
 
 \begin{table}[t]
 \caption{Tham số của pipeline}
@@ -235,79 +235,77 @@ Số yêu cầu TTS đồng thời & 16 \\
 
 \subsection{Kết quả}
 \label{sub:results}
-\todo{Toàn bộ số liệu trong mục này và mục Thảo luận là của bản pipeline đo ngày 14/11 (commit e5a8cb7: dịch hai pha, tăng tốc bằng TTS, rút gọn từng câu). Sẽ thay bằng số đo lại trên bản hiện tại; không giữ song song hai bộ số khi nộp bản chính thức.}
 
-\paragraph{Độ khớp thời lượng của từng câu.} Bảng~\ref{tab:results} so sánh bốn phương án trên 787 câu. Dịch hai pha giảm độ lệch trung bình từ 1,67 xuống 1,00 giây; tăng tốc độ đọc trong giới hạn 30\% giảm tiếp xuống 0,36 giây; thêm bước rút gọn bằng LLM (phương án đề xuất) còn 0,22 giây, và chỉ 27,6\% số câu còn dài hơn khung gốc so với 95,2\% khi dịch một pha. Đổi lại, phương án đề xuất gọi LLM 286 lần, so với 14 lần của phương án hai pha.
+\paragraph{Độ khớp thời lượng của từng câu.} Bảng~\ref{tab:results} so sánh bốn phương án trên 780 câu. Đưa ngân sách thời lượng vào lời nhắc dịch giảm độ lệch trung bình từ 1,89 xuống 1,25 giây; thêm giới hạn số ký tự và tăng tốc \texttt{atempo} trong giới hạn 30\% giảm tiếp xuống 0,29 giây; thêm bước rút gọn theo lô (phương án đề xuất) còn 0,19 giây, và chỉ 30,4\% số câu còn dài hơn khung gốc so với 96,9\% khi dịch không ràng buộc. Phương án đề xuất chỉ cần 20 lời gọi LLM (7 lời gọi dịch, mỗi đoạn một lời gọi, và 13 lời gọi rút gọn theo lô) và 1.034 lần tổng hợp giọng nói cho 780 câu. Khi chạy lại phương án đề xuất lần thứ hai, lúc giọng đọc đã có số đo tốc độ, độ lệch trung bình là 0,194 giây, với 21 lời gọi LLM và 845 lần tổng hợp giọng nói.
 
 \begin{table}[t]
-\caption{So sánh độ khớp thời lượng từng câu giữa các phương án (787 câu, mỗi phương án một lần chạy)}
+\caption{So sánh độ khớp thời lượng từng câu giữa các phương án (780 câu, mỗi phương án một lần chạy)}
 \label{tab:results}
 \centering
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|c|c|}
 \hline
-\textbf{Phương án} & \textbf{$\bar{\Delta}$ (s)} & \textbf{Tràn (\%)} & \textbf{$R>1{,}3$ (\%)} & \textbf{LLM} \\
+\textbf{PA} & \textbf{$\bar{\Delta}$ (s)} & \textbf{Tràn (\%)} & \textbf{$R>1{,}3$ (\%)} & \textbf{LLM} & \textbf{TTS} \\
 \hline
-V1: một pha, mặc định & 1,67 & 95,2 & 75,3 & 7 \\
-V2: hai pha, mặc định & 1,00 & 83,5 & 50,7 & 14 \\
-V3: hai pha + tăng tốc & 0,36 & 49,8 & 23,8 & 14 \\
-V4: đề xuất (đầy đủ) & 0,22 & 27,6 & 19,9 & 286 \\
+V1 & 1,89 & 96,9 & 82,8 & 7 & 780 \\
+V2 & 1,25 & 90,5 & 63,7 & 7 & 780 \\
+V3 & 0,29 & 46,5 & 23,2 & 7 & 780 \\
+V4 & 0,19 & 30,4 & 19,6 & 20 & 1.034 \\
 \hline
 \end{tabular}
 \end{table}
 
-\paragraph{Độ trễ theo trục thời gian.} Bảng~\ref{tab:timeline} so sánh các cách ghép bằng độ lệch tuyệt đối $|o_i - b_i|$ giữa thời điểm phát của câu lồng tiếng và mốc gốc, đo trên âm thanh được ghép lại từ các tệp câu thật. Với khoảng lặng cố định, âm thanh sau khi ghép dài hơn video gốc từ 9,4 đến 95,9 giây (tăng theo độ dài bài) và độ trễ tuyệt đối trung bình là 20,1 giây. Cùng âm thanh đó, khi xếp theo mốc tuyệt đối (\ref{eq:onset}) và khớp độ dài từng đoạn, độ trễ trung bình giảm còn 2,8 giây và cực đại còn 15,4 giây. Pipeline hiện tại (đã bỏ đệm lặng trong tệp câu và không rút gọn câu quá ngắn) cho tổng thời lượng đúng bằng video gốc ở cả bốn bài (chênh không quá 0,1 giây), độ trễ tuyệt đối trung bình 2,1 giây, phân vị 95 là 8,7 giây; câu muộn nhất trễ 21,5 giây và câu sớm nhất sớm 5,7 giây. Hệ số tăng tốc cả đoạn lớn nhất là 1,023 và hầu như không có phần cuối bị cắt (tối đa 0,06 giây). Kết quả không đồng đều giữa các bài: bài giảng trên lớp (15 phút, nhiều câu ngắn) có độ trễ trung bình 4,35 giây và 62,8\% số câu lệch quá 1 giây, trong khi ba bài còn lại có độ trễ trung bình không quá 1,03 giây.
+\paragraph{Độ trễ theo trục thời gian.} Bảng~\ref{tab:timeline} cho độ lệch tuyệt đối $|o_i - b_i|$ giữa thời điểm phát của câu lồng tiếng và mốc gốc, đo trên âm thanh được ghép lại từ các tệp câu thật bằng đúng hàm xếp câu của pipeline. Ở cả hai phương án, tổng thời lượng sau khi ghép bằng video gốc (chênh không quá 0,1 giây), vì mỗi đoạn được khớp đúng độ dài $L$. Tuy nhiên, khi không điều chỉnh tốc độ (V2), phần tràn vượt xa khoảng lặng có sẵn: độ trễ trung bình là 14,9 giây, câu muộn nhất trễ 58,1 giây, và mỗi đoạn phải tăng tốc tối đa $\times 1{,}15$ rồi vẫn bị cắt tới 93,4 giây phần cuối. Với phương án đề xuất, độ trễ trung bình chỉ còn 0,40 giây, phân vị 95 là 1,98 giây, 10,8\% số câu lệch quá 1 giây, hệ số tăng tốc cả đoạn lớn nhất là 1,002 và phần cuối bị cắt không quá 0,01 giây. Bài giảng trên lớp (15 phút, tỷ lệ lời thoại thấp nhất và nhiều câu ngắn) vẫn là bài khó nhất với độ trễ trung bình 0,68 giây và 21,6\% số câu lệch quá 1 giây; ba bài còn lại có độ trễ trung bình từ 0,11 đến 0,30 giây.
 
 \begin{table}[t]
-\caption{Độ trễ theo trục thời gian trên bốn bài (787 câu). Dòng (a) ghép bằng khoảng lặng cố định, (b) xếp theo mốc tuyệt đối, cả hai dùng âm thanh của pipeline trước khi sửa; dòng (c) là pipeline hiện tại. Cột TB, P95, Max là $|o_i - b_i|$ tính bằng giây}
+\caption{Độ trễ theo trục thời gian trên bốn bài (780 câu), xếp câu theo mốc tuyệt đối. Cột TB, P95 là $|o_i - b_i|$; cột Max là độ trễ muộn nhất, tính bằng giây}
 \label{tab:timeline}
 \centering
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{|l|c|c|c|c|c|}
 \hline
-\textbf{Ghép} & \textbf{Chênh (s)} & \textbf{TB} & \textbf{P95} & \textbf{Max} & \textbf{$>$1 s (\%)} \\
+\textbf{PA} & \textbf{Chênh (s)} & \textbf{TB} & \textbf{P95} & \textbf{Max} & \textbf{$>$1 s (\%)} \\
 \hline
-(a) Lặng cố định & $+9{,}4\ldots95{,}9$ & 20,1 & 74,2 & 95,9 & 91,9 \\
-(b) Mốc tuyệt đối & $-0{,}1\ldots0$ & 2,8 & 8,6 & 15,4 & 67,1 \\
-(c) Hiện tại & $-0{,}1\ldots0$ & 2,1 & 8,7 & 21,5 & 40,3 \\
+V2 & $-0{,}02\ldots0{,}08$ & 14,88 & 44,24 & 58,08 & 93,1 \\
+V4 & $-0{,}02\ldots0{,}08$ & 0,40 & 1,98 & 6,41 & 10,8 \\
 \hline
 \end{tabular}
 \end{table}
 
-\paragraph{Vận hành trên hệ thống thật.} Cả bốn tác vụ lồng tiếng qua nền tảng hoàn tất ở lần chạy đầu, không phải thử lại, thời gian chờ hàng đợi từ 7 đến 11 giây, và thời lượng âm thanh lồng tiếng bằng đúng thời lượng bài học ở cả bốn bài (Bảng~\ref{tab:server}). Thời gian xử lý trung bình là 110 giây cho mỗi phút video (từ 88,9 đến 127,3) trên máy 2 vCPU dùng chung, tức chậm hơn thời gian thực, và đã bao gồm bước nhận dạng giọng nói vì bản ký âm gốc chưa có sẵn khi lồng tiếng. Bài ngắn hơn một đoạn mười phút chỉ có một đoạn, nên thời gian đến đoạn đầu gần bằng cả tác vụ (1040 giây so với 1048 giây ở bài 9,4 phút); lợi ích của việc chia đoạn xuất hiện ở bài dài hơn: bài 15 phút có đoạn đầu sau 886 giây thay vì 1334 giây (rút ngắn 34\%). Trên 761 câu của bốn tác vụ, 32,2\% bị rút gọn; 21,8\% đọc ở tốc độ mặc định, 55,3\% được tăng tốc từ 1,0 đến 1,3 lần và 22,9\% ở mức tối đa. Phân bố này gần với kết quả của tập lệnh đo (27,2\% bị rút gọn; 22,1\%, 50,6\% và 27,3\% cho ba mức tương ứng), cho thấy kết quả đo ngoài hệ thống có tính đại diện. Số câu khác nhau (761 so với 787) do bộ nhận dạng giọng nói tách câu hơi khác nhau giữa hai lần chạy.
+\paragraph{Vận hành trên hệ thống thật.} Bốn bài được lồng tiếng lại qua giao diện web sau khi xóa toàn bộ dữ liệu đã lưu của chúng (bản ký âm, bản dịch, bản lồng tiếng, nhạc nền đã tách), nên đây là lần lồng tiếng đầu tiên, có đủ bước nhận dạng giọng nói và tách nhạc. Cả bốn tác vụ hoàn tất, không có lỗi hay lần thử lại nào, và thời lượng âm thanh bằng đúng thời lượng bài học (Bảng~\ref{tab:server}). Thời gian xử lý trung bình là 16,2 giây cho mỗi phút video (từ 14,5 đến 19,3), tức nhanh hơn thời gian thực khoảng 3,7 lần, trên máy chủ 2 vCPU dùng chung với hệ thống đang vận hành. Người học nghe được đoạn đầu tiên sau 148 đến 181 giây. Ở ba bài có hai đoạn, nhờ xử lý theo dây chuyền, đoạn thứ hai hoàn tất chỉ 25 đến 50 giây sau đoạn đầu. So với phiên bản trước của hệ thống trên cùng bốn bài và cùng giọng đọc (dịch hai lời gọi, tăng tốc bằng cách gọi lại TTS, rút gọn từng câu, chưa có dây chuyền), thời gian xử lý giảm từ khoảng 110 giây xuống 16,2 giây cho mỗi phút video và thời gian tới đoạn đầu giảm từ khoảng 1.045 giây xuống 168 giây. Trong 760 câu của bốn tác vụ, 27,4\% câu vẫn còn $R > 1{,}3$ khi tăng tốc, cao nhất ở bài giảng trên lớp (45\%).
 
 \begin{table}[t]
-\caption{Bốn tác vụ lồng tiếng thật trên nền tảng}
+\caption{Bốn tác vụ lồng tiếng thật trên nền tảng (lần lồng tiếng đầu, bật giữ nhạc nền)}
 \label{tab:server}
 \centering
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|c|c|}
 \hline
-\textbf{Bài} & \textbf{Thời lượng (s)} & \textbf{Xử lý (s)} & \textbf{Xử lý/phút (s)} & \textbf{Đến đoạn đầu (s)} \\
+\textbf{Bài} & \textbf{Dài (s)} & \textbf{Đoạn} & \textbf{Xong (s)} & \textbf{s/phút} & \textbf{Đoạn đầu (s)} \\
 \hline
-Bài 1 & 566 & 1048 & 111,1 & 1040 \\
-Bài 2 & 815 & 1729 & 127,3 & 1174 \\
-Bài 3 & 718 & 1364 & 114,0 & 1079 \\
-Bài 4 & 900 & 1334 & 88,9 & 886 \\
+Bài 1 & 566 & 1 & 181,8 & 19,3 & 181,4 \\
+Bài 2 & 815 & 2 & 223,7 & 16,5 & 173,9 \\
+Bài 3 & 718 & 2 & 173,1 & 14,5 & 148,0 \\
+Bài 4 & 900 & 2 & 220,1 & 14,7 & 170,3 \\
 \hline
 \end{tabular}
 \end{table}
 
-\paragraph{Độ bảo toàn ý của câu rút gọn.} Trong 50 câu rút gọn của phương án đề xuất, hai người chấm độc lập cho tỷ lệ giữ đủ ý lần lượt là 70\% và 80\%, mất ý phụ 28\% và 18\%, mất hoặc sai ý chính 2\% ở mỗi người. Hai người cho cùng điểm ở 31/50 câu (62\%; AC1 của Gwet 0,53). Kappa của Cohen gần bằng 0 (0,02) vì phần lớn câu được chấm điểm 2, trường hợp kappa được biết là kém tin cậy; ngoài ra, ở lượt chấm đầu, một người so với câu tiếng Anh gốc còn người kia so với bản dịch đầy đủ. Sau khi thống nhất 19 câu lệch theo cùng chuẩn là bản dịch đầy đủ, 72\% câu giữ đủ ý, 24\% mất ý phụ và 4\% (2 câu) mất hoặc sai ý chính, điểm bảo toàn ý trung bình 1,68 trên 2. Hai câu điểm 0 là một câu chỉ vị trí thực thi chương trình trong bộ nhớ bị rút thành nghĩa khác, và một câu ghi công nhóm đồ họa bị rút gọn đến mức khó hiểu; các lỗi còn lại chủ yếu là mất chi tiết phụ hoặc gộp hai ý thành quan hệ nhân quả không có trong câu gốc.
+\paragraph{Độ bảo toàn ý của câu rút gọn.} Trong 165 câu được rút gọn của phương án đề xuất, 50 câu được chọn ngẫu nhiên để chấm. Hai người chấm độc lập cho tỷ lệ giữ đủ ý lần lượt là 58\% và 74\%, mất ý phụ 38\% và 26\%, mất hoặc sai ý chính 4\% và 0\%. Hai người cho cùng điểm ở 26/50 câu (52\%; AC1 của Gwet 0,38; kappa của Cohen xấp xỉ 0 vì phần lớn câu được chấm điểm 2). Khác biệt chủ yếu đến từ cách hiểu ``ý phụ'': một người trừ điểm khi mất bất kỳ chi tiết có nội dung nào, người kia trừ điểm cả khi chỉ bỏ từ đệm. Sau khi thống nhất 24 câu lệch theo quy tắc chung (2: chỉ bỏ từ đệm hoặc thay từ đồng nghĩa; 1: mất một chi tiết có nội dung nhưng ý chính còn đúng; 0: mất hoặc đổi ý chính, hoặc câu bị cụt đến mức khó hiểu), 66\% câu giữ đủ ý, 30\% mất ý phụ và 4\% (2 câu) mất ý chính, điểm bảo toàn ý trung bình 1,62 trên 2. Hai câu điểm 0 đều là câu bị rút gọn đến mức cụt, mất một vế liệt kê hoặc động từ chính; các lỗi điểm 1 thường gặp là mất thuật ngữ (``học máy''), mất đối tượng của hành động, hoặc thay thuật ngữ bằng từ kém chuẩn (``chương trình'' thành ``bài'').
 
 \subsection{Thảo luận}
-Mỗi thành phần của phương pháp đóng góp vào độ khớp thời lượng: pha biên tập theo ngân sách thời lượng giảm độ lệch trung bình khoảng 40\% so với dịch một pha (1,67 xuống 1,00 giây), tăng tốc độ đọc giảm thêm khoảng 64\% (còn 0,36 giây), và rút gọn bằng LLM giảm thêm khoảng 40\% (còn 0,22 giây). Cách xếp theo mốc tuyệt đối là điều kiện cần nhưng không đủ: với phương án hai pha không điều chỉnh tốc độ, cách ghép này vẫn để trễ trung bình 14,7 giây (cực đại 54,5 giây) và phải cắt tới 79,6 giây cuối của bài 13,6 phút, vì tổng phần tràn vượt quá khoảng lặng có sẵn; chỉ khi kết hợp với tăng tốc độ đọc và rút gọn, độ trễ mới nằm ở mức vài giây.
+Mỗi thành phần của phương pháp đóng góp vào độ khớp thời lượng: ngân sách thời lượng trong lời nhắc giảm độ lệch trung bình khoảng 34\% so với dịch không ràng buộc (1,89 xuống 1,25 giây), giới hạn số ký tự cùng tăng tốc \texttt{atempo} giảm thêm khoảng 77\% (còn 0,29 giây), và rút gọn theo lô giảm thêm khoảng 36\% (còn 0,19 giây). Cách xếp theo mốc tuyệt đối là điều kiện cần nhưng không đủ: không có điều chỉnh tốc độ, phần tràn vượt quá khoảng lặng có sẵn nên vẫn có câu trễ gần một phút và phần cuối mỗi đoạn bị cắt; chỉ khi kết hợp với giới hạn độ dài, tăng tốc và rút gọn, độ trễ mới nằm dưới một giây ở phần lớn các câu.
 
-Quy tắc bỏ qua bước rút gọn đối với câu có khung dưới 2 giây là một đánh đổi có chủ đích. Các câu này (24,5\% số câu) thường là lời chào hay câu cảm ơn ngắn, và phần lớn rút gọn hai lần vẫn vượt ngưỡng. Quy tắc giảm số lần gọi LLM từ 690 xuống 286 (hai lần chạy trên cùng 787 câu), đổi lại độ lệch trung bình theo câu tăng nhẹ từ 0,19 lên 0,22 giây. Vì mỗi phương án mới chạy một lần và LLM không tất định, chưa thể tách riêng ảnh hưởng của quy tắc này khỏi dao động giữa các lần chạy.
+Gộp các bước gọi mô hình là thay đổi chính về chi phí. Mỗi đoạn chỉ cần một lời gọi dịch, các câu cần rút gọn được gửi chung trong một lời gọi cho mỗi vòng, và tăng tốc được thực hiện trên tệp có sẵn thay vì gọi lại TTS. Với cùng bốn bài, phiên bản trước của hệ thống cần 286 lời gọi LLM và 1.678 lần tổng hợp giọng nói, phiên bản hiện tại cần 20 và 1.034. Giới hạn số ký tự ước theo tốc độ đọc đo được giúp bản dịch vừa khung ngay từ đầu, thể hiện ở việc tỷ lệ câu có $R > 1{,}3$ giảm từ 63,7\% (V2) xuống 48,1\% trước khi tăng tốc. Quy tắc không rút gọn câu có khung dưới 2 giây là một đánh đổi có chủ đích: các câu này thường là lời chào hay câu cảm ơn ngắn, phần lớn rút gọn vẫn vượt ngưỡng, và phần dư được bù bằng khoảng lặng phía sau.
 
-Các trường hợp còn lỗi gồm: bài giảng trên lớp có nhiều câu ngắn và nói dày nên độ trễ lớn hơn hẳn; câu bị rút gọn mất ý phụ hoặc đôi khi sai ý khi nội dung phụ thuộc vào ngữ cảnh (Mục độ bảo toàn ý); và mốc thời gian của bộ nhận dạng giọng nói đôi khi vượt quá độ dài âm thanh, đã được xử lý bằng cách kẹp mốc.
+Các trường hợp còn lỗi gồm: bài giảng trên lớp có tỷ lệ lời thoại thấp, nhiều câu ngắn, nên còn nhiều câu vượt ngưỡng và độ trễ lớn hơn hẳn; câu bị rút gọn đôi khi mất thuật ngữ hoặc bị cụt (Mục độ bảo toàn ý); và mốc thời gian của bộ nhận dạng giọng nói đôi khi vượt quá độ dài âm thanh, đã được xử lý bằng cách kẹp mốc.
 
-Các hạn chế của nghiên cứu gồm: (i) chưa đánh giá cảm nhận của người nghe về độ tự nhiên, độ dễ hiểu và độ khớp hình, nên kết luận của bài chỉ về độ khớp thời lượng và độ bảo toàn ý, không về chất lượng nghe; (ii) tập dữ liệu nhỏ (bốn bài, 50 phút, tiếng Anh, lĩnh vực công nghệ thông tin) và mỗi phương án chỉ chạy một lần; (iii) thời gian xử lý đo trên máy 2 vCPU dùng chung với hệ thống đang vận hành \todo{bản 14/11: chậm hơn thời gian thực, khoảng 110 giây mỗi phút video; bản hiện tại đo sơ bộ ở máy cục bộ khoảng 8--12 giây mỗi phút, cập nhật theo số đo trên máy chủ}; (iv) hiệu quả tái sử dụng bản ký âm giữa các ngôn ngữ đích chưa được đo; (v) độ bảo toàn ý do hai thành viên nhóm chấm trên 50 câu, độ đồng thuận ban đầu chỉ ở mức trung bình.
+Các hạn chế của nghiên cứu gồm: (i) chưa đánh giá cảm nhận của người nghe về độ tự nhiên, độ dễ hiểu và độ khớp hình, trong khi tăng tốc bằng \texttt{atempo} là kéo giãn tín hiệu, nên kết luận của bài chỉ về độ khớp thời lượng và độ bảo toàn ý, không về chất lượng nghe; (ii) tập dữ liệu nhỏ (bốn bài, 50 phút, tiếng Anh, lĩnh vực công nghệ thông tin) và mỗi phương án chỉ chạy một lần, trong khi LLM không tất định; (iii) thời gian xử lý đo trên một máy chủ 2 vCPU dùng chung với hệ thống đang vận hành, mỗi bài một tác vụ, và phụ thuộc vào thời gian chờ cấp GPU đám mây cho bước tách nhạc; (iv) hiệu quả tái sử dụng bản ký âm và bản lồng tiếng giữa các ngôn ngữ đích chưa được đo; (v) độ bảo toàn ý do hai thành viên nhóm chấm trên 50 câu, độ đồng thuận ban đầu thấp và điểm cuối có được nhờ thống nhất.
 
 % =====================================================================
 \section{Kết luận}
 \label{sec:conclusion}
-Bài báo đã trình bày một pipeline lồng tiếng tự động cho video bài giảng được tích hợp trong hệ thống quản lý học tập. Bằng cách xử lý ràng buộc thời lượng ở cả tầng prompt (ngân sách thời lượng và giới hạn số ký tự ước theo tốc độ đọc đo được) và tầng hậu xử lý (rút gọn theo lô và tăng tốc tín hiệu có giới hạn), hệ thống tạo ra âm thanh lồng tiếng có thời lượng khớp với video gốc mà không cần huấn luyện mô hình riêng: \todo{số liệu bản 14/11} độ lệch thời lượng trung bình của mỗi câu giảm từ 1,67 xuống 0,22 giây và độ trễ tuyệt đối trung bình sau khi ghép cả bài là 2,1 giây. Kiến trúc phân đoạn mười phút cùng các cơ chế chống trùng và tái sử dụng được thiết kế để báo tiến độ sớm, chịu lỗi cục bộ và tiết kiệm chi phí; thực nghiệm trên hệ thống thật cho thấy bốn tác vụ lồng tiếng hoàn tất không lỗi, còn hiệu quả tái sử dụng chưa được đo.
+Bài báo đã trình bày một pipeline lồng tiếng tự động cho video bài giảng được tích hợp trong hệ thống quản lý học tập. Bằng cách xử lý ràng buộc thời lượng ở cả tầng prompt (ngân sách thời lượng và giới hạn số ký tự ước theo tốc độ đọc đo được) và tầng hậu xử lý (rút gọn theo lô và tăng tốc tín hiệu có giới hạn), hệ thống tạo ra âm thanh lồng tiếng có thời lượng khớp với video gốc mà không cần huấn luyện mô hình riêng: độ lệch thời lượng trung bình của mỗi câu giảm từ 1,89 xuống 0,19 giây và độ trễ tuyệt đối trung bình sau khi ghép cả bài là 0,40 giây, với 20 lời gọi LLM cho 50 phút bài giảng. Kiến trúc phân đoạn mười phút xử lý theo dây chuyền cùng các cơ chế chống trùng và tái sử dụng giúp hệ thống chịu lỗi cục bộ và phản hồi sớm: trên hệ thống thật, bốn tác vụ lồng tiếng hoàn tất không lỗi, mỗi phút video được xử lý trong khoảng 16 giây và người học nghe được đoạn đầu sau khoảng ba phút; hiệu quả tái sử dụng chưa được đo.
 
 Hạn chế hiện tại là giọng đọc là giọng tổng hợp có sẵn, chưa giữ được âm sắc của giảng viên; đánh giá mới thực hiện trên tập dữ liệu nhỏ, mỗi phương án một lần chạy, và chưa có đánh giá cảm nhận của người nghe. Hướng phát triển gồm: khảo sát điểm đánh giá trung bình (MOS) với nhóm người nghe độc lập về độ tự nhiên và độ khớp hình, nhân bản giọng nói của giảng viên, đồng bộ khẩu hình, mở rộng sang các lĩnh vực khác như kỹ năng mềm, và so sánh hiệu quả học tập giữa học bằng phụ đề và học bằng lồng tiếng.
 

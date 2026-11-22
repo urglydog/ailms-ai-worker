@@ -1,0 +1,51 @@
+﻿id,score_thien,score_sang,score_consensus,ly_do_thong_nhat
+1,1,2,1,mat chi tiet co noi dung
+2,2,2,2,dong y ban dau
+3,2,2,2,dong y ban dau
+4,2,2,2,dong y ban dau
+5,1,1,1,dong y ban dau
+6,1,2,1,mat chi tiet co noi dung
+7,0,1,0,"cau bi cut, mat y chinh"
+8,2,1,2,chi bo tu dem/dong nghia
+9,1,2,1,mat chi tiet co noi dung
+10,2,1,2,chi bo tu dem/dong nghia
+11,2,2,2,dong y ban dau
+12,1,1,1,dong y ban dau
+13,1,1,1,dong y ban dau
+14,0,1,0,"cau bi cut, mat y chinh"
+15,2,2,2,dong y ban dau
+16,2,2,2,dong y ban dau
+17,2,2,2,dong y ban dau
+18,2,2,2,dong y ban dau
+19,2,2,2,dong y ban dau
+20,2,2,2,dong y ban dau
+21,1,2,1,mat chi tiet co noi dung
+22,2,1,2,chi bo tu dem/dong nghia
+23,2,1,2,chi bo tu dem/dong nghia
+24,1,2,1,mat chi tiet co noi dung
+25,2,2,2,dong y ban dau
+26,2,2,2,dong y ban dau
+27,1,2,1,mat chi tiet co noi dung
+28,2,1,2,chi bo tu dem/dong nghia
+29,1,2,1,mat chi tiet co noi dung
+30,2,2,2,dong y ban dau
+31,2,2,2,dong y ban dau
+32,2,1,2,chi bo tu dem/dong nghia
+33,2,2,2,dong y ban dau
+34,2,2,2,dong y ban dau
+35,1,2,2,chi mat tu dem/ham y con nguyen
+36,2,2,2,dong y ban dau
+37,1,2,1,mat chi tiet co noi dung
+38,1,2,1,mat chi tiet co noi dung
+39,1,2,2,chi mat tu dem/ham y con nguyen
+40,2,2,2,dong y ban dau
+41,1,1,1,dong y ban dau
+42,2,2,2,dong y ban dau
+43,2,2,2,dong y ban dau
+44,1,2,2,chi mat tu dem/ham y con nguyen
+45,2,2,2,dong y ban dau
+46,2,2,2,dong y ban dau
+47,1,2,2,chi mat tu dem/ham y con nguyen
+48,1,2,1,mat chi tiet co noi dung
+49,1,2,1,mat chi tiet co noi dung
+50,2,1,2,chi bo tu dem/dong nghia
