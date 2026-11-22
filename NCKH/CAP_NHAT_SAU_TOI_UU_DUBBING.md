@@ -11,7 +11,8 @@
 - `CaiTien_TocDo_Dubbing.md`: chạy song song, rút gọn theo lô, `atempo`, mức suy nghĩ của Gemini, một lời gọi dịch, `max_chars`, embedding theo lô;
 - `CaiTien_NhacNen_Dubbing.md`: nhạc nền, mốc theo từ đầu tiên, câu không có chữ để đọc;
 - `SoSanh_GhepChunk.md`: ghép bằng một lệnh FFmpeg, checklist build server;
-- `CaiTien_BuocCuoi_TaiLen.md`: bước cuối, dung lượng, đánh thức GPU.
+- `CaiTien_BuocCuoi_TaiLen.md`: bước cuối, dung lượng, đánh thức GPU;
+- `CaiTien_TachNhacSongSong.md`: tách nhạc song song trên nhiều GPU, nạp sẵn model, chỉ tải audio gốc khi cần, index Gia sư AI chạy nền. **Mới, xem mục 5 bên dưới.**
 
 ---
 
@@ -24,6 +25,9 @@
 | Tối ưu đợt 2 | `ef5266b` (`feat/dubbing`) | **Một lời gọi dịch** kèm `max_chars`, embedding theo lô, dùng lại kết quả khi chunk chạy lại, sửa lỗi khóa token Azure |
 | Nhạc nền và sửa lỗi | `38ed361` (`feat/dubbing`) | Nhạc nền (Demucs/Modal), **mốc đầu câu theo từ đầu tiên**, câu không có chữ để đọc thành khoảng lặng |
 | Tối ưu ghép và bước cuối | `cf10f29`, `f2caff6`, `7578395` (`perf/dubbing`) | Ghép bằng một lệnh FFmpeg, bỏ ghép file cuối thừa, đánh thức GPU |
+| Tối ưu B, C | `4e6fef4` (`perf/dubbing`) | Chỉ tải audio gốc khi cần; index Gia sư AI chạy nền |
+| Tách nhạc song song | `34052fb` (`perf/dubbing`) | Nhạc nền chia phần khoảng 3 phút chạy song song trên nhiều GPU; nạp sẵn model Demucs |
+| **Đổi model LLM** | cấu hình `.env`, không phải commit | **`GEMINI_MODEL=gemini-3.6-flash`** (bản đo trong bài là 3.5 Flash). Xem mục 5 |
 
 ---
 
@@ -93,3 +97,38 @@
 **Bước 3: sửa `main.tex`** theo mục 2, thay số liệu mới.
 - Nếu không kịp đo lại, **phương án tối thiểu**: giữ mô tả và số liệu bản `e5a8cb7`, thêm một đoạn ở Triển khai hoặc Thảo luận rằng sau đánh giá, hệ thống được tối ưu tốc độ (gộp lời gọi dịch, `atempo`, rút gọn theo lô; khoảng 12 s mỗi phút video), **ghi rõ các thay đổi này không nằm trong phần đánh giá**.
 - **Không** mô tả thuật toán mới đi kèm số liệu cũ.
+
+---
+
+## 5. Bổ sung 22/11/2026 (chiều): các thay đổi sau khi viết file này
+
+### 5.1. ẢNH HƯỞNG tới bài, phải ghi vào bài và vào NOTES đo lại
+- **Model LLM đổi sang `gemini-3.6-flash`.** Người phụ trách dự án chốt 3.6 là bản ổn định nhất. Mức suy nghĩ vẫn là `minimal`; model 3.6 hỗ trợ mức này.
+  - Bảng 1 (tham số) trong `main.tex` đang ghi "Gemini 3.5 Flash", **phải sửa thành 3.6 Flash** nếu số liệu mới đo bằng 3.6.
+  - Đổi model làm thay đổi độ dài và chất lượng bản dịch, nên Δ, % câu tràn, số câu rút gọn và độ bảo toàn ý **phải đo bằng đúng 3.6**.
+  - Kiểm tra trên server: `docker exec lms_ai_worker printenv GEMINI_MODEL` phải ra `gemini-3.6-flash`. `.env` chỉ được nạp khi **tạo lại** container (`up -d --force-recreate`); lệnh `restart` không nạp lại.
+  - Ghi model thật đang chạy vào NOTES của đợt đo.
+
+### 5.2. KHÔNG ảnh hưởng nội dung hay độ khớp thời lượng; chỉ đổi thời gian (Bảng 4)
+| Thay đổi | Tóm tắt | Ảnh hưởng tới bài |
+|---|---|---|
+| **Tách nhạc song song** | Nhạc nền được chia thành phần khoảng 3 phút (dư 5 s mỗi đầu), tách cùng lúc trên nhiều GPU T4, nối lại bằng trộn chéo 0,5 s. Đã kiểm tra trên audio thật: khớp bản gốc tới từng mẫu (tương quan 1,0). Model Demucs được nạp sẵn trên mỗi máy | Không: nhạc nền không có trong phần đánh giá. **Nếu bật nhạc nền khi đo** thì chỉ thời gian xử lý (Bảng 4) thay đổi |
+| **Tối ưu B: chỉ tải audio gốc khi cần** | Bài đã có bản ký âm (lồng tiếng ngôn ngữ thứ 2) thì không tải lại từ YouTube | Không. Lưu ý khi đo Bảng 4: phải **xóa bản ký âm cũ** để đo đúng lần đầu (có bước nhận dạng giọng nói và có tải audio) |
+| **Tối ưu C: index Gia sư AI chạy nền** | Embedding câu gốc kèm ghi Supabase không còn chặn việc tải chunk | Không |
+| **Quyết định không đổi độ dài đoạn** | Đã cân nhắc rút đoạn còn 5 phút hoặc cho đoạn đầu ngắn, và **quyết định giữ L = 600 s**: cắt nhiều đoạn hơn thì dễ cắt đôi câu và dịch mất ý | Bài giữ nguyên **L = 600 s** (Bảng 1, mục Phân đoạn theo lớp, BR-CHUNK-02) |
+
+### 5.3. Thời gian xử lý mới nhất (máy local, mạng nhà; chỉ để tham khảo, số cho bài phải đo trên server)
+| Job | Bài | Tình huống | Kết quả |
+|---|---|---|---|
+| 44 | 9 phút 13 giây, 1 chunk | Lần đầu, nhạc nền tách trên 1 GPU | 113,8 s (12,3 s mỗi phút video) |
+| **45** | **11 phút 58 giây, 2 chunk** | **Lần đầu, nhạc nền 4 GPU song song** | **Chunk 1 phát được sau 74 s; cả job 97,8 s (8,2 s mỗi phút video)** |
+| 43 | 6 phút 16 giây | Ngôn ngữ thứ 2 (dùng lại bản ký âm và nhạc) | 32,7 s |
+
+So với bài đã nộp (khoảng 110 s mỗi phút video, đến đoạn đầu 886–1174 s), thời gian xử lý giảm **khoảng 13 lần**. Câu "chậm hơn thời gian thực" trong hạn chế (iii) **không còn đúng**: hiện xử lý nhanh hơn thời gian thực khoảng 7 lần. Cần sửa sau khi có số đo trên server.
+
+### 5.4. Gợi ý cấu hình khi đo lại trên server (bổ sung cho mục 4, bước 1)
+- `GEMINI_MODEL=gemini-3.6-flash`, `DUBBING_THINKING_LEVEL=minimal`, `TIMELINE_ENGINE=ffmpeg` (mặc định).
+- **Nhạc nền:** session NCKH đã xác nhận nhạc nền **gần như không ảnh hưởng** độ khớp từng câu. Có thể bật như khi chạy thật, nhưng **ghi rõ trong NOTES** là bật hay tắt, vì nó ảnh hưởng thời gian ở Bảng 4.
+  - Nếu bật: hàm `lms-demucs` trên Modal phải là **bản mới** (có nạp sẵn model, commit `34052fb`).
+  - Token Modal trong `.env` phải đúng tài khoản đã deploy hàm.
+- Build lại theo mục 6 của `docs/improve/performance/SoSanh_GhepChunk.md`.
