@@ -1,0 +1,5 @@
+﻿run_id,video_id,category,duration_sec,n_chunks,n_segments,n_unspeakable,n_chunks_skipped_low_speech,speech_ratio,asr_cached,cps_before,cps_after,t_asr_sec,t_translate_sec,t_tts_default_sec,t_v3_sec,t_v4_sec,llm_V1,llm_V2,llm_V34_translate,llm_V4_resummarize,resummarize_batch_calls_V4,tts_V1,tts_V2,tts_V3,tts_V4,llm_calls_translate,tts_calls_total,resummarize_calls_v4
+v3_r1_merged,lec01,CNTT,566.0,1,131,0,0,0.909,True,11.480,11.467,0.25,52.86,71.62,14.05,80.86,1,1,1,2,2,131,131,131,158,3,551,2
+v3_r1_merged,lec02,CNTT,815.1,2,185,0,0,0.92,False,none,12.722,9.01,63.21,102.61,31.14,152.61,2,2,2,4,4,185,185,185,320,6,875,4
+v3_r1_merged,lec03,KyNangMem,718.0,2,181,0,0,0.917,False,none,11.480,9.34,54.18,100.66,29.42,129.27,2,2,2,4,4,181,181,181,267,6,810,4
+v3_r1_merged,lec04,KyNangMem,900.0,2,283,0,0,0.785,False,12.722,11.415,10.19,72.99,134.87,32.39,149.95,2,2,2,3,3,283,283,283,289,6,1138,3

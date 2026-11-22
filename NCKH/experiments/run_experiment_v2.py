@@ -53,6 +53,7 @@ from app import audio_utils, media  # noqa: E402
 from app.config import settings  # noqa: E402
 from app.models import Segment  # noqa: E402
 from app.providers import azure_tts, gemini, groq_asr  # noqa: E402
+from app.providers.base import ProviderInvalidResponse  # noqa: E402
 from app.services import dubbing_service, translation  # noqa: E402
 
 from run_experiment import VideoSpec, _default_row, _row, _write_csv, prepare_audio  # noqa: E402
@@ -193,8 +194,21 @@ async def transcribe_v2(spec: VideoSpec, audio: Path, work: Path, max_chunks: in
 # ---------------------------------------------------------------------------- dịch
 async def translate_v1(segs: list[Segment], src: str, tgt: str) -> list[str]:
     numbered = {str(i + 1): s.text for i, s in enumerate(segs)}
-    res = await gemini.generate(translation._build_direct_prompt(numbered, src, tgt), thinking_level=translation._thinking())
-    m = translation._extract_json(res.text)
+    # 22/11/2026: Gemini 3.6 Flash (thinking minimal) thỉnh thoảng trả JSON hỏng cho lời gọi V1
+    # (bắt gặp 2/3 lần chạy lec01, cùng vị trí câu "Von Neumann"). Pipeline thật có thử lại cả chunk
+    # còn V1 là phương án nền chỉ có trong script đo, nên thử lại tối đa 3 lần; mỗi lần thử đều tính
+    # vào số lời gọi LLM của V1 (gemini.generate bị vá để đếm) và được in ra để ghi vào REPORT.
+    last_exc: Exception | None = None
+    for attempt in range(1, 4):
+        res = await gemini.generate(translation._build_direct_prompt(numbered, src, tgt), thinking_level=translation._thinking())
+        try:
+            m = translation._extract_json(res.text)
+            break
+        except ProviderInvalidResponse as exc:
+            last_exc = exc
+            print(f"  [V1] JSON hỏng lần {attempt}/3 — thử lại: {str(exc)[:120]}", flush=True)
+    else:
+        raise last_exc  # type: ignore[misc]
     return [(translation._as_text(m.get(str(i + 1))) or s.text).strip() for i, s in enumerate(segs)]
 
 
