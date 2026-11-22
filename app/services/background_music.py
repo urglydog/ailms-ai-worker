@@ -86,6 +86,9 @@ async def _separate(source_audio: Path, work_dir: Path, prefix: str | None = Non
     try:
         import modal
 
+        from app import source_audio as _src
+
+        source_audio = await _src.ensure(source_audio)   # tối ưu B: audio gốc có thể chưa được tải
         upload = work_dir / "bgm_source.mp3"
         # gửi MP3 thay vì WAV: nhỏ hơn ~10 lần, Demucs vẫn tách tốt. 128 kbps thay cho 192 kbps
         # (22/11/2026): bài 6 phút 9 MB -> 6 MB, chuyển mã vẫn ~2,5 s — gửi lên Modal nhanh hơn 1/3.
