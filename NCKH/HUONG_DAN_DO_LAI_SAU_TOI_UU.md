@@ -91,14 +91,30 @@ docker exec lms_redis redis-cli get 'dubbing:tts_cps:vi-VN-NamMinhNeural'
 ```
 Ghi giá trị vào NOTES. **Không xóa** các khóa này nếu chưa ❓ hỏi Sang (xem mục B, V4 lần 1/lần 2).
 
-## 4. Bước B — Sửa script đo cho khớp pipeline mới
+## 4. Bước B — Script đo (ĐÃ VIẾT SẴN, chỉ cần chạy thử)
 
-`NCKH/experiments/run_experiment.py` **đang chạy LỖI trên code mới**:
-- gọi `translation._build_adapt_prompt` (đã bị gỡ);
-- V3 tăng tốc bằng tham số `rate=` của `azure_tts.synthesize` (SSML, pipeline không còn dùng);
-- bộ đếm vá `translation.resummarize`, trong khi pipeline gọi `translation.resummarize_batch`.
+Sang đã viết sẵn **`NCKH/experiments/run_experiment_v2.py`** cho pipeline mới (ngày 22/11/2026) và sửa kèm
+`analyze.py` (đếm lời gọi LLM/TTS theo từng phương án, tên phương án mới) và `check_full_length.py` (ghép bằng
+`place_on_timeline_ffmpeg` khi `TIMELINE_ENGINE=ffmpeg`, bỏ qua câu chỉ có dấu câu). Đã chạy thử bằng dữ liệu
+giả lập (`_smoke_v2.py`, không gọi API) cho cả 4 phương án, gồm nhánh rút gọn theo lô.
+**Không dùng `run_experiment.py` cũ** (lỗi trên code mới; chỉ giữ để tái lập số của `e5a8cb7`).
 
-Sửa (hoặc tạo `run_experiment_v2.py`, giữ nguyên bản cũ để tái lập số cũ) theo định nghĩa phương án **đã ghi trong `main.tex`**:
+**Việc của AI người đo ở bước này:**
+```bash
+# B1. Kiểm tra code (không gọi API, khoảng 10 giây)
+docker exec --user 1000:1001 -w /app lms_ai_worker python NCKH/experiments/_smoke_v2.py | tail -5
+# B2. Dọn cache ASR cũ (mốc đầu đoạn) để ASR chạy lại với mốc theo từ đầu tiên
+docker exec --user 1000:1001 -w /app lms_ai_worker sh -c "mv NCKH/experiments/.cache NCKH/experiments/.cache_old_e5a8cb7 2>/dev/null; true"
+# B3. Chạy thử thật, rẻ: 1 bài, 1 chunk
+docker exec --user 1000:1001 -w /app lms_ai_worker python NCKH/experiments/run_experiment_v2.py \
+    --manifest NCKH/experiments/videos.json --run-id smoke_real --only lec01 --max-chunks 1 --keep-audio
+docker exec --user 1000:1001 -w /app lms_ai_worker python NCKH/experiments/analyze.py NCKH/experiments/results/smoke_real
+```
+Nếu B1 hoặc B3 lỗi: **dừng**, gửi nguyên log lỗi cho Sang, không tự sửa code trong `app/`. Được sửa script
+trong `NCKH/experiments/` nếu lỗi rõ ràng do script; ghi lại thay đổi trong report.
+Sau B3 xóa thư mục `results/smoke_real` (chỉ là chạy thử) **hoặc** giữ lại nhưng ghi rõ trong report là không dùng.
+
+Tham khảo, cách script định nghĩa các phương án (khớp `main.tex`):
 
 | PA | Dịch | Tăng tốc | Rút gọn | Cách gọi |
 |---|---|---|---|---|
@@ -107,7 +123,7 @@ Sửa (hoặc tạo `run_experiment_v2.py`, giữ nguyên bản cũ để tái l
 | **V3** | `translate_batch` **có** `max_chars = max(4, int(cps × T_orig × 1,15))` (cps đọc từ Redis như pipeline; nếu chưa có thì ghi rõ và dùng `None`) | `audio_utils.change_tempo(path, min(R, 1,3))` | **không** | TTS 1 lần rồi atempo |
 | **V4** | như V3 | như pipeline | như pipeline | gọi thẳng `dubbing_service._synthesize_segments(segments, texts, voice, out_paths, tgt)` cho **cả chunk** |
 
-Yêu cầu khác:
+Script đã làm sẵn các điểm sau (để AI đối chiếu khi đọc kết quả, **không cần làm lại**):
 - **V3 và V4 dùng chung một kết quả dịch** (cùng một lời gọi `translate_batch` có `max_chars`), giống cách đợt trước V2–V4 dùng chung bản dịch. Như vậy khác biệt giữa V3 và V4 chỉ còn là bước rút gọn.
 - **Mốc câu** dùng đúng như pipeline: ASR qua `groq_asr.transcribe` (đã lấy mốc theo từ đầu tiên) rồi `dubbing_service.clamp_stt_segments`. **Không dùng lại `asr_cache.json` cũ** (mốc cũ là mốc đầu đoạn): xóa hoặc đổi tên thư mục `.cache/` trước khi chạy để ASR chạy lại.
 - Câu chỉ có dấu câu: xử lý như pipeline (`dubbing_service._has_speakable_text`), ghi số câu bị bỏ.
