@@ -9,8 +9,8 @@ Không sửa `paper/main.tex`. Mọi số dưới đây truy được về file 
 1. Thứ tự các phương án về độ lệch **vẫn giữ**: V1 (1,89 s) > V2 (1,25 s) > V3 (0,29 s) > V4 (0,19 s) trên 780 câu của 4 bài.
 2. V4 giảm mạnh chi phí so với bản cũ: **20 lời gọi LLM và 1.034 lần TTS** (bản cũ `e5a8cb7`: 286 và 1.678).
 3. Độ trễ đo trên audio thật (cách ghép mới): V4 |trễ| trung bình **0,11–0,68 s** theo bài (bản cũ: 0,49–4,35 s). Bài `lec04` vẫn là bài tệ nhất.
-4. Job thật qua web (C4): 4/4 `COMPLETED`, **11,7–15,8 giây xử lý cho mỗi phút video** (bản cũ: 110,3). **Không so được như nhau** vì điều kiện khác (mục 5).
-5. **Khác hướng dẫn gốc:** không xóa dữ liệu cũ (Thiện từ chối bước A6) nên C4 chạy bằng **ko-KR** (giọng SunHi), không phải tiếng Việt. Hệ quả ghi ở mục 5 và 6.
+4. Job thật qua web (C4, tiếng Việt, ASR chạy đầy đủ, cùng 4 bài và cùng giọng với lần 13/11): 4/4 `COMPLETED`, **14,5–19,3 giây xử lý cho mỗi phút video, trung bình 16,2** (bản cũ: 110,3, tức **nhanh hơn khoảng 6,8 lần**); thời gian tới đoạn đầu tiên **168 s** so với 1.045 s (mục 5A). Số này so ngang được.
+5. **Thứ tự thực hiện C4:** lần đầu chạy bằng **ko-KR** (giọng SunHi) khi chưa xóa dữ liệu cũ, dùng lại bản ký âm (mục 5B, số bổ sung, không so ngang). Sau đó theo yêu cầu của Sang, đã **xóa dữ liệu lồng tiếng, bản dịch, bản ký âm và nhạc tách của 4 bài rồi chạy lại bằng tiếng Việt** (mục 5A, số chính). Việc xóa **không sao lưu** và xóa luôn bản ko-KR.
 6. Còn thiếu: chấm L4 (Sang + Thiện), số tiền chính xác từng job, thống kê phía DB.
 
 ## 1. Môi trường (A0, A4, A5)
@@ -25,7 +25,7 @@ Không sửa `paper/main.tex`. Mọi số dưới đây truy được về file 
 | Container | `running` | `running restarts=0 oom=false` |
 
 Cấu hình đo: `TIMELINE_ENGINE=ffmpeg`, `CHUNK_MINUTES=10`, `MAX_RESUMMARIZE_ATTEMPTS=2`, `MIN_RESUMMARIZE_FRAME_SEC=2.0`, `TTS_CONCURRENCY=16`, ASR `whisper-large-v3-turbo`. `GEMINI_MODELS` để trống.
-`tts_cps` cuối đợt: HoaiMy 11,052; NamMinh 10,683; SunHi (ko-KR) 4,887 ký tự/giây.
+`tts_cps` cuối đợt: Hoài My 12,264; Nam Minh 12,416; SunHi (ko-KR) 4,887 ký tự/giây. (Giá trị 11,052 và 10,683 là của giữa đợt, đã được xóa trước khi chạy lại C4 tiếng Việt.)
 Chi tiết, nhật ký các lần chạy: `results/server_20261122/NOTES.md`.
 
 ## 2. Bảng 2 — V1–V4 trên 4 bài (C1), 780 câu, giọng vi-VN
@@ -73,7 +73,52 @@ Tổng thời lượng sau ghép khớp bản gốc trong ±0,1 s ở cả 4 bà
 
 Từ `results/v3_r1_merged/videos.csv`: dịch 53–73 s/bài (một lời gọi cho mỗi chunk), V4 129–153 s/bài với bài 2 chunk (80,9 s cho `lec01`). Đây là thời gian local chạy tuần tự từng câu, không phải thời gian hệ thống thật.
 
-## 5. Bảng 4 — 4 job thật qua web (C4), ngôn ngữ ko-KR, giọng SunHi
+## 5. Bảng 4 — 4 job thật qua web (C4)
+
+### 5A. Chính — tiếng Việt (vi-VN), so ngang với số cũ 13/11
+
+Theo yêu cầu của Sang, dữ liệu lồng tiếng, bản dịch, bản ký âm gốc, nhạc tách trên B2 và `tts_cps` của 4 bài (lesson 2284, 2285, 2286, 2288)
+được xóa (chi tiết ở `results/server_20261122/NOTES.md`), rồi lồng tiếng lại từng bài bằng giao diện web, giọng như lần 13/11
+(`lec01`, `lec03`: Hoài My; `lec02`, `lec04`: Nam Minh). Nguồn: `results/server_20261122_vi/worker_logs.json` (job 21–24).
+Cả 4 job `COMPLETED`; 0 dòng `HET CREDIT (402)`, 0 lỗi 401/key, không thấy dòng thử lại nào trong log (chưa đối chiếu `retry_count` ở DB);
+mọi job có `asr` lớn hơn 0 (ASR chạy đầy đủ) và có `BGM tach nhac xong` (4 lần tách nhạc mới, 0 lần dùng lại).
+
+| Job | Bài (dài) | Chunk | Câu | Tới đoạn đầu mới (s) | cũ (s) | Xong mới (s) | cũ (s) | s xử lý / phút mới | cũ |
+|---|---|---|---|---|---|---|---|---|---|
+| 21 | lec01 (9:26) | 1 | 132 | 181,4 | 1.040 | 181,8 | 1.048 | 19,3 | 111,1 |
+| 22 | lec02 (13:35) | 2 | 188 | 173,9 | 1.174 | 223,7 | 1.729 | 16,5 | 127,3 |
+| 23 | lec03 (11:58) | 2 | 181 | 148,0 | 1.079 | 173,1 | 1.364 | 14,5 | 114,0 |
+| 24 | lec04 (15:00) | 2 | 259 | 170,3 | 886 | 220,1 | 1.334 | 14,7 | 88,9 |
+
+"Cũ" lấy từ `results/server_20261113/out.tsv` (job 10–13, commit `4ab708f`, cùng 4 bài, cùng giọng, ASR nằm trong thời gian xử lý).
+
+| Chỉ số | Cũ (13/11) | Mới (22/11, tiếng Việt) | Tỉ lệ |
+|---|---|---|---|
+| Giây xử lý / phút video, trung bình (khoảng) | 110,3 (88,9–127,3) | 16,2 (14,5–19,3) | khoảng 6,8 lần |
+| Giây tới đoạn đầu tiên, trung bình (khoảng) | 1.044,8 (886–1.174) | 168,4 (148,0–181,4) | khoảng 6,2 lần |
+| Giây giữa lúc xong đoạn đầu và xong cả bài (3 bài nhiều chunk) | 417,0 (275–543) | 41,5 (25,0–49,8) | khoảng 10 lần |
+| Số lần thử lại | 0 (DB) | không thấy trong log | – |
+
+TIMING từng chunk (giây):
+
+| Job | Chunk | asr | dịch | chờ chunk trước | tts | ghép | nhạc | upload | tổng |
+|---|---|---|---|---|---|---|---|---|---|
+| 21 | 0 | 5,7 | 21,3 | 0,0 | 81,4 | 4,8 | 21,8 | 2,9 | 137,9 |
+| 22 | 0 | 19,3 | 23,0 | 0,0 | 81,6 | 9,8 | 29,9 | 3,3 | 166,9 |
+| 22 | 1 | 6,2 | 8,4 | 110,0 | 32,1 | 2,0 | 9,5 | 2,8 | 171,1 |
+| 23 | 0 | 16,8 | 16,6 | 0,0 | 59,0 | 7,6 | 38,6 | 3,0 | 141,6 |
+| 23 | 1 | 5,1 | 5,4 | 97,7 | 13,7 | 1,3 | 4,9 | 1,6 | 129,7 |
+| 24 | 0 | 20,2 | 15,8 | 0,0 | 54,5 | 6,7 | 52,7 | 13,6 | 163,5 |
+| 24 | 1 | 8,4 | 10,7 | 108,5 | 28,8 | 3,2 | 12,2 | 2,0 | 173,7 |
+
+- Dây chuyền chạy đúng ở cả 3 bài nhiều chunk: `cho_chunk_truoc` 97,7–110,0 s.
+- Điều kiện giọng: `lec01` (Hoài My) và `lec02` (Nam Minh) là lần đầu của giọng đó, chưa có `tts_cps`; `lec03` và `lec04` chạy khi giọng đã có số đo từ bài trước.
+  `tts_cps` cuối đợt: Hoài My 12,264; Nam Minh 12,416 (SunHi 4,887 từ lần ko-KR).
+- Câu còn `R > 1,3` sau rút gọn (đếm dòng cảnh báo theo job): 20 / 38 / 33 / **117** trên 132 / 188 / 181 / 259 câu, tức 15% / 20% / 18% / **45%**. `lec04` cao nhất, cùng chiều với kết quả C3 (mục 3).
+- Giới hạn: mỗi bài chỉ chạy 1 lần (cả số cũ lẫn số mới), máy chạy chung với hệ thống vận hành, nên thời gian có dao động; 4 bài là cỡ mẫu nhỏ.
+  Hai lần đo khác nhau cả ở pipeline (cũ: commit `4ab708f`, SSML, rút gọn từng câu, chưa có dây chuyền) lẫn cấu hình (Gemini 3.6 Flash, nhạc nền bật), đúng là thứ cần so.
+
+### 5B. Bổ sung — ko-KR, giọng SunHi (chạy TRƯỚC khi xóa dữ liệu; dùng lại bản ký âm)
 
 Nguồn: `results/server_20261122/worker_logs.json` (từ `docker logs`, parser `parse_worker_logs.py`). Job 17–20 = lesson 2284, 2285, 2286, 2288; tất cả `COMPLETED` (kết quả Celery `{'status': 'COMPLETED'}`), không thấy dòng thử lại nào trong log (chưa đối chiếu cột `retry_count` ở DB), 0 dòng `HET CREDIT (402)`, 0 lỗi 401/key.
 
@@ -96,20 +141,11 @@ TIMING từng chunk (giây):
 | 20 | 0 | 0,0 | 16,9 | 0,0 | 47,0 | 4,8 | 93,1 | 3,1 | 164,8 |
 | 20 | 1 | 0,0 | 9,1 | 138,8 | 26,7 | 2,5 | 12,2 | 2,2 | 191,5 |
 
-- Dây chuyền chạy đúng ở 3 bài nhiều chunk: có `cho_chunk_truoc` (96–139 s), chunk 1 chuẩn bị song song rồi chờ chunk 0; thời gian từ lúc xong đoạn đầu đến lúc xong cả bài chỉ **19–48 s** (bản cũ: 417 s).
+- Dây chuyền chạy đúng ở 3 bài nhiều chunk: có `cho_chunk_truoc` (96–139 s), chunk 1 chuẩn bị song song rồi chờ chunk 0; thời gian từ lúc xong đoạn đầu đến lúc xong cả bài chỉ **19–48 s** (số so ngang với bản cũ nằm ở 5A).
 - Nhạc nền: cả 4 job **tách mới** (`BGM tach nhac xong`, 4–6 phần chạy song song, 88–136 s tổng, chạy song song với TTS); không có `BGM dung lai`.
 - `tts` chunk 0 giảm theo thứ tự chạy (83,0 → 56,7 → 40,7 → 47,0 s) vì giọng SunHi có `tts_cps` sau job 17.
 
-**Số cũ cạnh số mới** (cũ: `results/server_20261113/`, commit `4ab708f`, cùng 4 bài lesson 2284, 2285, 2286, 2288, tiếng Việt `vi-VN`, job 10–13; ASR nằm trong thời gian xử lý):
-
-| Chỉ số | Cũ (13/11) TB | Mới (22/11) TB | Mới: khoảng |
-|---|---|---|---|
-| Giây xử lý / phút video | 110,3 | 13,7 | 11,7–15,8 |
-| Giây tới đoạn đầu tiên | 1.044,8 | 145,8 | 120,4–172,8 |
-| Giây giữa 2 đoạn hoàn tất | 417,0 | 31,4 | 19,2–47,7 |
-| Số lần thử lại | 0 (DB) | không thấy trong log | – |
-
-**Không được kết luận "nhanh hơn 8 lần" từ bảng này.** Điều kiện khác nhau: (1) mới dùng lại bản ký âm (`asr = 0`), cũ chạy ASR đầy đủ; (2) mới là ko-KR, cũ là tiếng Việt; (3) bản cũ chạy pipeline cũ (commit `4ab708f`: tăng tốc bằng SSML, rút gọn từng câu, chưa có dây chuyền hai công đoạn). Số mới chỉ cho biết hệ thống đạt mức nào trong điều kiện này. Muốn so ngang bằng cần chạy lại tiếng Việt với dữ liệu xóa sạch (bước A6), chưa làm.
+Bảng 5B **không so ngang** với số cũ (khác ngôn ngữ, `asr = 0`). Nó cho thấy hệ thống chạy được cả một ngôn ngữ khác tiếng Việt; số `tts_cps` của SunHi là 4,887 ký tự/giây. Dữ liệu ko-KR của 4 bài **đã bị xóa** cùng đợt xóa dữ liệu để chạy lại tiếng Việt (số liệu vẫn còn trong `worker_logs.json`).
 
 ## 6. Bất thường (ghi đầy đủ, kể cả lần lỗi)
 
@@ -118,10 +154,13 @@ TIMING từng chunk (giây):
 3. **`lec01` chạy sau khi HoaiMy đã có số đo** (11,480 từ `lec03`), nên khác trạng thái "chưa có số đo" của `lec02` và `lec03`.
 4. **R > 1,3 sau rút gọn còn nhiều ở tiếng Hàn.** Trong 4 job C4: 151 câu còn `R > 1.3` theo parser (trong job 17, R lớn nhất tôi thấy là 4,32). Job 17 nhiều khả năng là lần đầu SunHi chạy chưa có `tts_cps` (chưa kiểm tra khóa Redis này trước job 17), nên bản dịch không bị giới hạn ký tự, `tts` 83,0 s (cao hơn mức tham khảo khoảng 60 s). Từ job 18 trở đi `tts` chunk 0 còn 40,7–56,7 s.
 5. **`lec04` là bài tệ nhất của V4:** |trễ| TB 0,68 s, 21,6% câu trễ trên 1 s, 11,0% trên 2 s, muộn tối đa 6,41 s (bản cũ: |trễ| TB 4,35 s, 62,8% câu trễ trên 1 s). Tỉ lệ có tiếng nói của bài chỉ 0,785, thấp hơn các bài khác (0,909–0,92); chưa kiểm chứng đó là nguyên nhân.
-6. **Mốc câu của job thật là mốc cũ.** Cả 4 job dùng lại bản ký âm lưu trước 21/11 (mốc đầu đoạn), nên C4 không phản ánh mốc theo từ đầu tiên. C1–C3 thì dùng ASR mới.
+6. **Mốc câu của lần ko-KR (5B) là mốc cũ.** Cả 4 job ko-KR dùng lại bản ký âm lưu trước 21/11 (mốc đầu đoạn). Lần tiếng Việt (5A) và C1–C3 dùng ASR mới.
 7. **`run_meta.json` ghi `commit: "?"`** (container không có git); commit thật `0d866b9` ghi ở NOTES.
 8. **Cột `tgt_v2` trong `fidelity_sample.csv` chứa văn bản V3** (bản dịch đầy đủ trước rút gọn), vì lấy mẫu với `--baseline V3`; tên cột là hằng của script.
-9. **Không có:** câu bị loại vì chỉ có dấu câu (`n_unspeakable = 0` cả 4 bài), đoạn bị bỏ vì ít tiếng nói (0), `HET CREDIT (402)` (0), lỗi tách nhạc (0).
+9. **Xóa dữ liệu 4 bài (bước A6) xóa mọi ngôn ngữ, không sao lưu.** `reset_lessons.sql` xóa cả bản lồng tiếng, bản dịch và bản ký âm của MỌI ngôn ngữ trong 4 bài, nên bản ko-KR vừa chạy cũng mất. Thiện bỏ qua bước sao lưu (script `backup_4lessons.sh` có viết nhưng không chạy). Đã thêm cảnh báo này vào đầu `reset_lessons.sql`.
+10. **`reset_lessons_cache.py` lỗi khi chạy phần Redis** (dùng client bất đồng bộ như đồng bộ: `TypeError: 'async_generator' object is not iterable`). Phần B2 chạy đúng. Đã sửa bằng `asyncio`, chạy lại thành công (xóa 8 object B2, 2 khóa `tts_cps`, 1 khóa cache trang khóa học).
+11. **Job 24 (`lec04`):** `upload` chunk 0 là 13,6 s, cao hơn mức 2–3 s của các job khác nhưng dưới ngưỡng bất thường 30 s; không thử lại.
+12. **Không có:** câu bị loại vì chỉ có dấu câu (`n_unspeakable = 0` cả 4 bài), đoạn bị bỏ vì ít tiếng nói (0), `HET CREDIT (402)` (0), lỗi tách nhạc (0).
 
 ## 7. Cách kiểm tra lại (tái tạo từng con số)
 
@@ -134,7 +173,8 @@ Chạy trong container: `docker exec --user 1000:1001 -w /app lms_ai_worker pyth
 | Bảng 3 (C3) | `check_full_length.py results/v3_r1_merged --variants V2,V4 --assembly new` (thư mục `audio/` của bản gộp là liên kết tượng trưng tới audio của `v3_r1` và `v3_r1_lec01b`) |
 | Mô hình trễ cộng dồn (không dùng cho Bảng 3) | `drift_analysis.py results/v3_r1_merged` |
 | Mẫu L4 (C5) | `sample_fidelity.py results/v3_r1_merged --n 50 --seed 42 --min-frame 2.0 --baseline V3` |
-| Bảng 4 (C4) | `docker logs --timestamps --since 2026-11-22T14:44:00Z lms_ai_worker 2>&1 \| python3 -I NCKH/experiments/parse_worker_logs.py --out results/server_20261122/worker_logs.json` (log docker có thể bị xoay vòng theo cấu hình `max-size 10m`, nên `worker_logs.json` là bản lưu chính) |
+| Bảng 4A (C4, tiếng Việt) | `docker logs --timestamps --since 2026-11-22T15:26:37Z lms_ai_worker 2>&1 \| python3 -I NCKH/experiments/parse_worker_logs.py --out results/server_20261122_vi/worker_logs.json` (log docker có thể bị xoay vòng theo cấu hình `max-size 10m`, nên `worker_logs.json` là bản lưu chính) |
+| Bảng 5B (C4, ko-KR) | như trên nhưng `--since 2026-11-22T14:44:00Z`, ghi ra `results/server_20261122/worker_logs.json` (cần cắt tới trước 15:26:37Z nếu chạy lại, vì sau mốc đó là job tiếng Việt) |
 | Số cũ | `results/post_fix_r1/summary.json`, `results/post_fix_r1/check_full_length.md`, `results/server_20261113/server_summary.md` |
 
 Không commit `audio/`, `.cache/`, `.cache_old_e5a8cb7/`, `media/`, video.
@@ -151,6 +191,6 @@ Chưa có số tiền chính xác cho từng job (bảng `ai_usage_logs` chưa �
 
 - [ ] Sang và Thiện chấm L4 (50 câu).
 - [ ] Sang kiểm tra REPORT, chọn lần V4 chính (C2).
-- [ ] Quyết định có chạy lại C4 bằng tiếng Việt (cần xóa dữ liệu 4 bài theo A6) để so ngang với số cũ không.
+- [x] Chạy lại C4 bằng tiếng Việt để so ngang với số cũ (xong, mục 5A; dữ liệu 4 bài đã xóa theo yêu cầu của Sang).
 - [ ] Lấy số tiền chính xác từ `ai_usage_logs` nếu bài cần nêu chi phí.
 - [ ] Điền số vào Bảng 2–4, Tóm tắt, Kết luận trong `paper/main.tex` (Sang làm).
