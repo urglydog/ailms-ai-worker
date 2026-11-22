@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 
-from app import audio_utils, media, redis_client
+from app import audio_utils, media, redis_client, storage
 from app import usage as usage_mod
 from app.config import settings
 from app.http import backend_client
@@ -109,6 +109,9 @@ async def run_dubbing_pipeline(
         # F5.3 mở rộng — sự kiện "stage" chỉ để FE hiển thị nhãn cụ thể hơn (không phải chunk
         # xong hay job xong), KHÔNG có tác dụng gì tới logic pipeline nếu publish thất bại.
         await redis_client.publish_progress(job_id, lesson_id, stage="PREPARING")
+        # Điểm 4 (22/11/2026): đánh thức GPU tách nhạc NGAY bây giờ để nó khởi động song song với việc
+        # tải audio gốc (không chờ). Bài đã có nhạc trên B2 thì không đánh thức.
+        background_music.warm_up(lesson_id, ctx.video_url)
 
         source_audio = work_dir / "source.wav"
         try:
@@ -174,11 +177,20 @@ async def run_dubbing_pipeline(
             return {"status": "FAILED", "jobId": job_id, "reason": "ALL_CHUNKS_FALLBACK"}
 
         await redis_client.publish_progress(job_id, lesson_id, stage="FINALIZING")
-        final_path = work_dir / "final.mp3"
-        await audio_utils.concat_files(chunk_audio_paths, final_path)
-        final_duration = await audio_utils.measure_duration_sec(final_path)
+        t_final = time.monotonic()
+        if len(chunks) == 1 and fallback_count == 0:
+            # Điểm 2 (22/11/2026): bài 1 chunk -> final.mp3 giống hệt file chunk vừa upload. Dùng luôn
+            # file + URL đó, bỏ giải mã/mã hoá lại và upload lần 2 (trước ~12–25 s/bài).
+            final_path = chunk_audio_paths[0]
+            final_url = storage.public_url(_chunk_key(ctx, chunks[0]))
+        else:
+            final_path = work_dir / "final.mp3"
+            await audio_utils.concat_files(chunk_audio_paths, final_path)
+            final_url = await upload_file(final_path, f"dubbing/{lesson_id}/{target_language}/final.mp3")
+        # độ dài đọc từ header (không giải mã cả bài) — chỉ cần số giây nguyên cho AudioTrack
+        final_duration = (await audio_utils.probe_audio(final_path))[0]
         final_size = final_path.stat().st_size
-        final_url = await upload_file(final_path, f"dubbing/{lesson_id}/{target_language}/final.mp3")
+        log.info("TIMING job=%s final=%.1fs (%s chunk)", job_id, time.monotonic() - t_final, len(chunks))
 
         await backend_client.finish_completed(
             job_id, final_url=final_url, duration_sec=int(final_duration), file_size=final_size,
@@ -598,6 +610,9 @@ def _speech_rate(t_orig: Decimal, actual_duration_sec: float) -> Decimal:
     return Decimal(str(actual_duration_sec)) / t_orig
 
 
+def _chunk_key(ctx, chunk: ChunkPlan) -> str:
+    return f"dubbing/{ctx.lesson_id}/{ctx.target_language}/chunk_{chunk.index}.mp3"
+
+
 async def _upload_chunk_audio(path: Path, ctx, chunk: ChunkPlan) -> str:
-    key = f"dubbing/{ctx.lesson_id}/{ctx.target_language}/chunk_{chunk.index}.mp3"
-    return await upload_file(path, key)
+    return await upload_file(path, _chunk_key(ctx, chunk))

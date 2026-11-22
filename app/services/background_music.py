@@ -40,6 +40,34 @@ def start_separation(
     return asyncio.create_task(_separate(source_audio, work_dir, cache_prefix(lesson_id, video_url)))
 
 
+_warm_tasks: set[asyncio.Task] = set()
+
+
+def warm_up(lesson_id: int | None, video_url: str | None) -> asyncio.Task | None:
+    """Đánh thức GPU trên Modal ngay đầu job (không chờ): container khởi động (~15–20 s) song song
+    với việc tải audio gốc, đến lúc gửi file thật thì máy đã sẵn sàng. Bài đã có nhạc trên B2 thì bỏ
+    qua (không cần GPU). Lỗi chỉ log — đây thuần là tối ưu."""
+    if settings.bgm_separation != "modal" or not settings.bgm_warm_up:
+        return None
+    task = asyncio.create_task(_warm(cache_prefix(lesson_id, video_url)))
+    _warm_tasks.add(task)
+    task.add_done_callback(_warm_tasks.discard)
+    return task
+
+
+async def _warm(prefix: str | None) -> None:
+    t0 = time.monotonic()
+    try:
+        if prefix and await storage.exists(f"{prefix}/vocals.mp3"):
+            return
+        import modal
+
+        await modal.Function.from_name(settings.bgm_modal_app, "separate").remote.aio(b"", ".mp3")
+        log.info("BGM da danh thuc GPU tach nhac: %.1fs", time.monotonic() - t0)
+    except Exception as exc:
+        log.warning("BGM khong danh thuc duoc GPU (bo qua): %s", exc)
+
+
 def cache_prefix(lesson_id: int | None, video_url: str | None) -> str | None:
     """Khoá cache trên B2: theo bài học VÀ video (đổi video thì không dùng nhầm nhạc cũ)."""
     if lesson_id is None or not video_url:
@@ -59,8 +87,11 @@ async def _separate(source_audio: Path, work_dir: Path, prefix: str | None = Non
         import modal
 
         upload = work_dir / "bgm_source.mp3"
-        # gửi MP3 thay vì WAV: nhỏ hơn ~10 lần, Demucs vẫn tách tốt
-        await audio_utils._ffmpeg("-i", str(source_audio), "-ac", "2", "-ar", "44100", "-b:a", "192k", str(upload))
+        # gửi MP3 thay vì WAV: nhỏ hơn ~10 lần, Demucs vẫn tách tốt. 128 kbps thay cho 192 kbps
+        # (22/11/2026): bài 6 phút 9 MB -> 6 MB, chuyển mã vẫn ~2,5 s — gửi lên Modal nhanh hơn 1/3.
+        await audio_utils._ffmpeg(
+            "-i", str(source_audio), "-ac", "2", "-ar", "44100", "-b:a", settings.bgm_upload_bitrate, str(upload),
+        )
         fn = modal.Function.from_name(settings.bgm_modal_app, "separate")
         result = await fn.remote.aio(upload.read_bytes(), ".mp3")
         music.write_bytes(result["music"])
@@ -178,7 +209,7 @@ async def mix_into_chunk(
         await audio_utils._ffmpeg(
             "-i", str(chunk_audio), "-ss", f"{start_sec:.3f}", "-to", f"{end_sec:.3f}", "-i", str(music),
             "-filter_complex", graph,
-            "-map", "[out]", "-t", f"{end_sec - start_sec:.3f}", "-b:a", "128k", str(mixed),
+            "-map", "[out]", "-t", f"{end_sec - start_sec:.3f}", "-b:a", settings.bgm_mix_bitrate, str(mixed),
         )
         mixed.replace(chunk_audio)
         log.info(

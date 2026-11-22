@@ -111,6 +111,12 @@ class Settings(BaseSettings):
     bgm_music_volume: float = 1.0
     # Tự hạ nhạc khi có lời — chỉ bật nếu nghe thấy giọng gốc còn sót trong phần nhạc tách ra.
     bgm_ducking: bool = False
+    # 22/11/2026 — chất lượng file: gửi đi tách nhạc / chunk sau khi trộn nhạc (giọng nói + nhạc nền
+    # ở 96 kbps gần như không nghe ra khác 128 kbps, file nhẹ hơn 25% -> upload nhanh hơn).
+    bgm_upload_bitrate: str = "128k"
+    bgm_mix_bitrate: str = "96k"
+    # Đánh thức GPU Modal ngay đầu job (song song với tải audio gốc).
+    bgm_warm_up: bool = True
     # Mức "suy nghĩ" cho các tính năng đơn giản khác (21/11/2026). Đo thật: mặc định model suy nghĩ ~1-1,7 lần lượng chữ trả về và token này vẫn tính tiền như token ra. Rỗng = mặc định
     # của model (hành vi cũ) — đặt biến môi trường tương ứng thành rỗng để tắt từng nhóm. Gia sư hỏi đáp, Discovery, trợ lý giảng viên, giám sát thi, kế hoạch học KHÔNG đổi.
     material_thinking_level: str = "low"          # mindmap / flashcard / quiz: cấu trúc hóa từ transcript có sẵn

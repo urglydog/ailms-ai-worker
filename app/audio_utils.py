@@ -332,15 +332,42 @@ async def _ffmpeg(*args: str) -> None:
 async def concat_files(paths: list[str | Path], out_path: str | Path) -> None:
     """Ghép danh sách file mp3 liên tiếp, không chèn khoảng lặng — dùng nối các chunk
     10 phút thành `final.mp3` (đã tự đúng mốc thời gian ở bước ghép từng chunk).
+
+    22/11/2026: bằng FFmpeg thay cho pydub (pydub giải mã TOÀN BỘ rồi mã hoá lại, ~12–25 s/bài).
+      · Mọi chunk cùng sample rate + số kênh (trường hợp thường gặp) -> nối CHÉP THẲNG (`-c copy`),
+        không giải mã/mã hoá lại: ~1 s cho cả bài.
+      · Khác nhau (vd có chunk lỗi giữ audio gốc khác định dạng) -> nối bằng bộ lọc `concat` trong
+        1 lượt FFmpeg, mã hoá lại 1 lần.
     """
+    if not paths:
+        raise ValueError("khong co file nao de ghep")
+    specs = await asyncio.gather(*(probe_audio(p) for p in paths))
+    same_format = len({sr for _, sr in specs}) == 1 and len({await _channels(p) for p in paths}) == 1
+    if same_format:
+        listing = Path(str(out_path) + ".list.txt")
+        listing.write_text("".join(f"file '{Path(p).resolve().as_posix()}'\n" for p in paths), encoding="utf-8")
+        try:
+            await _ffmpeg("-f", "concat", "-safe", "0", "-i", str(listing), "-c", "copy", str(out_path))
+        finally:
+            listing.unlink(missing_ok=True)
+        return
+    inputs: list[str] = []
+    for p in paths:
+        inputs += ["-i", str(p)]
+    fmt = "aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo"
+    graph = ";".join(f"[{i}:a]{fmt}[c{i}]" for i in range(len(paths)))
+    graph += ";" + "".join(f"[c{i}]" for i in range(len(paths))) + f"concat=n={len(paths)}:v=0:a=1[out]"
+    await _ffmpeg(*inputs, "-filter_complex", graph, "-map", "[out]", str(out_path))
 
-    def _concat() -> None:
-        merged = AudioSegment.empty()
-        for path in paths:
-            merged += _load(path)
-        merged.export(str(out_path), format="mp3")
 
-    await asyncio.to_thread(_concat)
+async def _channels(path: str | Path) -> int:
+    process = await asyncio.create_subprocess_exec(
+        "ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=channels",
+        "-of", "default=noprint_wrappers=1:nokey=1", str(path),
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+    )
+    out, _err = await process.communicate()
+    return int(out.decode().strip() or 0)
 
 
 async def extract_range(src_path: str | Path, start_sec: float, end_sec: float, out_path: str | Path) -> None:
