@@ -15,6 +15,7 @@ In ra giá trị tts_cps TRƯỚC khi xóa để chép vào NOTES. Không in key
 from __future__ import annotations
 
 import argparse
+import asyncio
 import sys
 from pathlib import Path
 
@@ -56,18 +57,24 @@ def main() -> None:
             for k in keys:
                 s3.delete_object(Bucket=bucket, Key=k)
 
-    r = redis_client.get_client()
-    for v in [x.strip() for x in args.voices.split(",") if x.strip()]:
-        key = f"dubbing:tts_cps:{v}"
-        print(f"Redis {key} = {r.get(key)}")
-        if args.reset_cps and args.apply:
-            r.delete(key)
-    if args.course_cache:
-        ks = list(r.scan_iter("courseDetails::*"))
-        print(f"Redis courseDetails::*: {len(ks)} khóa")
-        if args.apply and ks:
-            r.delete(*ks)
+    voices = [x.strip() for x in args.voices.split(",") if x.strip()]
+    asyncio.run(_redis_part(voices, args.reset_cps, args.course_cache, args.apply))
     print("Xong." if args.apply else "Chưa xóa gì. Chạy lại với --apply để xóa.")
+
+
+async def _redis_part(voices: list[str], reset_cps: bool, course_cache: bool, apply: bool) -> None:
+    """Client Redis của ai-worker là bất đồng bộ (redis.asyncio) nên mọi lệnh phải `await`."""
+    r = redis_client.get_client()
+    for v in voices:
+        key = f"dubbing:tts_cps:{v}"
+        print(f"Redis {key} = {await r.get(key)}")
+        if reset_cps and apply:
+            await r.delete(key)
+    if course_cache:
+        ks = [k async for k in r.scan_iter("courseDetails::*")]
+        print(f"Redis courseDetails::*: {len(ks)} khóa")
+        if apply and ks:
+            await r.delete(*ks)
 
 
 if __name__ == "__main__":

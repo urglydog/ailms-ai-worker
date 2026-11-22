@@ -2,6 +2,8 @@
 -- Thứ tự theo NCKH/CAP_NHAT_SAU_TOI_UU_DUBBING.md mục 6.3. Xóa CẢ transcript nguồn và đích
 -- (giữ transcript đích sẽ lỗi 500 Duplicate entry uk_segment_transcript_seq — bẫy job 37).
 -- CHỈ dùng cho đúng 4 lesson dưới đây. Đã được Sang cho phép (22/11/2026).
+-- CẢNH BÁO: xóa MỌI ngôn ngữ của 4 bài (bản lồng tiếng, bản dịch, bản ký âm gốc), KHÔNG chỉ tiếng Việt.
+-- Ai chỉ muốn xóa một ngôn ngữ thì phải sửa riêng câu lệnh (lọc theo ngôn ngữ), đừng chạy nguyên file này.
 --
 -- Chạy (người đo tự nhập mật khẩu MySQL khi được hỏi):
 --   docker exec -i lms_mysql mysql -u <user> -p <db> < NCKH/experiments/reset_lessons.sql
