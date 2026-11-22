@@ -94,6 +94,9 @@ class Settings(BaseSettings):
     # Hiệu năng dubbing (S1): số câu tổng hợp giọng CÙNG LÚC trong 1 chunk. Azure Speech S0 cho 30 request/giây (mỗi request ~1 s) nên 16 luồng ≈ 16 request/giây là an toàn
     # (nâng từ 8 lên 16 ngày 21/11/2026); gặp lỗi 429 thì đặt TTS_CONCURRENCY=8 trong .env; đặt 1 để quay về chạy tuần tự như cũ.
     tts_concurrency: int = 16
+    # Cách ghép câu thành file audio của chunk (BR-CHUNK-05): "ffmpeg" = 1 lệnh FFmpeg cho cả chunk
+    # (nhanh, xem docs/improve/performance/SoSanh_GhepChunk.md), "pydub" = cách cũ (dự phòng).
+    timeline_engine: str = "ffmpeg"
     # Số tiến trình FFmpeg `atempo` chạy cùng lúc (CPU-bound, máy chủ 2 vCPU).
     tempo_concurrency: int = 2
     # Mức "suy nghĩ" của Gemini cho dịch/rút gọn lời thoại (S7). Rỗng = mặc định của model (như cũ).
@@ -108,6 +111,12 @@ class Settings(BaseSettings):
     bgm_music_volume: float = 1.0
     # Tự hạ nhạc khi có lời — chỉ bật nếu nghe thấy giọng gốc còn sót trong phần nhạc tách ra.
     bgm_ducking: bool = False
+    # 22/11/2026 — chất lượng file: gửi đi tách nhạc / chunk sau khi trộn nhạc (giọng nói + nhạc nền
+    # ở 96 kbps gần như không nghe ra khác 128 kbps, file nhẹ hơn 25% -> upload nhanh hơn).
+    bgm_upload_bitrate: str = "128k"
+    bgm_mix_bitrate: str = "96k"
+    # Đánh thức GPU Modal ngay đầu job (song song với tải audio gốc).
+    bgm_warm_up: bool = True
     # Mức "suy nghĩ" cho các tính năng đơn giản khác (21/11/2026). Đo thật: mặc định model suy nghĩ ~1-1,7 lần lượng chữ trả về và token này vẫn tính tiền như token ra. Rỗng = mặc định
     # của model (hành vi cũ) — đặt biến môi trường tương ứng thành rỗng để tắt từng nhóm. Gia sư hỏi đáp, Discovery, trợ lý giảng viên, giám sát thi, kế hoạch học KHÔNG đổi.
     material_thinking_level: str = "low"          # mindmap / flashcard / quiz: cấu trúc hóa từ transcript có sẵn

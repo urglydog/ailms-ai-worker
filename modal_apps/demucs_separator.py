@@ -33,9 +33,16 @@ _RESOURCES = {"cpu": 8.0, "memory": 8192} if _GPU.lower() == "none" else {"gpu":
 
 @app.function(image=image, timeout=1800, **_RESOURCES)
 def separate(audio: bytes, suffix: str = ".mp3") -> dict:
-    """Trả {"music": mp3 bytes (không có giọng), "vocals": mp3 bytes, "separate_sec": float}."""
+    """Trả {"music": mp3 bytes (không có giọng), "vocals": mp3 bytes, "separate_sec": float}.
+
+    `audio` rỗng = lời gọi "đánh thức" (worker gọi ngay đầu job): chỉ để container GPU khởi động sẵn,
+    trả về ngay, không chạy Demucs.
+    """
     import subprocess
     import tempfile
+
+    if not audio:
+        return {"warm": True}
 
     t0 = time.time()
     with tempfile.TemporaryDirectory() as tmp:

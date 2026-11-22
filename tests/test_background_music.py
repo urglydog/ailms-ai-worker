@@ -166,3 +166,31 @@ async def test_b2_upload_runs_in_background_and_does_not_block_mix(tmp_path, mon
         await background_music.wait_pending_uploads(2)
     assert up.await_count == 2
     assert not background_music._pending_uploads
+
+
+async def test_warm_up_skipped_when_disabled_or_cached(monkeypatch):
+    monkeypatch.setattr(settings, "bgm_separation", "")
+    assert background_music.warm_up(1, "u") is None
+
+    monkeypatch.setattr(settings, "bgm_separation", "modal")
+    with patch("app.storage.exists", AsyncMock(return_value=True)):
+        task = background_music.warm_up(1, "https://youtu.be/x")
+        await task                                    # da co nhac tren B2 -> khong goi Modal (khong loi)
+
+
+async def test_warm_up_sends_empty_audio_to_modal(monkeypatch):
+    monkeypatch.setattr(settings, "bgm_separation", "modal")
+    calls = []
+
+    class _Fn:
+        class remote:
+            @staticmethod
+            async def aio(audio, suffix):
+                calls.append(audio)
+                return {"warm": True}
+
+    fake_modal = type("M", (), {"Function": type("F", (), {"from_name": staticmethod(lambda a, b: _Fn)})})
+    with patch.dict("sys.modules", {"modal": fake_modal}), \
+         patch("app.storage.exists", AsyncMock(return_value=False)):
+        await background_music.warm_up(1, "https://youtu.be/x")
+    assert calls == [b""]

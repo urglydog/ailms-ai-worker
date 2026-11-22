@@ -56,6 +56,23 @@ async def upload_file(local_path: str | Path, key: str, *, content_type: str = "
     return await asyncio.to_thread(_upload)
 
 
+def public_url(key: str) -> str:
+    """URL công khai của 1 object — cùng định dạng `upload_file` trả về."""
+    return f"https://{settings.b2_endpoint}/{settings.b2_bucket_name}/{key}"
+
+
+async def exists(key: str) -> bool:
+    """Object đã có trên B2 chưa (HEAD, không tải nội dung). Lỗi mạng/quyền -> coi như chưa có."""
+    def _head() -> bool:
+        try:
+            _get_client().head_object(Bucket=settings.b2_bucket_name, Key=key)
+            return True
+        except Exception:
+            return False
+
+    return await asyncio.to_thread(_head)
+
+
 async def download_file(key: str, local_path: str | Path) -> bool:
     """Tải 1 object từ B2 về file. Trả False nếu object chưa có (hoặc tải lỗi) — dùng làm cache."""
     def _download() -> bool:
