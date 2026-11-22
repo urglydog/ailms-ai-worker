@@ -132,3 +132,10 @@ So với bài đã nộp (khoảng 110 s mỗi phút video, đến đoạn đầ
   - Nếu bật: hàm `lms-demucs` trên Modal phải là **bản mới** (có nạp sẵn model, commit `34052fb`).
   - Token Modal trong `.env` phải đúng tài khoản đã deploy hàm.
 - Build lại theo mục 6 của `docs/improve/performance/SoSanh_GhepChunk.md`.
+
+### 5.5. Bổ sung tối 22/11/2026: dây chuyền chunk, tua, upload B2 (`docs/improve/performance/CaiTien_DayChuyen_Chunk.md`)
+| Thay đổi | Ảnh hưởng tới bài |
+|---|---|
+| **Dây chuyền 2 công đoạn** (commit `9b165a3`): nhận dạng và dịch của chunk sau chạy cùng lúc với tạo giọng và tải lên của chunk trước; báo backend vẫn đúng thứ tự | Không ảnh hưởng độ khớp (Bảng 2, 3). **Có** ảnh hưởng **Bảng 4** với bài dài hơn 10 phút (3 trên 4 bài thử nghiệm: 815, 718, 900 s): tổng thời gian và thời gian tới các đoạn sau giảm; **thời gian tới đoạn đầu không đổi**. Mục "Phân đoạn theo lớp" vẫn đúng (mỗi đoạn xử lý độc lập, báo tiến độ từng đoạn); có thể thêm 1 câu "xử lý theo dây chuyền 2 công đoạn" |
+| **Upload B2 chờ ngắn và thử lại** (commit `ee0f5f9`) | Không. Chỉ giảm các lần tải lên chậm bất thường (trước đây có lần 1–3 phút), nên số đo Bảng 4 ổn định hơn |
+| **Trình phát tua tới đoạn chưa lồng tiếng** (fe, commit `3071339`) | Không (thuộc giao diện). Có thể nhắc ở mục Trình phát kép: đoạn chưa xong thì phát tiếng gốc |
