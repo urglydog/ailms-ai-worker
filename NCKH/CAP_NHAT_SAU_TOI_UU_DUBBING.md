@@ -12,7 +12,10 @@
 - `CaiTien_NhacNen_Dubbing.md`: nhạc nền, mốc theo từ đầu tiên, câu không có chữ để đọc;
 - `SoSanh_GhepChunk.md`: ghép bằng một lệnh FFmpeg, checklist build server;
 - `CaiTien_BuocCuoi_TaiLen.md`: bước cuối, dung lượng, đánh thức GPU;
-- `CaiTien_TachNhacSongSong.md`: tách nhạc song song trên nhiều GPU, nạp sẵn model, chỉ tải audio gốc khi cần, index Gia sư AI chạy nền. **Mới, xem mục 5 bên dưới.**
+- `CaiTien_TachNhacSongSong.md`: tách nhạc song song trên nhiều GPU, nạp sẵn model, chỉ tải audio gốc khi cần, index Gia sư AI chạy nền. **Xem mục 5 bên dưới.**
+- `CaiTien_DayChuyen_Chunk.md`: dây chuyền xử lý chunk, tua tới đoạn chưa lồng tiếng, upload B2 không treo. **Mới nhất, xem mục 5.5.**
+
+> **Đọc nhanh cho session NCKH (cập nhật tối 22/11/2026):** những gì **ảnh hưởng bài báo** gồm mục 2 (thuật toán: dịch một lời gọi, `max_chars`, `atempo`, rút gọn theo lô, mốc theo từ đầu tiên), mục 5.1 (**model đổi sang `gemini-3.6-flash`**) và mục 5.5 (dây chuyền chunk làm thay đổi **Bảng 4** với bài dài hơn 10 phút). Còn lại chỉ là tối ưu thời gian, không đổi độ khớp thời lượng. Độ dài đoạn vẫn **L = 600 s**.
 
 ---
 
@@ -27,6 +30,9 @@
 | Tối ưu ghép và bước cuối | `cf10f29`, `f2caff6`, `7578395` (`perf/dubbing`) | Ghép bằng một lệnh FFmpeg, bỏ ghép file cuối thừa, đánh thức GPU |
 | Tối ưu B, C | `4e6fef4` (`perf/dubbing`) | Chỉ tải audio gốc khi cần; index Gia sư AI chạy nền |
 | Tách nhạc song song | `34052fb` (`perf/dubbing`) | Nhạc nền chia phần khoảng 3 phút chạy song song trên nhiều GPU; nạp sẵn model Demucs |
+| Dây chuyền chunk | `9b165a3` (`perf/dubbing`) | Nhận dạng và dịch của chunk sau chạy cùng lúc với tạo giọng và tải lên của chunk trước. Xem mục 5.5 |
+| Upload B2 không treo | `ee0f5f9` (`perf/dubbing`) | Chờ kết nối 10 s, chờ đọc 30 s, thử lại 5 lần (trước 60 s mỗi lần treo). Xem mục 5.5 |
+| Trình phát khi tua | `3071339` (repo **fe**, `feat/dubbing`) | Đoạn chưa lồng tiếng xong thì phát tiếng gốc kèm nhãn, thay vì im lặng |
 | **Đổi model LLM** | cấu hình `.env`, không phải commit | **`GEMINI_MODEL=gemini-3.6-flash`** (bản đo trong bài là 3.5 Flash). Xem mục 5 |
 
 ---
