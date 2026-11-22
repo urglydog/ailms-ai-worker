@@ -1,0 +1,54 @@
+{
+  "run_id": "v3_r1_lec01",
+  "script": "run_experiment_v2.py",
+  "commit": "?",
+  "started_at": "2026-11-22T14:11:55",
+  "variants": [
+    "V1",
+    "V2",
+    "V3",
+    "V4"
+  ],
+  "max_chunks": null,
+  "videos": [
+    {
+      "id": "lec01",
+      "source": "/app/NCKH/experiments/media/lecture_01.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-HoaiMyNeural",
+      "category": "CNTT",
+      "note": "Crash Course Computer Science #10: Early Programming | kênh: CrashCourse | https://www.youtube.com/watch?v=nwDq4adJwzM | giấy phép: chưa xác minh | đã trích audio, 9,4 phút"
+    }
+  ],
+  "params": {
+    "chunk_minutes": 10,
+    "r_min": 1.0,
+    "r_max": 1.3,
+    "max_tempo": 1.3,
+    "max_resummarize_attempts": 2,
+    "min_resummarize_frame_sec": 2.0,
+    "target_r_max_chars": 1.15,
+    "min_speech_ratio": 0.1,
+    "asr_model": "whisper-large-v3-turbo",
+    "llm_model": "gemini-3.6-flash",
+    "llm_fallback_models": "",
+    "dubbing_thinking_level": "minimal",
+    "tts_concurrency": 16,
+    "timeline_engine": "ffmpeg",
+    "bgm_separation": "modal"
+  },
+  "tts_cps_before": {
+    "vi-VN-HoaiMyNeural": 11.48
+  },
+  "machine": {
+    "python": "3.11.18",
+    "platform": "linux"
+  },
+  "errors": {
+    "lec01": "ProviderError(code='invalid_response', retryable=False, msg=Gemini tra ve JSON khong hop le: Expecting property name enclosed in double quotes: line 66 column 107 (char 6334))"
+  },
+  "tts_cps_after": {
+    "vi-VN-HoaiMyNeural": 11.48
+  },
+  "finished_at": "2026-11-22T14:12:17"
+}
