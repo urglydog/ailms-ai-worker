@@ -31,32 +31,91 @@ _GPU = os.environ.get("DEMUCS_GPU", "T4")
 _RESOURCES = {"cpu": 8.0, "memory": 8192} if _GPU.lower() == "none" else {"gpu": _GPU}
 
 
+_MODEL = None   # model Demucs nạp 1 lần cho mỗi container (container được giữ ấm giữa các lời gọi)
+
+
+def _model():
+    """Nạp `htdemucs` lên GPU đúng 1 lần cho mỗi container (22/11/2026).
+
+    Trước đây mỗi lời gọi chạy CLI `python -m demucs` -> khởi động Python + nạp model lại từ đầu
+    (~3–5 s/lời gọi). Giờ lời gọi "đánh thức" đã nạp sẵn, các phần audio gửi tới chỉ còn chạy model.
+    """
+    global _MODEL
+    if _MODEL is None:
+        import torch
+        from demucs.pretrained import get_model
+
+        model = get_model("htdemucs")
+        model.eval()
+        if torch.cuda.is_available():
+            model.cuda()
+        _MODEL = model
+    return _MODEL
+
+
+def _separate_in_process(src: Path, out_dir: Path) -> tuple[Path, Path]:
+    """Đúng các bước của CLI `demucs --two-stems=vocals --mp3` (demucs 4.0.1, mặc định shifts=1,
+    overlap=0.25, clip='rescale') nhưng dùng model đã nạp sẵn; MP3 xuất ra nhẹ hơn (xem dưới)."""
+    import torch
+    from demucs.apply import apply_model
+    from demucs.audio import save_audio
+    from demucs.separate import load_track
+
+    model = _model()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    wav = load_track(src, model.audio_channels, model.samplerate)
+    ref = wav.mean(0)
+    wav = (wav - ref.mean()) / ref.std()
+    with torch.no_grad():
+        sources = apply_model(model, wav[None], device=device, shifts=1, split=True, overlap=0.25, progress=False)[0]
+    sources = sources * ref.std() + ref.mean()
+    idx = model.sources.index("vocals")
+    vocals = sources[idx]
+    music = sources.sum(0) - vocals
+    vocals_path, music_path = out_dir / "vocals.mp3", out_dir / "no_vocals.mp3"
+    # 320 kbps như CLI làm mỗi phần trả về ~2 x 2,4 MB/phút -> tải về chậm. Nhạc được trộn lại ở 96 kbps,
+    # giọng gốc chỉ dùng để ĐO độ to -> 192 / 96 kbps là dư (22/11/2026).
+    save_audio(vocals.cpu(), str(vocals_path), samplerate=model.samplerate, bitrate=96, clip="rescale")
+    save_audio(music.cpu(), str(music_path), samplerate=model.samplerate, bitrate=192, clip="rescale")
+    return music_path, vocals_path
+
+
 @app.function(image=image, timeout=1800, **_RESOURCES)
 def separate(audio: bytes, suffix: str = ".mp3") -> dict:
     """Trả {"music": mp3 bytes (không có giọng), "vocals": mp3 bytes, "separate_sec": float}.
 
-    `audio` rỗng = lời gọi "đánh thức" (worker gọi ngay đầu job): chỉ để container GPU khởi động sẵn,
-    trả về ngay, không chạy Demucs.
+    `audio` rỗng = lời gọi "đánh thức" (worker gọi ngay đầu job): container GPU khởi động sẵn VÀ nạp
+    model lên GPU, trả về ngay, không chạy Demucs.
     """
     import subprocess
     import tempfile
 
     if not audio:
-        return {"warm": True}
+        t0 = time.time()
+        _model()
+        return {"warm": True, "load_sec": round(time.time() - t0, 1)}
 
     t0 = time.time()
     with tempfile.TemporaryDirectory() as tmp:
         src = Path(tmp) / f"in{suffix}"
         src.write_bytes(audio)
-        subprocess.run(
-            ["python", "-m", "demucs", "--two-stems=vocals", "-n", "htdemucs", "--mp3", "-o", tmp, str(src)],
-            check=True, capture_output=True,
-        )
-        out = Path(tmp) / "htdemucs" / "in"
+        try:
+            music_path, vocals_path = _separate_in_process(src, Path(tmp))
+            mode = "in_process"
+        except Exception as exc:  # dự phòng: chạy CLI như cũ
+            print(f"Tach trong tien trinh loi, dung CLI: {exc}")
+            subprocess.run(
+                ["python", "-m", "demucs", "--two-stems=vocals", "-n", "htdemucs", "--mp3", "-o", tmp, str(src)],
+                check=True, capture_output=True,
+            )
+            out = Path(tmp) / "htdemucs" / "in"
+            music_path, vocals_path = out / "no_vocals.mp3", out / "vocals.mp3"
+            mode = "cli"
         return {
-            "music": (out / "no_vocals.mp3").read_bytes(),
-            "vocals": (out / "vocals.mp3").read_bytes(),
+            "music": music_path.read_bytes(),
+            "vocals": vocals_path.read_bytes(),
             "separate_sec": round(time.time() - t0, 1),
+            "mode": mode,
         }
 
 
