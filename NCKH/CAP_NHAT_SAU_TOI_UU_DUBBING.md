@@ -145,3 +145,104 @@ So với bài đã nộp (khoảng 110 s mỗi phút video, đến đoạn đầ
 | **Dây chuyền 2 công đoạn** (commit `9b165a3`): nhận dạng và dịch của chunk sau chạy cùng lúc với tạo giọng và tải lên của chunk trước; báo backend vẫn đúng thứ tự | Không ảnh hưởng độ khớp (Bảng 2, 3). **Có** ảnh hưởng **Bảng 4** với bài dài hơn 10 phút (3 trên 4 bài thử nghiệm: 815, 718, 900 s): tổng thời gian và thời gian tới các đoạn sau giảm; **thời gian tới đoạn đầu không đổi**. Mục "Phân đoạn theo lớp" vẫn đúng (mỗi đoạn xử lý độc lập, báo tiến độ từng đoạn); có thể thêm 1 câu "xử lý theo dây chuyền 2 công đoạn" |
 | **Upload B2 chờ ngắn và thử lại** (commit `ee0f5f9`) | Không. Chỉ giảm các lần tải lên chậm bất thường (trước đây có lần 1–3 phút), nên số đo Bảng 4 ổn định hơn |
 | **Trình phát tua tới đoạn chưa lồng tiếng** (fe, commit `3071339`) | Không (thuộc giao diện). Có thể nhắc ở mục Trình phát kép: đoạn chưa xong thì phát tiếng gốc |
+
+---
+
+## 6. Kinh nghiệm đo đạc (rút ra từ các lần đo job 29–46, 15–22/11/2026)
+
+Viết cho session viết script đo và người đo trên server. Đây là các bẫy **đã gặp thật** khi đo. Script `run_experiment_v2.py` đã xử lý sẵn một số (tốc độ đọc `tts_cps`, loại câu chỉ có dấu câu, ghi commit); phần dưới liệt kê đủ để đối chiếu.
+
+### 6.1. Đọc log TIMING (nguồn số liệu thời gian cho Bảng 4)
+Mỗi chunk ghi một dòng; sau khi có dây chuyền, dòng này có thêm `cho_chunk_truoc`:
+```
+TIMING job=46 chunk=1 cau=29 asr=0.0s dich=3.7s cho_chunk_truoc=200.4s tts=8.4s ghep=0.4s nhac=1.7s upload=9.5s tong=224.1s
+TIMING job=46 final=5.0s (2 chunk)
+```
+
+| Trường | Nghĩa | Lưu ý |
+|---|---|---|
+| `asr` | nhận dạng giọng nói | **0.0s** nghĩa là dùng lại bản ký âm có sẵn, không chạy ASR. Muốn đo lần đầu thì xem mục 6.3 |
+| `dich` | dịch (cả gọi lại câu bị thiếu) | 0.0s nếu bản dịch đích đã có sẵn trong DB |
+| `cho_chunk_truoc` | công đoạn A đã xong, đang chờ công đoạn B của chunk trước | Chỉ khác 0 từ chunk thứ 2. **Không phải thời gian xử lý** |
+| `tts` | tạo giọng, rút gọn theo lô, tăng tốc `atempo` | gồm cả các lời gọi Gemini rút gọn |
+| `ghep` | xếp câu theo mốc thành file audio của chunk | **Từ 22/11 không còn gồm** tạo embedding cho Gia sư AI (đã chạy nền). Số trước 22/11 có gồm |
+| `nhac` | **chờ** tách nhạc xong, cộng đo độ to và trộn | Bật nhạc nền thì đây gồm cả thời gian chờ GPU. Tắt nhạc nền thì khoảng 0 |
+| `upload` | tải chunk lên B2 và báo về backend | Xem mục 6.4 về các lần chậm bất thường |
+| `tong` | từ lúc chunk bắt đầu công đoạn A tới khi báo xong | **Gồm cả `cho_chunk_truoc`**. Thời gian xử lý thật của chunk = `tong − cho_chunk_truoc` |
+| `final=` | nối các chunk thành file cuối, cộng tải lên | Bài 1 chunk khoảng 0,1 s, vì dùng luôn file chunk |
+
+**Các mốc nên báo cáo**, lấy từ log hoặc từ DB:
+- **Thời gian tới đoạn đầu** = mốc log `PUT .../jobs/{id}/chunks/0 204` − mốc `Bat dau pipeline long tieng: job=...`. Có thể lấy từ `audio_chunks`/`ai_job_chunks` nếu bảng có `updated_at`.
+- **Tổng thời gian** = dòng `Task app.tasks.dubbing.run_pipeline[...] succeeded in X s`. Mốc **người dùng thấy xong** là dòng `POST .../jobs/{id}/finish 204`, có thể sớm hơn dòng `succeeded` vì job còn đợi các việc chạy nền (lưu nhạc lên B2, index Gia sư AI) trước khi dọn thư mục.
+
+Dòng log về nhạc nền, nếu bật:
+- `BGM da danh thuc N may GPU tach nhac: Xs`
+- `BGM tach nhac xong: N phan song song, Demucs lau nhat Xs, tong Ys`
+- `BGM dung lai nhac da tach tren B2 (...)`: không gọi GPU
+- `BGM do to: ... -> chinh ±X dB`
+- `BGM tron nhac chunk a-bs: cho Xs, tron Ys`
+
+### 6.2. `parse_worker_logs.py` cần cập nhật
+- **`RE_CAP` không còn khớp log mới.**
+  - Regex đang tìm `Segment seq=(\d+) van R=([\d.]+) > 1\.3 sau (\d+) lan rut gon`.
+  - Log hiện tại là `Segment seq=%s van R=%.2f > 1.3 sau rut gon — tang toc toi da x1.3 ...`, không còn số lần.
+  - Nên script sẽ **đếm ra 0** câu chạm trần. Sửa regex thành `Segment seq=(\d+) van R=([\d.]+) > 1\.3`.
+- **Nghĩa của cảnh báo đó đã đổi:** giờ nó được ghi cho **mọi** câu còn R > 1,3 khi tăng tốc, **kể cả** câu khung ngắn hơn 2 s không được rút gọn. Muốn tách 2 loại thì kết hợp với `transcript_segments.was_summarized`.
+- Nên thêm phần đọc dòng `TIMING` (mục 6.1) để lập Bảng 4 thay vì đo bằng tay.
+- `RE_TEMPO` và `RE_CUT` vẫn khớp.
+
+### 6.3. Muốn đo "lần lồng tiếng đầu" thì phải xóa đúng dữ liệu cũ
+Hệ thống **dùng lại** rất nhiều thứ. Không xóa thì số đo là của lần thứ 2, nhanh hơn nhiều và **không đúng tình huống bài báo**.
+
+| Dùng lại | Ở đâu | Hệ quả nếu quên xóa |
+|---|---|---|
+| Bản ký âm gốc | `transcripts` (`is_source=1`) và `transcript_segments` | `asr=0`, không tải audio gốc. **Mốc đầu câu là mốc CŨ**: bản ký âm lưu trước 21/11 dùng mốc đầu đoạn của Whisper, chưa dùng mốc theo từ đầu tiên, nên **Bảng 3 sai** |
+| Bản dịch đích | `transcripts` (`is_source=0`, đúng ngôn ngữ) | `dich=0`, bỏ qua Gemini |
+| Bản lồng tiếng | `audio_tracks`, `audio_chunks`, `ai_jobs`, `ai_job_chunks` | Web không cho lồng tiếng lại cặp (bài, ngôn ngữ) đó |
+| Nhạc đã tách | B2 `bgm/{lesson_id}/{sha1(video_url)[:12]}/music.mp3, vocals.mp3` | Không gọi GPU (nhanh hơn khoảng 60 s) |
+| Tốc độ đọc của giọng | Redis `dubbing:tts_cps:{voice}` | Lần đầu của một giọng không có `max_chars`, nên phải đọc lại nhiều câu. Đã ghi lại trong `tts_cps_before/after` |
+
+**Thứ tự xóa an toàn cho một bài** (MySQL; đã dùng nhiều lần ở local):
+```sql
+DELETE FROM ai_job_chunks WHERE ai_job_id IN (SELECT id FROM ai_jobs WHERE lesson_id=?);
+DELETE FROM ai_jobs WHERE lesson_id=?;
+DELETE FROM audio_chunks WHERE audio_track_id IN (SELECT id FROM audio_tracks WHERE lesson_id=?);
+DELETE FROM audio_tracks WHERE lesson_id=?;
+DELETE FROM transcript_segments WHERE transcript_id IN (SELECT id FROM transcripts WHERE lesson_id=?);
+DELETE FROM transcripts WHERE lesson_id=?;
+```
+- **Bẫy đã gặp (job 37):** xóa bản lồng tiếng mà **giữ lại transcript đích** thì worker bỏ qua bước dịch, nhưng backend vẫn chèn lại các câu đích, nên lỗi **500 `Duplicate entry ... uk_segment_transcript_seq`**. Phải xóa **cả** transcript đích, hoặc xóa cả hai transcript.
+- Embedding Gia sư AI trên Supabase của bài cũ vẫn còn. Lần chạy sau sẽ ghi thêm một bản trùng. Không ảnh hưởng số đo.
+- Thêm hoặc xóa bài trong khóa học: xóa cache Redis `courseDetails::{slug}` để trang hiện đúng. `redis-cli` cần mật khẩu; dễ nhất là chạy Python trong `lms_ai_worker` với `redis.from_url(settings.redis_url)`.
+
+### 6.4. Các bẫy môi trường đã gặp
+1. **`.env` chỉ được nạp khi TẠO LẠI container** (`docker compose up -d --force-recreate ai-worker`). `restart` thì không. Đã gặp: `.env` ghi `gemini-3.6-flash` nhưng container vẫn chạy 3.5. Trước mỗi đợt đo, kiểm tra: `docker exec lms_ai_worker printenv GEMINI_MODEL DUBBING_THINKING_LEVEL BGM_SEPARATION`.
+2. **Code chạy là code trong thư mục được gắn vào container** (`../ai-worker:/app`), **theo nhánh đang checkout** ở thư mục đó. Đổi nhánh rồi `restart` là đổi code. Ghi commit thật bằng `git -C project/ai-worker rev-parse HEAD`, và xác nhận đúng phiên bản bằng `docker exec lms_ai_worker grep -c _prepare_chunk_with_retry app/services/dubbing_service.py` (phải lớn hơn 0 với bản có dây chuyền).
+3. **Upload B2 bị treo:** trước commit `ee0f5f9`, mỗi lần treo mất **60 s** (gặp 182 s và 219 s cho một chunk 7 MB, bình thường 2–9 s). Sau commit đó tối đa khoảng 30 s mỗi lần. Gặp `upload` lớn bất thường thì **ghi chú hoặc chạy lại**, đừng lấy trung bình lẫn vào.
+4. **Key Gemini hết hạn hoặc bị thu hồi giữa chừng** (job 39): lỗi `401 API key not valid`, chunk hỏng cả 3 lần thử, job `FAILED ALL_CHUNKS_FALLBACK`. Gọi thử một câu trước khi chạy cả loạt.
+5. **Modal (nhạc nền):**
+   - GPU chỉ chạy được khi tài khoản đã thêm thẻ.
+   - Hàm `lms-demucs` phải là bản mới (commit `34052fb`, có nạp sẵn model).
+   - Lần thử GPU **L4** từng phải chờ cấp GPU **585 s**; T4 ổn định (đang dùng T4).
+   - Nhiều job lần đầu chạy cùng lúc có thể chạm giới hạn khoảng 10 GPU của gói Starter.
+6. **Tải video YouTube trên server** phải qua proxy (đang chết, xem `secrets/README.md`); lỗi tải là `SOURCE_UNAVAILABLE`. Ở local đã tắt proxy bằng `YOUTUBE_PROXY_LIST_PATH: ""`.
+7. **Thời gian ở local không đại diện cho server:** mạng tải lên ở nhà chậm và hay treo. Số liệu cho bài báo chỉ lấy trên server.
+
+### 6.5. Bẫy khi đo độ khớp và độ trễ (Bảng 2, 3)
+- **Câu chỉ có dấu câu** (Whisper hay trả `"."` ở đoạn nhạc) được pipeline thay bằng **0,1 s im lặng**. `run_experiment_v2.py` đã loại các câu này khỏi mọi phương án. **Báo cáo số câu bị loại**, vì nó làm số câu khác bản cũ.
+- **Đo độ trễ trên file đã trộn nhạc là sai:** dò mốc có tiếng trên audio có nhạc nền sẽ bắt nhầm tiếng nhạc. Hãy:
+  - đo trên file từng câu (`chunk_{i}_seg_{seq}.mp3`, chỉ còn trong lúc job chạy), hoặc dựng lại bằng `place_on_timeline` như `check_full_length.py`;
+  - hoặc chạy job với `BGM_SEPARATION=` (tắt) khi cần đo trên audio cuối.
+- **Đừng so dạng sóng của 2 file MP3 bằng tương quan từng mẫu:** mã hóa MP3 lại làm lệch pha, nên 2 file nghe y hệt vẫn chỉ có tương quan khoảng 0,7–0,8. Dùng **tương quan đường bao âm lượng** (RMS mỗi 20 ms, khoảng 0,998 khi khớp) hoặc dò độ lệch tốt nhất cho từng câu. Xem `scripts/bench_timeline.py` trong repo.
+- **Độ dài file MP3 trong header (`ffprobe`) dư khoảng 35–45 ms** so với âm thanh giải mã, vì phần đệm của bộ mã hóa. So độ dài cuối bài thì giải mã ra (pydub hoặc FFmpeg), đừng đọc header. Nối nhiều chunk bằng chép thẳng thêm khoảng 30 ms ở mỗi chỗ nối.
+- **LLM không tất định:** mỗi phương án nên chạy ít nhất 2 lần nếu còn credit, hoặc ghi rõ "1 lần chạy" như bài cũ.
+
+### 6.6. Số liệu tham khảo để tự kiểm tra (local, mạng nhà)
+| Job | Bài | Tình huống | Số liệu chính |
+|---|---|---|---|
+| 44 | 3465, 9 phút 13 giây, 112 câu, vi | lần đầu, nhạc 1 GPU | xong 113,8 s; `nhac` chờ 36,6 s |
+| 45 | 3464, 11 phút 58 giây, 140+29 câu, vi | lần đầu, nhạc 4 GPU | đoạn đầu 74 s, xong 97,8 s; `upload` chunk 0 2,0 s |
+| 46 | 3464, ja | ngôn ngữ thứ 2, dây chuyền | `cho_chunk_truoc` 200,4 s (do upload treo 181,9 s); chunk 2 xong 20 s sau chunk 1 |
+| 43 | 3463, 6 phút 16 giây, fr | ngôn ngữ thứ 2 | xong 32,7 s; `final` 0,1 s |
+
+Số liệu trên server mà lệch rất xa các mốc này (ví dụ `ghep` hơn 10 s, `tts` hơn 60 s mỗi chunk 10 phút) thì nhiều khả năng sai phiên bản code hoặc sai cấu hình (mục 6.4).
