@@ -27,7 +27,8 @@ async def _run(tmp_path, monkeypatch, duration_sec, chunk_side_effect):
          patch("app.media.extract_audio_from_url", AsyncMock()), \
          patch("app.media.probe_duration_sec", AsyncMock(return_value=duration_sec)), \
          patch("app.http.backend_client.start_job", AsyncMock()), \
-         patch("app.services.dubbing_service._process_chunk_with_retry", AsyncMock(side_effect=chunk_side_effect)), \
+         patch("app.services.dubbing_service._prepare_chunk_with_retry", AsyncMock(return_value=SimpleNamespace(consumed=0))), \
+         patch("app.services.dubbing_service._finish_chunk_with_retry", AsyncMock(side_effect=chunk_side_effect)), \
          patch("app.http.backend_client.finish_completed", finish), \
          patch("app.redis_client.publish_progress", AsyncMock()), \
          patch("app.services.dubbing_service.upload_file", upload), \

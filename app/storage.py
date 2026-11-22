@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 
 import boto3
+from botocore.config import Config as BotoConfig
 
 from app.config import settings
 
@@ -25,6 +26,21 @@ def _region_from_endpoint(endpoint: str) -> str:
     return match.group(1) if match else "us-east-005"
 
 
+def _client_config() -> BotoConfig:
+    """Thời gian chờ ngắn + thử lại nhiều lần (22/11/2026).
+
+    Mặc định boto3 chờ 60 s mỗi lần kết nối/đọc bị treo rồi mới thử lại: đo được upload chunk
+    7 MB lên B2 mất 182 s (job 46, ≈ 3 × 60 s) trong khi bình thường chỉ 2–9 s. Treo = không có
+    byte nào đi/về trong suốt khoảng chờ (mạng chậm nhưng vẫn chạy thì KHÔNG bị cắt), nên chờ
+    ngắn lại không làm hỏng upload chậm; một lần treo giờ chỉ tốn ~`B2_READ_TIMEOUT_SEC` giây.
+    """
+    return BotoConfig(
+        connect_timeout=settings.b2_connect_timeout_sec,
+        read_timeout=settings.b2_read_timeout_sec,
+        retries={"max_attempts": settings.b2_max_attempts, "mode": "standard"},
+    )
+
+
 def _get_client():
     global _client
     if _client is None:
@@ -35,6 +51,7 @@ def _get_client():
             aws_access_key_id=settings.b2_key_id,
             aws_secret_access_key=settings.b2_application_key,
             region_name=_region_from_endpoint(endpoint),
+            config=_client_config(),
         )
     return _client
 

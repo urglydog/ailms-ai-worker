@@ -74,6 +74,10 @@ class Settings(BaseSettings):
     b2_key_id: str = ""
     b2_application_key: str = ""
     b2_endpoint: str = ""
+    # Upload/tải B2: chờ ngắn + thử lại nhiều lần (mặc định boto3 60 s/lần treo, xem app/storage.py)
+    b2_connect_timeout_sec: float = 10.0
+    b2_read_timeout_sec: float = 30.0
+    b2_max_attempts: int = 5
 
     # ── Tham số pipeline ─────────────────────────────────────
     chunk_minutes: int = 10          # BR-CHUNK-02: phân đoạn cố định 10 phút

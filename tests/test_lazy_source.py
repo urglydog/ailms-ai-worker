@@ -52,7 +52,8 @@ async def _run(tmp_path, monkeypatch, ctx, chunk_side_effect):
     with patch("app.http.backend_client.get_context", AsyncMock(return_value=ctx)), \
          patch("app.media.download_youtube_audio", download), \
          patch("app.http.backend_client.start_job", AsyncMock()), \
-         patch("app.services.dubbing_service._process_chunk_with_retry", AsyncMock(side_effect=chunk_side_effect)), \
+         patch("app.services.dubbing_service._prepare_chunk_with_retry", AsyncMock(return_value=SimpleNamespace(consumed=0))), \
+         patch("app.services.dubbing_service._finish_chunk_with_retry", AsyncMock(side_effect=chunk_side_effect)), \
          patch("app.http.backend_client.finish_completed", AsyncMock()), \
          patch("app.http.backend_client.upsert_chunk_failed", AsyncMock()), \
          patch("app.http.backend_client.finish_failed", AsyncMock()), \
