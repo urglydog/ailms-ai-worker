@@ -1,0 +1,844 @@
+{
+ "jobs": {
+  "17": {
+   "chunks_timing": [
+    {
+     "chunk": 0,
+     "cau": 133,
+     "asr": 0.0,
+     "dich": 24.8,
+     "cho_chunk_truoc": 0.0,
+     "tts": 83.0,
+     "ghep": 4.4,
+     "nhac": 23.0,
+     "upload": 3.1,
+     "tong": 138.3,
+     "xu_ly_that": 138.3
+    }
+   ],
+   "final": {
+    "final_s": 0.1,
+    "n_chunks": 1
+   },
+   "task_succeeded_s": 148.76899451296777,
+   "first_chunk_s": 148.3,
+   "chunk_done_s": {
+    "0": 148.3
+   },
+   "user_sees_done_s": 148.7,
+   "sum_xu_ly_that_s": 138.3,
+   "asr_reused": true,
+   "max_upload_s": 3.1,
+   "chunks_logged_tempo": [
+    {
+     "chunk": 0,
+     "max_delay_s": 4.3,
+     "raw_length_s": 565.8,
+     "tempo": 1.0
+    }
+   ],
+   "chunks_cut_tail": []
+  },
+  "18": {
+   "chunks_timing": [
+    {
+     "chunk": 0,
+     "cau": 141,
+     "asr": 0.0,
+     "dich": 18.9,
+     "cho_chunk_truoc": 0.0,
+     "tts": 56.7,
+     "ghep": 8.1,
+     "nhac": 46.4,
+     "upload": 3.2,
+     "tong": 133.3,
+     "xu_ly_that": 133.3
+    },
+    {
+     "chunk": 1,
+     "cau": 47,
+     "asr": 0.0,
+     "dich": 6.0,
+     "cho_chunk_truoc": 108.4,
+     "tts": 9.6,
+     "ghep": 1.8,
+     "nhac": 8.8,
+     "upload": 2.6,
+     "tong": 137.2,
+     "xu_ly_that": 28.8
+    }
+   ],
+   "final": {
+    "final_s": 4.4,
+    "n_chunks": 2
+   },
+   "task_succeeded_s": 169.0421405462548,
+   "first_chunk_s": 141.7,
+   "chunk_done_s": {
+    "0": 141.7,
+    "1": 164.5
+   },
+   "user_sees_done_s": 169.0,
+   "sum_xu_ly_that_s": 162.1,
+   "asr_reused": true,
+   "max_upload_s": 3.2,
+   "chunks_logged_tempo": [
+    {
+     "chunk": 0,
+     "max_delay_s": 3.5,
+     "raw_length_s": 603.5,
+     "tempo": 1.006
+    }
+   ],
+   "chunks_cut_tail": []
+  },
+  "19": {
+   "chunks_timing": [
+    {
+     "chunk": 0,
+     "cau": 150,
+     "asr": 0.0,
+     "dich": 13.8,
+     "cho_chunk_truoc": 0.0,
+     "tts": 40.7,
+     "ghep": 5.7,
+     "nhac": 50.2,
+     "upload": 3.0,
+     "tong": 113.4,
+     "xu_ly_that": 113.4
+    },
+    {
+     "chunk": 1,
+     "cau": 31,
+     "asr": 0.0,
+     "dich": 3.3,
+     "cho_chunk_truoc": 96.2,
+     "tts": 6.5,
+     "ghep": 1.0,
+     "nhac": 5.1,
+     "upload": 2.4,
+     "tong": 114.6,
+     "xu_ly_that": 18.4
+    }
+   ],
+   "final": {
+    "final_s": 4.1,
+    "n_chunks": 2
+   },
+   "task_succeeded_s": 139.73208730109036,
+   "first_chunk_s": 120.4,
+   "chunk_done_s": {
+    "0": 120.4,
+    "1": 135.5
+   },
+   "user_sees_done_s": 139.6,
+   "sum_xu_ly_that_s": 131.8,
+   "asr_reused": true,
+   "max_upload_s": 3.0,
+   "chunks_logged_tempo": [],
+   "chunks_cut_tail": []
+  },
+  "20": {
+   "chunks_timing": [
+    {
+     "chunk": 0,
+     "cau": 162,
+     "asr": 0.0,
+     "dich": 16.9,
+     "cho_chunk_truoc": 0.0,
+     "tts": 47.0,
+     "ghep": 4.8,
+     "nhac": 93.1,
+     "upload": 3.1,
+     "tong": 164.8,
+     "xu_ly_that": 164.8
+    },
+    {
+     "chunk": 1,
+     "cau": 97,
+     "asr": 0.0,
+     "dich": 9.1,
+     "cho_chunk_truoc": 138.8,
+     "tts": 26.7,
+     "ghep": 2.5,
+     "nhac": 12.2,
+     "upload": 2.2,
+     "tong": 191.5,
+     "xu_ly_that": 52.7
+    }
+   ],
+   "final": {
+    "final_s": 4.1,
+    "n_chunks": 2
+   },
+   "task_succeeded_s": 220.59276727493852,
+   "first_chunk_s": 172.8,
+   "chunk_done_s": {
+    "0": 172.8,
+    "1": 216.4
+   },
+   "user_sees_done_s": 220.5,
+   "sum_xu_ly_that_s": 217.5,
+   "asr_reused": true,
+   "max_upload_s": 3.1,
+   "chunks_logged_tempo": [
+    {
+     "chunk": 0,
+     "max_delay_s": 3.3,
+     "raw_length_s": 599.3,
+     "tempo": 1.0
+    },
+    {
+     "chunk": 1,
+     "max_delay_s": 2.3,
+     "raw_length_s": 299.8,
+     "tempo": 1.0
+    }
+   ],
+   "chunks_cut_tail": []
+  }
+ },
+ "capped_warnings": 151,
+ "capped_detail": [
+  {
+   "seq": 30,
+   "R": 1.98
+  },
+  {
+   "seq": 39,
+   "R": 2.66
+  },
+  {
+   "seq": 49,
+   "R": 2.1
+  },
+  {
+   "seq": 54,
+   "R": 2.56
+  },
+  {
+   "seq": 80,
+   "R": 1.3
+  },
+  {
+   "seq": 85,
+   "R": 1.91
+  },
+  {
+   "seq": 88,
+   "R": 1.41
+  },
+  {
+   "seq": 101,
+   "R": 1.91
+  },
+  {
+   "seq": 119,
+   "R": 2.01
+  },
+  {
+   "seq": 123,
+   "R": 2.7
+  },
+  {
+   "seq": 125,
+   "R": 1.73
+  },
+  {
+   "seq": 128,
+   "R": 3.18
+  },
+  {
+   "seq": 131,
+   "R": 2.77
+  },
+  {
+   "seq": 132,
+   "R": 1.52
+  },
+  {
+   "seq": 133,
+   "R": 4.32
+  },
+  {
+   "seq": 3,
+   "R": 1.52
+  },
+  {
+   "seq": 4,
+   "R": 1.4
+  },
+  {
+   "seq": 6,
+   "R": 1.46
+  },
+  {
+   "seq": 12,
+   "R": 2.52
+  },
+  {
+   "seq": 14,
+   "R": 1.32
+  },
+  {
+   "seq": 45,
+   "R": 1.45
+  },
+  {
+   "seq": 60,
+   "R": 1.98
+  },
+  {
+   "seq": 70,
+   "R": 1.91
+  },
+  {
+   "seq": 75,
+   "R": 1.34
+  },
+  {
+   "seq": 83,
+   "R": 1.59
+  },
+  {
+   "seq": 85,
+   "R": 1.68
+  },
+  {
+   "seq": 86,
+   "R": 1.34
+  },
+  {
+   "seq": 103,
+   "R": 1.47
+  },
+  {
+   "seq": 105,
+   "R": 2.41
+  },
+  {
+   "seq": 106,
+   "R": 1.98
+  },
+  {
+   "seq": 107,
+   "R": 2.08
+  },
+  {
+   "seq": 117,
+   "R": 1.6
+  },
+  {
+   "seq": 121,
+   "R": 1.74
+  },
+  {
+   "seq": 128,
+   "R": 1.31
+  },
+  {
+   "seq": 138,
+   "R": 4.97
+  },
+  {
+   "seq": 140,
+   "R": 1.55
+  },
+  {
+   "seq": 162,
+   "R": 1.8
+  },
+  {
+   "seq": 183,
+   "R": 1.8
+  },
+  {
+   "seq": 186,
+   "R": 2.16
+  },
+  {
+   "seq": 188,
+   "R": 2.16
+  },
+  {
+   "seq": 16,
+   "R": 1.57
+  },
+  {
+   "seq": 19,
+   "R": 2.27
+  },
+  {
+   "seq": 22,
+   "R": 1.5
+  },
+  {
+   "seq": 25,
+   "R": 1.43
+  },
+  {
+   "seq": 27,
+   "R": 1.33
+  },
+  {
+   "seq": 31,
+   "R": 1.54
+  },
+  {
+   "seq": 35,
+   "R": 1.91
+  },
+  {
+   "seq": 47,
+   "R": 1.42
+  },
+  {
+   "seq": 56,
+   "R": 2.05
+  },
+  {
+   "seq": 61,
+   "R": 1.69
+  },
+  {
+   "seq": 66,
+   "R": 2.38
+  },
+  {
+   "seq": 89,
+   "R": 1.91
+  },
+  {
+   "seq": 96,
+   "R": 2.41
+  },
+  {
+   "seq": 99,
+   "R": 2.38
+  },
+  {
+   "seq": 102,
+   "R": 1.35
+  },
+  {
+   "seq": 122,
+   "R": 1.98
+  },
+  {
+   "seq": 124,
+   "R": 2.12
+  },
+  {
+   "seq": 128,
+   "R": 1.98
+  },
+  {
+   "seq": 129,
+   "R": 1.42
+  },
+  {
+   "seq": 140,
+   "R": 2.02
+  },
+  {
+   "seq": 158,
+   "R": 2.05
+  },
+  {
+   "seq": 169,
+   "R": 1.49
+  },
+  {
+   "seq": 173,
+   "R": 1.91
+  },
+  {
+   "seq": 174,
+   "R": 3.53
+  },
+  {
+   "seq": 180,
+   "R": 2.73
+  },
+  {
+   "seq": 2,
+   "R": 2.11
+  },
+  {
+   "seq": 9,
+   "R": 2.23
+  },
+  {
+   "seq": 13,
+   "R": 2.52
+  },
+  {
+   "seq": 20,
+   "R": 1.4
+  },
+  {
+   "seq": 25,
+   "R": 1.41
+  },
+  {
+   "seq": 31,
+   "R": 2.22
+  },
+  {
+   "seq": 43,
+   "R": 1.5
+  },
+  {
+   "seq": 45,
+   "R": 1.33
+  },
+  {
+   "seq": 48,
+   "R": 1.36
+  },
+  {
+   "seq": 49,
+   "R": 1.89
+  },
+  {
+   "seq": 50,
+   "R": 2.19
+  },
+  {
+   "seq": 51,
+   "R": 3.02
+  },
+  {
+   "seq": 52,
+   "R": 2.25
+  },
+  {
+   "seq": 53,
+   "R": 1.78
+  },
+  {
+   "seq": 54,
+   "R": 1.31
+  },
+  {
+   "seq": 56,
+   "R": 3.12
+  },
+  {
+   "seq": 57,
+   "R": 1.84
+  },
+  {
+   "seq": 62,
+   "R": 1.49
+  },
+  {
+   "seq": 64,
+   "R": 1.33
+  },
+  {
+   "seq": 66,
+   "R": 1.31
+  },
+  {
+   "seq": 68,
+   "R": 1.85
+  },
+  {
+   "seq": 72,
+   "R": 5.96
+  },
+  {
+   "seq": 73,
+   "R": 4.37
+  },
+  {
+   "seq": 74,
+   "R": 1.94
+  },
+  {
+   "seq": 78,
+   "R": 1.96
+  },
+  {
+   "seq": 79,
+   "R": 1.51
+  },
+  {
+   "seq": 84,
+   "R": 1.73
+  },
+  {
+   "seq": 85,
+   "R": 1.8
+  },
+  {
+   "seq": 86,
+   "R": 2.18
+  },
+  {
+   "seq": 88,
+   "R": 1.87
+  },
+  {
+   "seq": 90,
+   "R": 3.97
+  },
+  {
+   "seq": 97,
+   "R": 2.02
+  },
+  {
+   "seq": 98,
+   "R": 1.47
+  },
+  {
+   "seq": 104,
+   "R": 1.97
+  },
+  {
+   "seq": 106,
+   "R": 1.34
+  },
+  {
+   "seq": 142,
+   "R": 1.85
+  },
+  {
+   "seq": 144,
+   "R": 1.38
+  },
+  {
+   "seq": 146,
+   "R": 1.35
+  },
+  {
+   "seq": 150,
+   "R": 1.36
+  },
+  {
+   "seq": 152,
+   "R": 1.48
+  },
+  {
+   "seq": 159,
+   "R": 1.96
+  },
+  {
+   "seq": 172,
+   "R": 1.31
+  },
+  {
+   "seq": 176,
+   "R": 1.66
+  },
+  {
+   "seq": 180,
+   "R": 3.08
+  },
+  {
+   "seq": 182,
+   "R": 2.05
+  },
+  {
+   "seq": 183,
+   "R": 1.99
+  },
+  {
+   "seq": 185,
+   "R": 2.39
+  },
+  {
+   "seq": 186,
+   "R": 1.55
+  },
+  {
+   "seq": 188,
+   "R": 2.02
+  },
+  {
+   "seq": 192,
+   "R": 1.43
+  },
+  {
+   "seq": 193,
+   "R": 1.9
+  },
+  {
+   "seq": 194,
+   "R": 1.83
+  },
+  {
+   "seq": 196,
+   "R": 1.3
+  },
+  {
+   "seq": 197,
+   "R": 1.45
+  },
+  {
+   "seq": 198,
+   "R": 1.57
+  },
+  {
+   "seq": 203,
+   "R": 1.42
+  },
+  {
+   "seq": 207,
+   "R": 1.6
+  },
+  {
+   "seq": 208,
+   "R": 2.02
+  },
+  {
+   "seq": 209,
+   "R": 2.39
+  },
+  {
+   "seq": 210,
+   "R": 2.68
+  },
+  {
+   "seq": 211,
+   "R": 1.39
+  },
+  {
+   "seq": 212,
+   "R": 1.77
+  },
+  {
+   "seq": 213,
+   "R": 1.98
+  },
+  {
+   "seq": 214,
+   "R": 1.83
+  },
+  {
+   "seq": 216,
+   "R": 1.47
+  },
+  {
+   "seq": 217,
+   "R": 2.39
+  },
+  {
+   "seq": 235,
+   "R": 2.15
+  },
+  {
+   "seq": 237,
+   "R": 1.47
+  },
+  {
+   "seq": 238,
+   "R": 1.83
+  },
+  {
+   "seq": 239,
+   "R": 1.34
+  },
+  {
+   "seq": 240,
+   "R": 1.36
+  },
+  {
+   "seq": 241,
+   "R": 1.89
+  },
+  {
+   "seq": 242,
+   "R": 1.86
+  },
+  {
+   "seq": 244,
+   "R": 1.89
+  },
+  {
+   "seq": 245,
+   "R": 1.74
+  },
+  {
+   "seq": 246,
+   "R": 2.98
+  },
+  {
+   "seq": 247,
+   "R": 2.39
+  },
+  {
+   "seq": 248,
+   "R": 3.08
+  },
+  {
+   "seq": 249,
+   "R": 6.81
+  },
+  {
+   "seq": 250,
+   "R": 1.65
+  },
+  {
+   "seq": 251,
+   "R": 2.23
+  },
+  {
+   "seq": 252,
+   "R": 2.26
+  },
+  {
+   "seq": 253,
+   "R": 6.0
+  },
+  {
+   "seq": 255,
+   "R": 2.29
+  },
+  {
+   "seq": 256,
+   "R": 2.38
+  },
+  {
+   "seq": 258,
+   "R": 1.36
+  }
+ ],
+ "het_credit_lines": 0,
+ "gemini_key_error_lines": 0,
+ "bgm_lines": [
+  "BGM da danh thuc 4 may GPU tach nhac: 9.4s",
+  "BGM tach nhac xong: 4 phan song song, Demucs lau nhat 15.5s, tong 104.5s",
+  "BGM da luu nhac len B2 (bgm/2284/569a79ef7602): 3.1s",
+  "BGM do to: giong long tieng -18.1 LUFS, giong goc -21.5 LUFS -> chinh -3.4 dB",
+  "BGM tron nhac chunk 0-566s: cho 0.0s, tron 23.0s (giong -3.4 dB, nhac x1.0, ducking=False)",
+  "BGM da danh thuc 5 may GPU tach nhac: 10.2s",
+  "BGM tach nhac xong: 5 phan song song, Demucs lau nhat 20.4s, tong 105.5s",
+  "BGM da luu nhac len B2 (bgm/2285/c6789c1cb7ac): 3.4s",
+  "BGM do to: giong long tieng -17.9 LUFS, giong goc -20.9 LUFS -> chinh -3.0 dB",
+  "BGM tron nhac chunk 0-600s: cho 21.7s, tron 24.7s (giong -3.0 dB, nhac x1.0, ducking=False)",
+  "BGM do to: giong long tieng -17.7 LUFS, giong goc -20.8 LUFS -> chinh -3.1 dB",
+  "BGM tron nhac chunk 600-815s: cho 0.0s, tron 8.8s (giong -3.1 dB, nhac x1.0, ducking=False)",
+  "BGM da danh thuc 4 may GPU tach nhac: 9.7s",
+  "BGM tach nhac xong: 4 phan song song, Demucs lau nhat 21.4s, tong 87.7s",
+  "BGM da luu nhac len B2 (bgm/2286/83b3712a54b5): 3.0s",
+  "BGM do to: giong long tieng -17.8 LUFS, giong goc -22.7 LUFS -> chinh -4.9 dB",
+  "BGM tron nhac chunk 0-600s: cho 27.4s, tron 22.7s (giong -4.9 dB, nhac x1.0, ducking=False)",
+  "BGM do to: giong long tieng -17.5 LUFS, giong goc -22.4 LUFS -> chinh -4.9 dB",
+  "BGM tron nhac chunk 600-718s: cho 0.0s, tron 5.1s (giong -4.9 dB, nhac x1.0, ducking=False)",
+  "BGM da danh thuc 5 may GPU tach nhac: 6.4s",
+  "BGM tach nhac xong: 6 phan song song, Demucs lau nhat 24.1s, tong 135.9s",
+  "BGM da luu nhac len B2 (bgm/2288/d79becbe2379): 3.5s",
+  "BGM do to: giong long tieng -17.8 LUFS, giong goc -24.9 LUFS -> chinh -7.1 dB",
+  "BGM tron nhac chunk 0-600s: cho 67.2s, tron 25.8s (giong -7.1 dB, nhac x1.0, ducking=False)",
+  "BGM do to: giong long tieng -18.2 LUFS, giong goc -23.8 LUFS -> chinh -5.6 dB",
+  "BGM tron nhac chunk 600-900s: cho 0.0s, tron 12.2s (giong -5.6 dB, nhac x1.0, ducking=False)"
+ ],
+ "had_timestamps": true,
+ "notes": [
+  "capped_warnings gồm cả câu khung < 2 s không được rút gọn; tách bằng was_summarized.",
+  "asr=0 ở chunk nghĩa là dùng lại bản ký âm — không phải lần lồng tiếng đầu.",
+  "upload lớn bất thường (> 30 s) nên ghi chú/chạy lại, không lấy trung bình lẫn vào."
+ ]
+}

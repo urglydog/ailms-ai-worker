@@ -149,6 +149,9 @@ async def assemble_new(run_dir: Path, vid: str, duration: float, variant: str, c
             src = by_seq[seq]
             f = audio_dir / f"c{ch.index}_s{seq}_{variant.lower()}.mp3"
             if not f.exists():
+                # run_experiment_v2 bỏ câu chỉ có dấu câu (pipeline thay bằng 0,1 s lặng) -> không tính là thiếu
+                if not dubbing_service._has_speakable_text(src["text"]):
+                    continue
                 missing.append(f.name)
                 continue
             was_clamped = (src["end"] - ch.start_sec) > end_rel + 1e-6
@@ -170,8 +173,12 @@ async def assemble_new(run_dir: Path, vid: str, duration: float, variant: str, c
         if not paths:
             return {"error": f"chunk {ch.index}: không có câu nào"}
         out = tmp / f"{vid}_{variant}_new_chunk{ch.index}.mp3"
-        tl = await audio_utils.place_on_timeline(paths, desired, chunk_len, out)
-        durs = [await file_dur(p) for p in paths]
+        # Ghép bằng đúng engine pipeline đang dùng (TIMELINE_ENGINE, mặc định ffmpeg từ 22/11/2026)
+        durs = [await file_dur(p) for p in paths]   # đo bằng giải mã (chính xác hơn header MP3)
+        if getattr(dubbing_service.settings, "timeline_engine", "") == "ffmpeg" and hasattr(audio_utils, "place_on_timeline_ffmpeg"):
+            tl = await audio_utils.place_on_timeline_ffmpeg(paths, desired, chunk_len, out, durations_sec=durs)
+        else:
+            tl = await audio_utils.place_on_timeline(paths, desired, chunk_len, out)
         onsets = audio_utils.plan_onsets(desired, durs)
         tempo = tl.tempo_applied or 1.0
         cut_tail = max(0.0, tl.raw_length_sec / tempo - chunk_len)

@@ -74,6 +74,10 @@ class Settings(BaseSettings):
     b2_key_id: str = ""
     b2_application_key: str = ""
     b2_endpoint: str = ""
+    # Upload/tải B2: chờ ngắn + thử lại nhiều lần (mặc định boto3 60 s/lần treo, xem app/storage.py)
+    b2_connect_timeout_sec: float = 10.0
+    b2_read_timeout_sec: float = 30.0
+    b2_max_attempts: int = 5
 
     # ── Tham số pipeline ─────────────────────────────────────
     chunk_minutes: int = 10          # BR-CHUNK-02: phân đoạn cố định 10 phút
@@ -94,6 +98,9 @@ class Settings(BaseSettings):
     # Hiệu năng dubbing (S1): số câu tổng hợp giọng CÙNG LÚC trong 1 chunk. Azure Speech S0 cho 30 request/giây (mỗi request ~1 s) nên 16 luồng ≈ 16 request/giây là an toàn
     # (nâng từ 8 lên 16 ngày 21/11/2026); gặp lỗi 429 thì đặt TTS_CONCURRENCY=8 trong .env; đặt 1 để quay về chạy tuần tự như cũ.
     tts_concurrency: int = 16
+    # Cách ghép câu thành file audio của chunk (BR-CHUNK-05): "ffmpeg" = 1 lệnh FFmpeg cho cả chunk
+    # (nhanh, xem docs/improve/performance/SoSanh_GhepChunk.md), "pydub" = cách cũ (dự phòng).
+    timeline_engine: str = "ffmpeg"
     # Số tiến trình FFmpeg `atempo` chạy cùng lúc (CPU-bound, máy chủ 2 vCPU).
     tempo_concurrency: int = 2
     # Mức "suy nghĩ" của Gemini cho dịch/rút gọn lời thoại (S7). Rỗng = mặc định của model (như cũ).
@@ -108,6 +115,19 @@ class Settings(BaseSettings):
     bgm_music_volume: float = 1.0
     # Tự hạ nhạc khi có lời — chỉ bật nếu nghe thấy giọng gốc còn sót trong phần nhạc tách ra.
     bgm_ducking: bool = False
+    # 22/11/2026 — chất lượng file: gửi đi tách nhạc / chunk sau khi trộn nhạc (giọng nói + nhạc nền
+    # ở 96 kbps gần như không nghe ra khác 128 kbps, file nhẹ hơn 25% -> upload nhanh hơn).
+    bgm_upload_bitrate: str = "128k"
+    bgm_mix_bitrate: str = "96k"
+    # Đánh thức GPU Modal ngay đầu job (song song với tải audio gốc).
+    bgm_warm_up: bool = True
+    # Tách nhạc song song (22/11/2026): chia bài thành phần ~3 phút, mỗi phần 1 máy GPU, dư 5 s mỗi
+    # đầu, nối lại bằng trộn chéo 0,5 s. Đặt BGM_PIECE_SEC rất lớn (vd 100000) để quay về tách cả bài.
+    bgm_piece_sec: float = 180.0
+    bgm_piece_overlap_sec: float = 5.0
+    bgm_crossfade_sec: float = 0.5
+    bgm_max_parallel: int = 6
+    bgm_stitch_bitrate: str = "192k"
     # Mức "suy nghĩ" cho các tính năng đơn giản khác (21/11/2026). Đo thật: mặc định model suy nghĩ ~1-1,7 lần lượng chữ trả về và token này vẫn tính tiền như token ra. Rỗng = mặc định
     # của model (hành vi cũ) — đặt biến môi trường tương ứng thành rỗng để tắt từng nhóm. Gia sư hỏi đáp, Discovery, trợ lý giảng viên, giám sát thi, kế hoạch học KHÔNG đổi.
     material_thinking_level: str = "low"          # mindmap / flashcard / quiz: cấu trúc hóa từ transcript có sẵn

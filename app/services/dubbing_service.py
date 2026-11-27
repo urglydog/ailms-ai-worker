@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 
-from app import audio_utils, media, redis_client
+from app import audio_utils, media, redis_client, source_audio, storage
 from app import usage as usage_mod
 from app.config import settings
 from app.http import backend_client
@@ -37,6 +37,8 @@ from app.models import Segment
 from app.providers import azure_tts, groq_asr
 from app.services import background_music, translation, tutor_indexing
 from app.storage import upload_file
+
+source_audio_mod = source_audio   # trong _process_chunk_* tên `source_audio` là tham số đường dẫn
 
 log = logging.getLogger(__name__)
 
@@ -51,8 +53,8 @@ class SkippedPipelineError(Exception):
     """BR-DUB-10 — ký âm rỗng hoặc thoại < 10% thời lượng. TUYỆT ĐỐI không retry."""
 
 
-class SourceUnavailableError(Exception):
-    """BR-DUB-11 — nguồn video (URL B2 hoặc YouTube) không còn truy cập được."""
+# BR-DUB-11 — định nghĩa ở `app/source_audio.py` (dùng chung với bước tải audio gốc khi cần).
+SourceUnavailableError = source_audio.SourceUnavailableError
 
 
 @dataclass(frozen=True)
@@ -109,39 +111,68 @@ async def run_dubbing_pipeline(
         # F5.3 mở rộng — sự kiện "stage" chỉ để FE hiển thị nhãn cụ thể hơn (không phải chunk
         # xong hay job xong), KHÔNG có tác dụng gì tới logic pipeline nếu publish thất bại.
         await redis_client.publish_progress(job_id, lesson_id, stage="PREPARING")
+        # Điểm 4 (22/11/2026): đánh thức GPU tách nhạc NGAY bây giờ để nó khởi động song song với việc
+        # tải audio gốc (không chờ). Bài đã có nhạc trên B2 thì không đánh thức.
+        background_music.warm_up(lesson_id, ctx.video_url, ctx.duration_sec)
 
-        source_audio = work_dir / "source.wav"
-        try:
+        source_path = work_dir / "source.wav"
+
+        async def _download(path: Path) -> None:
             if ctx.video_source == "YOUTUBE":
-                await media.download_youtube_audio(ctx.video_url, source_audio)
+                await media.download_youtube_audio(ctx.video_url, path)
             else:
-                await media.extract_audio_from_url(ctx.video_url, source_audio)
-        except Exception as exc:  # BR-DUB-11 — bất kỳ lỗi tải/tách nào đều coi là nguồn không khả dụng
-            raise SourceUnavailableError(str(exc)) from exc
+                await media.extract_audio_from_url(ctx.video_url, path)
 
-        duration_sec = ctx.duration_sec or int(await media.probe_duration_sec(source_audio))
+        source_audio.register(source_path, _download)
+        # Tối ưu B (22/11/2026): bài đã có bản ký âm + biết thời lượng + nhạc nền (nếu bật) đã có trên B2
+        # -> KHÔNG tải audio gốc trước; chỉ tải nếu một bước thật sự cần (xem `app/source_audio.py`).
+        if not await _can_defer_source(ctx, lesson_id):
+            await source_audio.ensure(source_path)
+        else:
+            log.info("Job %s: da co ban ky am + nhac nen, chua tai audio goc (chi tai khi can)", job_id)
+
+        duration_sec = ctx.duration_sec or int(
+            await media.probe_duration_sec(await source_audio.ensure(source_path))
+        )
         chunks = split_into_chunks(duration_sec, settings.chunk_minutes)
         await backend_client.start_job(job_id, total_chunks=len(chunks), celery_task_id=celery_task_id)
 
         # M2: tách nhạc nền chạy NỀN song song với các chunk (None nếu tắt BGM_SEPARATION).
-        music_task = background_music.start_separation(source_audio, work_dir, lesson_id, ctx.video_url)
+        music_task = background_music.start_separation(source_path, work_dir, lesson_id, ctx.video_url)
         reuse_source = ctx.source_transcript_available
         next_seq = 1
         chunk_audio_paths: list[Path] = []
         fallback_count = 0
 
-        for chunk in chunks:
+        # Dây chuyền 2 công đoạn (22/11/2026, bài > 10 phút):
+        #   A = nhận dạng + dịch (Groq, Gemini)      B = TTS, ghép, trộn nhạc, upload, báo backend (Azure, B2)
+        # A của chunk k+1 chạy CÙNG LÚC với B của chunk k. Mỗi công đoạn vẫn chạy lần lượt theo thứ tự
+        # chunk -> backend nhận kết quả đúng thứ tự, từng cái một (`upsertChunk` không chịu được 2 lần
+        # báo đồng thời), và số thứ tự câu của chunk k+1 tính từ số câu ASR của chunk k như cũ.
+        prefetch: asyncio.Task | None = None
+
+        def _start_prepare(chunk: ChunkPlan, seq: int) -> asyncio.Task:
+            return asyncio.create_task(_prepare_chunk_with_retry(
+                job_id, lesson_id, ctx, chunk, len(chunks), source_path, work_dir, reuse_source, seq,
+            ))
+
+        for idx, chunk in enumerate(chunks):
             try:
-                chunk_audio, consumed_seq = await _process_chunk_with_retry(
-                    job_id, lesson_id, ctx, chunk, len(chunks), source_audio, work_dir, reuse_source, next_seq,
-                    music_task,
+                task, prefetch = (prefetch or _start_prepare(chunk, next_seq)), None
+                prepared = await task
+                next_seq += prepared.consumed
+                if idx + 1 < len(chunks):
+                    prefetch = _start_prepare(chunks[idx + 1], next_seq)   # chạy trong lúc chunk này làm B
+                chunk_audio, _consumed = await _finish_chunk_with_retry(
+                    prepared, job_id, lesson_id, ctx, chunk, len(chunks), source_path, work_dir, music_task,
                 )
-                next_seq += consumed_seq
                 chunk_audio_paths.append(chunk_audio)
                 await redis_client.publish_progress(
                     job_id, lesson_id, chunkIndex=chunk.index, totalChunks=len(chunks), status="COMPLETED",
                 )
             except SkippedPipelineError:
+                if prefetch is not None:
+                    prefetch.cancel()
                 raise
             except Exception as exc:
                 # BR-CHUNK-04: hết retry cho MỘT chunk — giữ audio GỐC riêng đoạn đó,
@@ -149,7 +180,9 @@ async def run_dubbing_pipeline(
                 log.error("Chunk %s cua job %s that bai sau %s lan retry: %s", chunk.index, job_id, settings.max_retry, exc)
                 fallback_count += 1
                 fallback_audio = work_dir / f"chunk_{chunk.index}_original.mp3"
-                await audio_utils.extract_range(source_audio, chunk.start_sec, chunk.end_sec, fallback_audio)
+                await audio_utils.extract_range(
+                    await source_audio.ensure(source_path), chunk.start_sec, chunk.end_sec, fallback_audio,
+                )
                 chunk_audio_paths.append(fallback_audio)
                 await backend_client.upsert_chunk_failed(
                     job_id, chunk.index, start_sec=chunk.start_sec, end_sec=chunk.end_sec, error_message=str(exc),
@@ -174,11 +207,20 @@ async def run_dubbing_pipeline(
             return {"status": "FAILED", "jobId": job_id, "reason": "ALL_CHUNKS_FALLBACK"}
 
         await redis_client.publish_progress(job_id, lesson_id, stage="FINALIZING")
-        final_path = work_dir / "final.mp3"
-        await audio_utils.concat_files(chunk_audio_paths, final_path)
-        final_duration = await audio_utils.measure_duration_sec(final_path)
+        t_final = time.monotonic()
+        if len(chunks) == 1 and fallback_count == 0:
+            # Điểm 2 (22/11/2026): bài 1 chunk -> final.mp3 giống hệt file chunk vừa upload. Dùng luôn
+            # file + URL đó, bỏ giải mã/mã hoá lại và upload lần 2 (trước ~12–25 s/bài).
+            final_path = chunk_audio_paths[0]
+            final_url = storage.public_url(_chunk_key(ctx, chunks[0]))
+        else:
+            final_path = work_dir / "final.mp3"
+            await audio_utils.concat_files(chunk_audio_paths, final_path)
+            final_url = await upload_file(final_path, f"dubbing/{lesson_id}/{target_language}/final.mp3")
+        # độ dài đọc từ header (không giải mã cả bài) — chỉ cần số giây nguyên cho AudioTrack
+        final_duration = (await audio_utils.probe_audio(final_path))[0]
         final_size = final_path.stat().st_size
-        final_url = await upload_file(final_path, f"dubbing/{lesson_id}/{target_language}/final.mp3")
+        log.info("TIMING job=%s final=%.1fs (%s chunk)", job_id, time.monotonic() - t_final, len(chunks))
 
         await backend_client.finish_completed(
             job_id, final_url=final_url, duration_sec=int(final_duration), file_size=final_size,
@@ -203,12 +245,96 @@ async def run_dubbing_pipeline(
         await redis_client.publish_progress(job_id, lesson_id, status="FAILED")
         raise
     finally:
+        for pending in list(_prepare_tasks):
+            pending.cancel()
         if music_task is not None and not music_task.done():
             music_task.cancel()  # job dừng sớm (lỗi/skip) thì không chờ Modal nữa
         await background_music.wait_pending_uploads()  # lưu cache nhạc lên B2 phải xong trước khi xoá file
+        await _wait_background_indexing()             # tối ưu C: index Gia sư AI chạy nền phải xong
+        source_audio.unregister(work_dir / "source.wav")
         # BR-STORAGE-01: dọn ngay sau job — cleanup_temp_files() (Celery beat) chỉ là
         # lưới an toàn cho thư mục mồ côi khi worker crash giữa chừng.
         shutil.rmtree(work_dir, ignore_errors=True)
+
+
+async def _can_defer_source(ctx, lesson_id: int) -> bool:
+    """Có thể bỏ qua việc tải audio gốc lúc đầu job không (tối ưu B)?
+
+    Cần đủ 3 điều kiện: đã có bản ký âm gốc (không chạy ASR), backend đã biết thời lượng bài (không
+    phải đo từ file), và nhạc nền tắt hoặc đã được tách sẵn trên B2 (không phải gửi audio đi tách).
+    """
+    if not ctx.source_transcript_available or not ctx.duration_sec:
+        return False
+    if settings.bgm_separation != "modal":
+        return True
+    prefix = background_music.cache_prefix(lesson_id, ctx.video_url)
+    return bool(prefix) and await storage.exists(f"{prefix}/music.mp3") and await storage.exists(f"{prefix}/vocals.mp3")
+
+
+_indexing_tasks: set[asyncio.Task] = set()
+
+
+async def _index_for_tutor(lesson_id: int, language: str | None, segments: list[Segment]) -> None:
+    t0 = time.monotonic()
+    try:
+        await tutor_indexing.index_segments(lesson_id, language, segments)
+        log.info("Index Gia su AI cho lesson %s xong (chay nen): %.1fs", lesson_id, time.monotonic() - t0)
+    except Exception as exc:
+        log.warning("Danh index embedding cho lesson %s that bai (khong anh huong job long tieng): %s", lesson_id, exc)
+
+
+async def _wait_background_indexing(timeout_sec: float = 300) -> None:
+    if _indexing_tasks:
+        await asyncio.wait(list(_indexing_tasks), timeout=timeout_sec)
+
+
+_prepare_tasks: set[asyncio.Task] = set()
+
+
+async def _with_retry(label: str, job_id: int, chunk: ChunkPlan, step):
+    """BR-CHUNK-04 cho 1 công đoạn: thử tối đa `MAX_RETRY` lần, chờ 2^lần giây. SKIPPED không thử lại."""
+    last_error: Exception | None = None
+    for attempt in range(1, settings.max_retry + 1):
+        try:
+            return await step()
+        except SkippedPipelineError:
+            raise
+        except Exception as exc:
+            last_error = exc
+            if attempt == settings.max_retry:
+                break
+            wait_sec = 2**attempt
+            log.warning(
+                "Chunk %s job %s loi o %s (lan %s/%s): %s — retry sau %ss",
+                chunk.index, job_id, label, attempt, settings.max_retry, exc, wait_sec,
+            )
+            await asyncio.sleep(wait_sec)
+    assert last_error is not None
+    raise last_error
+
+
+async def _prepare_chunk_with_retry(
+    job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
+    source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
+) -> "PreparedChunk":
+    task = asyncio.current_task()
+    if task is not None:
+        _prepare_tasks.add(task)
+        task.add_done_callback(_prepare_tasks.discard)
+    return await _with_retry("nhan dang/dich", job_id, chunk, lambda: _prepare_chunk(
+        job_id, lesson_id, ctx, chunk, total_chunks, source_audio, work_dir, reuse_source, next_seq,
+    ))
+
+
+async def _finish_chunk_with_retry(
+    prepared: "PreparedChunk", job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
+    source_audio: Path, work_dir: Path, music_task: asyncio.Task | None = None,
+) -> tuple[Path, int]:
+    # Thử lại CHỈ công đoạn B, dùng lại kết quả ASR/dịch của A: không chạy lại Whisper nên số câu
+    # (và số thứ tự câu của chunk sau, đã được tính) không đổi giữa các lần thử.
+    return await _with_retry("tts/ghep/upload", job_id, chunk, lambda: _finish_chunk(
+        prepared, job_id, lesson_id, ctx, chunk, total_chunks, source_audio, work_dir, music_task,
+    ))
 
 
 async def _process_chunk_with_retry(
@@ -242,11 +368,41 @@ async def _process_chunk_with_retry(
     raise last_error
 
 
+@dataclass
+class PreparedChunk:
+    """Kết quả công đoạn A (nhận dạng + dịch) của 1 chunk, dùng cho công đoạn B."""
+
+    segments: list[Segment]
+    translated_texts: list[str]
+    detected_language: str | None
+    generate_source_dtos: bool
+    t_start: float
+    t_asr: float
+    t_translated: float
+
+    @property
+    def consumed(self) -> int:
+        """Số `seq` chunk này dùng — chunk sau đánh số tiếp từ đây (chỉ khi vừa chạy ASR)."""
+        return len(self.segments) if self.generate_source_dtos else 0
+
+
 async def _process_chunk_once(
     job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
     source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
     music_task: asyncio.Task | None = None,
 ) -> tuple[Path, int]:
+    """Cả 2 công đoạn của 1 chunk, nối tiếp (giữ cho script NCKH và test)."""
+    prepared = await _prepare_chunk(
+        job_id, lesson_id, ctx, chunk, total_chunks, source_audio, work_dir, reuse_source, next_seq,
+    )
+    return await _finish_chunk(prepared, job_id, lesson_id, ctx, chunk, total_chunks, source_audio, work_dir, music_task)
+
+
+async def _prepare_chunk(
+    job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
+    source_audio: Path, work_dir: Path, reuse_source: bool, next_seq: int,
+) -> PreparedChunk:
+    """Công đoạn A: lấy câu (ASR hoặc bản ký âm có sẵn) và bản dịch."""
     t_start = time.monotonic()
     detected_language: str | None = None
     generate_source_dtos = False
@@ -263,7 +419,9 @@ async def _process_chunk_once(
             job_id, lesson_id, stage="ASR", chunkIndex=chunk.index, totalChunks=total_chunks,
         )
         chunk_wav = work_dir / f"chunk_{chunk.index}_src.wav"
-        await audio_utils.extract_range(source_audio, chunk.start_sec, chunk.end_sec, chunk_wav)
+        await audio_utils.extract_range(
+            await source_audio_mod.ensure(source_audio), chunk.start_sec, chunk.end_sec, chunk_wav,
+        )
         stt = await groq_asr.transcribe(str(chunk_wav))
 
         chunk_len = chunk.end_sec - chunk.start_sec
@@ -285,16 +443,8 @@ async def _process_chunk_once(
             ))
 
     if not segments:
-        # Đoạn toàn khoảng lặng (hay gặp khi tái sử dụng transcript, chunk rơi đúng
-        # vào quãng nghỉ) — giữ nguyên audio gốc cho đoạn này, không gọi AI.
-        empty_audio = work_dir / f"chunk_{chunk.index}_dub.mp3"
-        await audio_utils.extract_range(source_audio, chunk.start_sec, chunk.end_sec, empty_audio)
-        audio_url = await _upload_chunk_audio(empty_audio, ctx, chunk)
-        await backend_client.upsert_chunk_completed(
-            job_id, chunk.index, start_sec=chunk.start_sec, end_sec=chunk.end_sec, audio_file_url=audio_url,
-            detected_source_language=None, source_segments=None, target_segments=[],
-        )
-        return empty_audio, 0
+        t_now = time.monotonic()
+        return PreparedChunk([], [], None, False, t_start, t_now, t_now)
 
     t_asr = time.monotonic()
     if ctx.target_transcript_available:
@@ -319,10 +469,38 @@ async def _process_chunk_once(
             )
             cache_file.write_text(json.dumps(translated_texts, ensure_ascii=False), encoding="utf-8")
 
+    return PreparedChunk(
+        segments, translated_texts, detected_language, generate_source_dtos, t_start, t_asr, time.monotonic(),
+    )
+
+
+async def _finish_chunk(
+    prepared: PreparedChunk, job_id: int, lesson_id: int, ctx, chunk: ChunkPlan, total_chunks: int,
+    source_audio: Path, work_dir: Path, music_task: asyncio.Task | None = None,
+) -> tuple[Path, int]:
+    """Công đoạn B: TTS, ghép theo mốc, trộn nhạc nền, upload, báo backend."""
+    segments, translated_texts = prepared.segments, prepared.translated_texts
+    detected_language, generate_source_dtos = prepared.detected_language, prepared.generate_source_dtos
+    t_start, t_asr, t_translated = prepared.t_start, prepared.t_asr, prepared.t_translated
+    t_b = time.monotonic()
+
+    if not segments:
+        # Đoạn toàn khoảng lặng (hay gặp khi tái sử dụng transcript, chunk rơi đúng
+        # vào quãng nghỉ) — giữ nguyên audio gốc cho đoạn này, không gọi AI.
+        empty_audio = work_dir / f"chunk_{chunk.index}_dub.mp3"
+        await audio_utils.extract_range(
+            await source_audio_mod.ensure(source_audio), chunk.start_sec, chunk.end_sec, empty_audio,
+        )
+        audio_url = await _upload_chunk_audio(empty_audio, ctx, chunk)
+        await backend_client.upsert_chunk_completed(
+            job_id, chunk.index, start_sec=chunk.start_sec, end_sec=chunk.end_sec, audio_file_url=audio_url,
+            detected_source_language=None, source_segments=None, target_segments=[],
+        )
+        return empty_audio, 0
+
     await redis_client.publish_progress(
         job_id, lesson_id, stage="TTS", chunkIndex=chunk.index, totalChunks=total_chunks,
     )
-    t_translated = time.monotonic()
     sentence_paths = [work_dir / f"chunk_{chunk.index}_seg_{seg.seq}.mp3" for seg in segments]
     # mốc gốc của câu, tính TƯƠNG ĐỐI từ đầu chunk
     desired_onsets = [max(0.0, seg.start - chunk.start_sec) for seg in segments]
@@ -333,6 +511,7 @@ async def _process_chunk_once(
         segments, translated_texts, ctx.voice_name, sentence_paths, ctx.target_language,
     )
     t_tts = time.monotonic()
+    t_wait = t_b - t_translated   # thời gian A xong sớm, chờ chunk trước làm xong B (dây chuyền)
 
     for seg, (result, final_text, was_summarized) in zip(segments, synthesized):
         target_dtos.append(backend_client.segment_to_json(
@@ -351,10 +530,11 @@ async def _process_chunk_once(
         # reuse_source=False) — các job dịch sang ngôn ngữ khác sau đó không lặp lại.
         # Lỗi ở bước này KHÔNG được làm hỏng cả job lồng tiếng (BR-TUTOR-03 là tính năng
         # phụ trợ, không phải luồng chính) nên bọc try/except riêng, chỉ log cảnh báo.
-        try:
-            await tutor_indexing.index_segments(ctx.lesson_id, detected_language, segments)
-        except Exception as exc:
-            log.warning("Danh index embedding cho lesson %s that bai (khong anh huong job long tieng): %s", ctx.lesson_id, exc)
+        # Tối ưu C (22/11/2026): chạy NỀN — người học không cần chờ bước này mới nghe được bản lồng
+        # tiếng (trước nằm trong `ghep`, ~3–5 s). Job đợi nó xong trước khi kết thúc (`finally`).
+        task = asyncio.create_task(_index_for_tutor(ctx.lesson_id, detected_language, list(segments)))
+        _indexing_tasks.add(task)
+        task.add_done_callback(_indexing_tasks.discard)
 
     await redis_client.publish_progress(
         job_id, lesson_id, stage="UPLOADING", chunkIndex=chunk.index, totalChunks=total_chunks,
@@ -365,6 +545,7 @@ async def _process_chunk_once(
     # (đo được +96 s ở bài 15 phút). Chunk luôn được khớp đúng độ dài để không lan sang chunk sau.
     timeline = await audio_utils.place_on_timeline(
         sentence_paths, desired_onsets, float(chunk.end_sec - chunk.start_sec), chunk_audio,
+        durations_sec=[result.duration_sec for result, _text, _summarized in synthesized],
     )
     if timeline.tempo_applied > 1.0 or timeline.max_delay_sec > 2.0:
         log.info(
@@ -390,8 +571,9 @@ async def _process_chunk_once(
     t_end = time.monotonic()
     # Hiệu năng dubbing (bước 0): thời gian từng bước của chunk — để biết thời gian thật sự đi đâu.
     log.info(
-        "TIMING job=%s chunk=%s cau=%s asr=%.1fs dich=%.1fs tts=%.1fs ghep=%.1fs nhac=%.1fs upload=%.1fs tong=%.1fs",
-        job_id, chunk.index, len(segments), t_asr - t_start, t_translated - t_asr, t_tts - t_translated,
+        "TIMING job=%s chunk=%s cau=%s asr=%.1fs dich=%.1fs cho_chunk_truoc=%.1fs tts=%.1fs ghep=%.1fs nhac=%.1fs "
+        "upload=%.1fs tong=%.1fs",
+        job_id, chunk.index, len(segments), t_asr - t_start, t_translated - t_asr, t_wait, t_tts - t_b,
         t_timeline - t_tts, t_music - t_timeline, t_end - t_music, t_end - t_start,
     )
 
@@ -597,6 +779,9 @@ def _speech_rate(t_orig: Decimal, actual_duration_sec: float) -> Decimal:
     return Decimal(str(actual_duration_sec)) / t_orig
 
 
+def _chunk_key(ctx, chunk: ChunkPlan) -> str:
+    return f"dubbing/{ctx.lesson_id}/{ctx.target_language}/chunk_{chunk.index}.mp3"
+
+
 async def _upload_chunk_audio(path: Path, ctx, chunk: ChunkPlan) -> str:
-    key = f"dubbing/{ctx.lesson_id}/{ctx.target_language}/chunk_{chunk.index}.mp3"
-    return await upload_file(path, key)
+    return await upload_file(path, _chunk_key(ctx, chunk))

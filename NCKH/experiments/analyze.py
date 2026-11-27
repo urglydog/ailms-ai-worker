@@ -29,6 +29,13 @@ NAMES = {
     "V3": "Hai pha + tăng tốc độ đọc",
     "V4": "Đề xuất (đầy đủ)",
 }
+# Tên phương án cho run của run_experiment_v2.py (pipeline sau tối ưu 15–22/11/2026)
+NAMES_V2 = {
+    "V1": "Dịch không ràng buộc, tốc độ mặc định",
+    "V2": "Dịch theo ngân sách thời lượng, tốc độ mặc định",
+    "V3": "Thêm giới hạn ký tự + atempo, không rút gọn",
+    "V4": "Đề xuất (đầy đủ)",
+}
 
 
 def read_csv(path: Path) -> list[dict]:
@@ -77,8 +84,16 @@ def summarize_variants(seg: list[dict], videos: list[dict]) -> dict:
         still_over = sum(1 for r in rows if f(r["overrun"]) > 0.05)
         extra_llm = sum(int(f(r["llm_calls"])) for r in rows)
         base_llm = llm_translate // 2 if v == "V1" else llm_translate
+        tts_total = sum(int(f(r["tts_calls"])) for r in rows)
+        if videos and "llm_V1" in videos[0]:
+            # run_experiment_v2.py: số lời gọi ghi theo từng phương án trong videos.csv
+            sv = lambda k: sum(int(f(x.get(k))) for x in videos)  # noqa: E731
+            base_llm = {"V1": sv("llm_V1"), "V2": sv("llm_V2"), "V3": sv("llm_V34_translate"),
+                        "V4": sv("llm_V34_translate") + sv("llm_V4_resummarize")}[v]
+            extra_llm = 0
+            tts_total = sv(f"tts_{v}")
         out[v] = {
-            "name": NAMES[v],
+            "name": (NAMES_V2 if videos and "llm_V1" in videos[0] else NAMES)[v],
             "n_segments": n,
             "mean_abs_delta_s": round(st.mean(deltas), 3),
             "median_abs_delta_s": round(st.median(deltas), 3),
@@ -90,7 +105,7 @@ def summarize_variants(seg: list[dict], videos: list[dict]) -> dict:
             "pct_R_default_gt_1_3": round(pct(sum(1 for r in rows if f(r["r_default"]) > 1.3), n), 1),
             "mean_R_default": round(st.mean(f(r["r_default"]) for r in rows), 3),
             "llm_calls": base_llm + extra_llm,
-            "tts_calls": sum(int(f(r["tts_calls"])) for r in rows),
+            "tts_calls": tts_total,
             "mean_chars": round(st.mean(f(r["tgt_chars"]) for r in rows), 1),
         }
     return out

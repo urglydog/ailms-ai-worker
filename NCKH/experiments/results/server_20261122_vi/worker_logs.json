@@ -1,0 +1,1065 @@
+{
+ "jobs": {
+  "21": {
+   "chunks_timing": [
+    {
+     "chunk": 0,
+     "cau": 132,
+     "asr": 5.7,
+     "dich": 21.3,
+     "cho_chunk_truoc": 0.0,
+     "tts": 81.4,
+     "ghep": 4.8,
+     "nhac": 21.8,
+     "upload": 2.9,
+     "tong": 137.9,
+     "xu_ly_that": 137.9
+    }
+   ],
+   "final": {
+    "final_s": 0.2,
+    "n_chunks": 1
+   },
+   "task_succeeded_s": 181.7706298008561,
+   "first_chunk_s": 181.4,
+   "chunk_done_s": {
+    "0": 181.4
+   },
+   "user_sees_done_s": 181.7,
+   "sum_xu_ly_that_s": 137.9,
+   "asr_reused": false,
+   "max_upload_s": 2.9,
+   "chunks_logged_tempo": [],
+   "chunks_cut_tail": []
+  },
+  "22": {
+   "chunks_timing": [
+    {
+     "chunk": 0,
+     "cau": 141,
+     "asr": 19.3,
+     "dich": 23.0,
+     "cho_chunk_truoc": 0.0,
+     "tts": 81.6,
+     "ghep": 9.8,
+     "nhac": 29.9,
+     "upload": 3.3,
+     "tong": 166.9,
+     "xu_ly_that": 166.9
+    },
+    {
+     "chunk": 1,
+     "cau": 47,
+     "asr": 6.2,
+     "dich": 8.4,
+     "cho_chunk_truoc": 110.0,
+     "tts": 32.1,
+     "ghep": 2.0,
+     "nhac": 9.5,
+     "upload": 2.8,
+     "tong": 171.1,
+     "xu_ly_that": 61.1
+    }
+   ],
+   "final": {
+    "final_s": 3.3,
+    "n_chunks": 2
+   },
+   "task_succeeded_s": 223.7493573478423,
+   "first_chunk_s": 173.9,
+   "chunk_done_s": {
+    "0": 173.9,
+    "1": 220.3
+   },
+   "user_sees_done_s": 223.7,
+   "sum_xu_ly_that_s": 228.0,
+   "asr_reused": false,
+   "max_upload_s": 3.3,
+   "chunks_logged_tempo": [
+    {
+     "chunk": 0,
+     "max_delay_s": 4.7,
+     "raw_length_s": 603.9,
+     "tempo": 1.006
+    }
+   ],
+   "chunks_cut_tail": []
+  },
+  "23": {
+   "chunks_timing": [
+    {
+     "chunk": 0,
+     "cau": 150,
+     "asr": 16.8,
+     "dich": 16.6,
+     "cho_chunk_truoc": 0.0,
+     "tts": 59.0,
+     "ghep": 7.6,
+     "nhac": 38.6,
+     "upload": 3.0,
+     "tong": 141.6,
+     "xu_ly_that": 141.6
+    },
+    {
+     "chunk": 1,
+     "cau": 31,
+     "asr": 5.1,
+     "dich": 5.4,
+     "cho_chunk_truoc": 97.7,
+     "tts": 13.7,
+     "ghep": 1.3,
+     "nhac": 4.9,
+     "upload": 1.6,
+     "tong": 129.7,
+     "xu_ly_that": 32.0
+    }
+   ],
+   "final": {
+    "final_s": 3.5,
+    "n_chunks": 2
+   },
+   "task_succeeded_s": 173.09058594610542,
+   "first_chunk_s": 148.0,
+   "chunk_done_s": {
+    "0": 148.0,
+    "1": 169.5
+   },
+   "user_sees_done_s": 173.0,
+   "sum_xu_ly_that_s": 173.6,
+   "asr_reused": false,
+   "max_upload_s": 3.0,
+   "chunks_logged_tempo": [],
+   "chunks_cut_tail": []
+  },
+  "24": {
+   "chunks_timing": [
+    {
+     "chunk": 0,
+     "cau": 162,
+     "asr": 20.2,
+     "dich": 15.8,
+     "cho_chunk_truoc": 0.0,
+     "tts": 54.5,
+     "ghep": 6.7,
+     "nhac": 52.7,
+     "upload": 13.6,
+     "tong": 163.5,
+     "xu_ly_that": 163.5
+    },
+    {
+     "chunk": 1,
+     "cau": 97,
+     "asr": 8.4,
+     "dich": 10.7,
+     "cho_chunk_truoc": 108.5,
+     "tts": 28.8,
+     "ghep": 3.2,
+     "nhac": 12.2,
+     "upload": 2.0,
+     "tong": 173.7,
+     "xu_ly_that": 65.2
+    }
+   ],
+   "final": {
+    "final_s": 3.5,
+    "n_chunks": 2
+   },
+   "task_succeeded_s": 220.11335465405136,
+   "first_chunk_s": 170.3,
+   "chunk_done_s": {
+    "0": 170.3,
+    "1": 216.4
+   },
+   "user_sees_done_s": 220.0,
+   "sum_xu_ly_that_s": 228.7,
+   "asr_reused": false,
+   "max_upload_s": 13.6,
+   "chunks_logged_tempo": [
+    {
+     "chunk": 0,
+     "max_delay_s": 4.9,
+     "raw_length_s": 600.0,
+     "tempo": 1.0
+    },
+    {
+     "chunk": 1,
+     "max_delay_s": 4.3,
+     "raw_length_s": 301.6,
+     "tempo": 1.005
+    }
+   ],
+   "chunks_cut_tail": []
+  }
+ },
+ "capped_warnings": 208,
+ "capped_detail": [
+  {
+   "seq": 6,
+   "R": 1.33
+  },
+  {
+   "seq": 17,
+   "R": 1.37
+  },
+  {
+   "seq": 30,
+   "R": 1.75
+  },
+  {
+   "seq": 39,
+   "R": 2.46
+  },
+  {
+   "seq": 42,
+   "R": 1.31
+  },
+  {
+   "seq": 46,
+   "R": 1.31
+  },
+  {
+   "seq": 49,
+   "R": 1.57
+  },
+  {
+   "seq": 54,
+   "R": 4.68
+  },
+  {
+   "seq": 56,
+   "R": 1.87
+  },
+  {
+   "seq": 70,
+   "R": 1.51
+  },
+  {
+   "seq": 85,
+   "R": 1.91
+  },
+  {
+   "seq": 88,
+   "R": 2.49
+  },
+  {
+   "seq": 101,
+   "R": 2.33
+  },
+  {
+   "seq": 109,
+   "R": 1.35
+  },
+  {
+   "seq": 115,
+   "R": 1.44
+  },
+  {
+   "seq": 119,
+   "R": 1.84
+  },
+  {
+   "seq": 124,
+   "R": 1.88
+  },
+  {
+   "seq": 127,
+   "R": 2.6
+  },
+  {
+   "seq": 130,
+   "R": 2.51
+  },
+  {
+   "seq": 132,
+   "R": 3.82
+  },
+  {
+   "seq": 1,
+   "R": 1.8
+  },
+  {
+   "seq": 2,
+   "R": 1.69
+  },
+  {
+   "seq": 3,
+   "R": 1.72
+  },
+  {
+   "seq": 12,
+   "R": 3.82
+  },
+  {
+   "seq": 14,
+   "R": 1.62
+  },
+  {
+   "seq": 17,
+   "R": 1.37
+  },
+  {
+   "seq": 41,
+   "R": 1.64
+  },
+  {
+   "seq": 45,
+   "R": 2.27
+  },
+  {
+   "seq": 49,
+   "R": 1.44
+  },
+  {
+   "seq": 59,
+   "R": 1.3
+  },
+  {
+   "seq": 60,
+   "R": 2.58
+  },
+  {
+   "seq": 70,
+   "R": 3.82
+  },
+  {
+   "seq": 72,
+   "R": 1.39
+  },
+  {
+   "seq": 83,
+   "R": 2.02
+  },
+  {
+   "seq": 85,
+   "R": 8.1
+  },
+  {
+   "seq": 86,
+   "R": 1.78
+  },
+  {
+   "seq": 103,
+   "R": 1.84
+  },
+  {
+   "seq": 105,
+   "R": 4.03
+  },
+  {
+   "seq": 106,
+   "R": 3.78
+  },
+  {
+   "seq": 107,
+   "R": 2.35
+  },
+  {
+   "seq": 108,
+   "R": 1.43
+  },
+  {
+   "seq": 117,
+   "R": 2.73
+  },
+  {
+   "seq": 119,
+   "R": 1.4
+  },
+  {
+   "seq": 121,
+   "R": 3.35
+  },
+  {
+   "seq": 128,
+   "R": 1.35
+  },
+  {
+   "seq": 129,
+   "R": 1.36
+  },
+  {
+   "seq": 138,
+   "R": 3.71
+  },
+  {
+   "seq": 140,
+   "R": 2.51
+  },
+  {
+   "seq": 147,
+   "R": 1.4
+  },
+  {
+   "seq": 158,
+   "R": 1.32
+  },
+  {
+   "seq": 162,
+   "R": 2.26
+  },
+  {
+   "seq": 167,
+   "R": 1.33
+  },
+  {
+   "seq": 178,
+   "R": 1.31
+  },
+  {
+   "seq": 179,
+   "R": 1.39
+  },
+  {
+   "seq": 182,
+   "R": 1.33
+  },
+  {
+   "seq": 183,
+   "R": 2.33
+  },
+  {
+   "seq": 186,
+   "R": 2.65
+  },
+  {
+   "seq": 188,
+   "R": 1.91
+  },
+  {
+   "seq": 16,
+   "R": 1.5
+  },
+  {
+   "seq": 19,
+   "R": 2.43
+  },
+  {
+   "seq": 22,
+   "R": 1.51
+  },
+  {
+   "seq": 25,
+   "R": 1.52
+  },
+  {
+   "seq": 27,
+   "R": 1.45
+  },
+  {
+   "seq": 31,
+   "R": 1.75
+  },
+  {
+   "seq": 33,
+   "R": 1.88
+  },
+  {
+   "seq": 35,
+   "R": 1.91
+  },
+  {
+   "seq": 47,
+   "R": 1.52
+  },
+  {
+   "seq": 54,
+   "R": 1.53
+  },
+  {
+   "seq": 56,
+   "R": 2.45
+  },
+  {
+   "seq": 61,
+   "R": 1.74
+  },
+  {
+   "seq": 66,
+   "R": 2.65
+  },
+  {
+   "seq": 86,
+   "R": 1.39
+  },
+  {
+   "seq": 89,
+   "R": 2.33
+  },
+  {
+   "seq": 96,
+   "R": 2.07
+  },
+  {
+   "seq": 99,
+   "R": 2.23
+  },
+  {
+   "seq": 102,
+   "R": 1.56
+  },
+  {
+   "seq": 103,
+   "R": 1.34
+  },
+  {
+   "seq": 122,
+   "R": 2.17
+  },
+  {
+   "seq": 124,
+   "R": 2.27
+  },
+  {
+   "seq": 125,
+   "R": 1.31
+  },
+  {
+   "seq": 128,
+   "R": 2.61
+  },
+  {
+   "seq": 129,
+   "R": 1.45
+  },
+  {
+   "seq": 140,
+   "R": 3.08
+  },
+  {
+   "seq": 158,
+   "R": 2.39
+  },
+  {
+   "seq": 161,
+   "R": 1.46
+  },
+  {
+   "seq": 166,
+   "R": 1.51
+  },
+  {
+   "seq": 169,
+   "R": 1.58
+  },
+  {
+   "seq": 173,
+   "R": 2.45
+  },
+  {
+   "seq": 174,
+   "R": 7.95
+  },
+  {
+   "seq": 179,
+   "R": 1.38
+  },
+  {
+   "seq": 180,
+   "R": 2.73
+  },
+  {
+   "seq": 2,
+   "R": 2.25
+  },
+  {
+   "seq": 9,
+   "R": 3.82
+  },
+  {
+   "seq": 13,
+   "R": 13.63
+  },
+  {
+   "seq": 20,
+   "R": 1.48
+  },
+  {
+   "seq": 22,
+   "R": 1.87
+  },
+  {
+   "seq": 25,
+   "R": 1.5
+  },
+  {
+   "seq": 31,
+   "R": 3.08
+  },
+  {
+   "seq": 43,
+   "R": 1.85
+  },
+  {
+   "seq": 44,
+   "R": 1.61
+  },
+  {
+   "seq": 45,
+   "R": 1.47
+  },
+  {
+   "seq": 46,
+   "R": 1.56
+  },
+  {
+   "seq": 47,
+   "R": 1.39
+  },
+  {
+   "seq": 48,
+   "R": 1.97
+  },
+  {
+   "seq": 49,
+   "R": 1.71
+  },
+  {
+   "seq": 50,
+   "R": 1.93
+  },
+  {
+   "seq": 51,
+   "R": 3.22
+  },
+  {
+   "seq": 52,
+   "R": 2.52
+  },
+  {
+   "seq": 53,
+   "R": 1.88
+  },
+  {
+   "seq": 54,
+   "R": 2.24
+  },
+  {
+   "seq": 55,
+   "R": 1.93
+  },
+  {
+   "seq": 56,
+   "R": 3.08
+  },
+  {
+   "seq": 57,
+   "R": 1.9
+  },
+  {
+   "seq": 58,
+   "R": 1.66
+  },
+  {
+   "seq": 60,
+   "R": 23.85
+  },
+  {
+   "seq": 61,
+   "R": 1.76
+  },
+  {
+   "seq": 62,
+   "R": 5.61
+  },
+  {
+   "seq": 63,
+   "R": 6.35
+  },
+  {
+   "seq": 65,
+   "R": 1.85
+  },
+  {
+   "seq": 66,
+   "R": 2.35
+  },
+  {
+   "seq": 67,
+   "R": 2.19
+  },
+  {
+   "seq": 68,
+   "R": 2.31
+  },
+  {
+   "seq": 72,
+   "R": 5.96
+  },
+  {
+   "seq": 73,
+   "R": 4.94
+  },
+  {
+   "seq": 74,
+   "R": 2.96
+  },
+  {
+   "seq": 78,
+   "R": 2.12
+  },
+  {
+   "seq": 79,
+   "R": 1.51
+  },
+  {
+   "seq": 83,
+   "R": 1.39
+  },
+  {
+   "seq": 84,
+   "R": 2.9
+  },
+  {
+   "seq": 85,
+   "R": 2.0
+  },
+  {
+   "seq": 86,
+   "R": 2.11
+  },
+  {
+   "seq": 88,
+   "R": 2.12
+  },
+  {
+   "seq": 90,
+   "R": 3.97
+  },
+  {
+   "seq": 97,
+   "R": 1.89
+  },
+  {
+   "seq": 101,
+   "R": 1.35
+  },
+  {
+   "seq": 104,
+   "R": 2.05
+  },
+  {
+   "seq": 105,
+   "R": 1.32
+  },
+  {
+   "seq": 106,
+   "R": 1.67
+  },
+  {
+   "seq": 109,
+   "R": 1.72
+  },
+  {
+   "seq": 113,
+   "R": 1.44
+  },
+  {
+   "seq": 142,
+   "R": 1.35
+  },
+  {
+   "seq": 144,
+   "R": 1.83
+  },
+  {
+   "seq": 146,
+   "R": 1.47
+  },
+  {
+   "seq": 147,
+   "R": 1.33
+  },
+  {
+   "seq": 150,
+   "R": 1.73
+  },
+  {
+   "seq": 151,
+   "R": 1.68
+  },
+  {
+   "seq": 152,
+   "R": 1.57
+  },
+  {
+   "seq": 159,
+   "R": 2.59
+  },
+  {
+   "seq": 164,
+   "R": 1.78
+  },
+  {
+   "seq": 169,
+   "R": 1.35
+  },
+  {
+   "seq": 172,
+   "R": 1.94
+  },
+  {
+   "seq": 173,
+   "R": 1.72
+  },
+  {
+   "seq": 175,
+   "R": 2.05
+  },
+  {
+   "seq": 176,
+   "R": 2.18
+  },
+  {
+   "seq": 178,
+   "R": 2.13
+  },
+  {
+   "seq": 180,
+   "R": 3.97
+  },
+  {
+   "seq": 182,
+   "R": 2.12
+  },
+  {
+   "seq": 183,
+   "R": 3.67
+  },
+  {
+   "seq": 184,
+   "R": 2.38
+  },
+  {
+   "seq": 185,
+   "R": 2.95
+  },
+  {
+   "seq": 186,
+   "R": 2.25
+  },
+  {
+   "seq": 188,
+   "R": 2.12
+  },
+  {
+   "seq": 190,
+   "R": 1.78
+  },
+  {
+   "seq": 192,
+   "R": 1.9
+  },
+  {
+   "seq": 193,
+   "R": 1.97
+  },
+  {
+   "seq": 194,
+   "R": 2.21
+  },
+  {
+   "seq": 195,
+   "R": 2.15
+  },
+  {
+   "seq": 196,
+   "R": 1.56
+  },
+  {
+   "seq": 197,
+   "R": 1.71
+  },
+  {
+   "seq": 198,
+   "R": 1.5
+  },
+  {
+   "seq": 199,
+   "R": 1.74
+  },
+  {
+   "seq": 203,
+   "R": 1.84
+  },
+  {
+   "seq": 207,
+   "R": 2.09
+  },
+  {
+   "seq": 208,
+   "R": 2.41
+  },
+  {
+   "seq": 209,
+   "R": 3.02
+  },
+  {
+   "seq": 210,
+   "R": 3.21
+  },
+  {
+   "seq": 211,
+   "R": 2.06
+  },
+  {
+   "seq": 212,
+   "R": 1.5
+  },
+  {
+   "seq": 213,
+   "R": 3.22
+  },
+  {
+   "seq": 214,
+   "R": 1.86
+  },
+  {
+   "seq": 215,
+   "R": 1.8
+  },
+  {
+   "seq": 216,
+   "R": 1.98
+  },
+  {
+   "seq": 217,
+   "R": 2.89
+  },
+  {
+   "seq": 224,
+   "R": 1.93
+  },
+  {
+   "seq": 233,
+   "R": 1.55
+  },
+  {
+   "seq": 235,
+   "R": 3.77
+  },
+  {
+   "seq": 236,
+   "R": 4.15
+  },
+  {
+   "seq": 237,
+   "R": 1.58
+  },
+  {
+   "seq": 238,
+   "R": 1.83
+  },
+  {
+   "seq": 239,
+   "R": 1.91
+  },
+  {
+   "seq": 240,
+   "R": 1.86
+  },
+  {
+   "seq": 241,
+   "R": 1.74
+  },
+  {
+   "seq": 242,
+   "R": 2.13
+  },
+  {
+   "seq": 243,
+   "R": 1.77
+  },
+  {
+   "seq": 244,
+   "R": 1.93
+  },
+  {
+   "seq": 245,
+   "R": 3.18
+  },
+  {
+   "seq": 246,
+   "R": 11.93
+  },
+  {
+   "seq": 247,
+   "R": 5.61
+  },
+  {
+   "seq": 248,
+   "R": 5.02
+  },
+  {
+   "seq": 249,
+   "R": 7.34
+  },
+  {
+   "seq": 250,
+   "R": 1.95
+  },
+  {
+   "seq": 251,
+   "R": 5.4
+  },
+  {
+   "seq": 252,
+   "R": 2.35
+  },
+  {
+   "seq": 253,
+   "R": 6.81
+  },
+  {
+   "seq": 255,
+   "R": 2.36
+  },
+  {
+   "seq": 256,
+   "R": 3.17
+  },
+  {
+   "seq": 257,
+   "R": 1.72
+  },
+  {
+   "seq": 258,
+   "R": 1.32
+  }
+ ],
+ "het_credit_lines": 0,
+ "gemini_key_error_lines": 0,
+ "bgm_lines": [
+  "BGM da danh thuc 4 may GPU tach nhac: 8.8s",
+  "BGM tach nhac xong: 4 phan song song, Demucs lau nhat 19.0s, tong 132.5s",
+  "BGM da luu nhac len B2 (bgm/2284/569a79ef7602): 2.5s",
+  "BGM do to: giong long tieng -18.9 LUFS, giong goc -21.5 LUFS -> chinh -2.6 dB",
+  "BGM tron nhac chunk 0-566s: cho 0.0s, tron 21.8s (giong -2.6 dB, nhac x1.0, ducking=False)",
+  "BGM da danh thuc 5 may GPU tach nhac: 11.5s",
+  "BGM tach nhac xong: 5 phan song song, Demucs lau nhat 19.4s, tong 139.4s",
+  "BGM da luu nhac len B2 (bgm/2285/c6789c1cb7ac): 3.8s",
+  "BGM do to: giong long tieng -20.4 LUFS, giong goc -20.9 LUFS -> chinh -0.5 dB",
+  "BGM tron nhac chunk 0-600s: cho 5.7s, tron 24.2s (giong -0.5 dB, nhac x1.0, ducking=False)",
+  "BGM do to: giong long tieng -20.5 LUFS, giong goc -20.8 LUFS -> chinh -0.3 dB",
+  "BGM tron nhac chunk 600-815s: cho 0.0s, tron 9.5s (giong -0.3 dB, nhac x1.0, ducking=False)",
+  "BGM da danh thuc 4 may GPU tach nhac: 16.5s",
+  "BGM tach nhac xong: 4 phan song song, Demucs lau nhat 21.1s, tong 113.4s",
+  "BGM da luu nhac len B2 (bgm/2286/83b3712a54b5): 3.3s",
+  "BGM do to: giong long tieng -18.8 LUFS, giong goc -22.7 LUFS -> chinh -3.9 dB",
+  "BGM tron nhac chunk 0-600s: cho 13.4s, tron 25.2s (giong -3.9 dB, nhac x1.0, ducking=False)",
+  "BGM do to: giong long tieng -18.9 LUFS, giong goc -22.4 LUFS -> chinh -3.5 dB",
+  "BGM tron nhac chunk 600-718s: cho 0.0s, tron 4.9s (giong -3.5 dB, nhac x1.0, ducking=False)",
+  "BGM da danh thuc 5 may GPU tach nhac: 31.2s",
+  "BGM tach nhac xong: 6 phan song song, Demucs lau nhat 23.5s, tong 126.5s",
+  "BGM da luu nhac len B2 (bgm/2288/d79becbe2379): 3.0s",
+  "BGM do to: giong long tieng -20.3 LUFS, giong goc -24.9 LUFS -> chinh -4.6 dB",
+  "BGM tron nhac chunk 0-600s: cho 29.3s, tron 23.4s (giong -4.6 dB, nhac x1.0, ducking=False)",
+  "BGM do to: giong long tieng -20.4 LUFS, giong goc -23.8 LUFS -> chinh -3.4 dB",
+  "BGM tron nhac chunk 600-900s: cho 0.0s, tron 12.2s (giong -3.4 dB, nhac x1.0, ducking=False)"
+ ],
+ "had_timestamps": true,
+ "notes": [
+  "capped_warnings gồm cả câu khung < 2 s không được rút gọn; tách bằng was_summarized.",
+  "asr=0 ở chunk nghĩa là dùng lại bản ký âm — không phải lần lồng tiếng đầu.",
+  "upload lớn bất thường (> 30 s) nên ghi chú/chạy lại, không lấy trung bình lẫn vào."
+ ]
+}

@@ -24,7 +24,7 @@ async def test_skipped_pipeline_publishes_job_level_skipped_event(tmp_path, monk
     with patch("app.http.backend_client.get_context", AsyncMock(return_value=ctx)), \
          patch("app.media.extract_audio_from_url", AsyncMock()), \
          patch("app.http.backend_client.start_job", AsyncMock()), \
-         patch("app.services.dubbing_service._process_chunk_with_retry",
+         patch("app.services.dubbing_service._prepare_chunk_with_retry",
                AsyncMock(side_effect=SkippedPipelineError("thoai < 10% - BR-DUB-10"))), \
          patch("app.http.backend_client.finish_skipped", finish_skipped_mock), \
          patch("app.redis_client.publish_progress", publish_progress_mock):

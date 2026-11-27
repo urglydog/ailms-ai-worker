@@ -1,0 +1,74 @@
+{
+  "run_id": "v3_r2",
+  "script": "run_experiment_v2.py",
+  "commit": "?",
+  "started_at": "2026-11-22T14:22:17",
+  "variants": [
+    "V4"
+  ],
+  "max_chunks": null,
+  "videos": [
+    {
+      "id": "lec01",
+      "source": "/app/NCKH/experiments/media/lecture_01.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-HoaiMyNeural",
+      "category": "CNTT",
+      "note": "Crash Course Computer Science #10: Early Programming | kênh: CrashCourse | https://www.youtube.com/watch?v=nwDq4adJwzM | giấy phép: chưa xác minh | đã trích audio, 9,4 phút"
+    },
+    {
+      "id": "lec02",
+      "source": "/app/NCKH/experiments/media/lecture_02.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-NamMinhNeural",
+      "category": "CNTT",
+      "note": "Crash Course Computer Science #18: Operating Systems | kênh: CrashCourse | https://www.youtube.com/watch?v=26QPDBe-NB8 | giấy phép: chưa xác minh | đã trích audio, 13,6 phút"
+    },
+    {
+      "id": "lec03",
+      "source": "/app/NCKH/experiments/media/lecture_03.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-HoaiMyNeural",
+      "category": "KyNangMem",
+      "note": "Crash Course Computer Science #29: The Internet | kênh: CrashCourse | https://www.youtube.com/watch?v=AEaKrq3SpW8 | giấy phép: chưa xác minh | đã trích audio, 12,0 phút"
+    },
+    {
+      "id": "lec04",
+      "source": "/app/NCKH/experiments/media/lecture_04.mp3",
+      "target_language": "vi-VN",
+      "voice_name": "vi-VN-NamMinhNeural",
+      "category": "KyNangMem",
+      "note": "Stanford CS229, Lecture 1 (15 phút đầu) | https://www.youtube.com/watch?v=UzxYlbK2c7E | giấy phép: chưa xác minh | đã trích audio, 15,0 phút"
+    }
+  ],
+  "params": {
+    "chunk_minutes": 10,
+    "r_min": 1.0,
+    "r_max": 1.3,
+    "max_tempo": 1.3,
+    "max_resummarize_attempts": 2,
+    "min_resummarize_frame_sec": 2.0,
+    "target_r_max_chars": 1.15,
+    "min_speech_ratio": 0.1,
+    "asr_model": "whisper-large-v3-turbo",
+    "llm_model": "gemini-3.6-flash",
+    "llm_fallback_models": "",
+    "dubbing_thinking_level": "minimal",
+    "tts_concurrency": 16,
+    "timeline_engine": "ffmpeg",
+    "bgm_separation": "modal"
+  },
+  "tts_cps_before": {
+    "vi-VN-HoaiMyNeural": 11.467,
+    "vi-VN-NamMinhNeural": 11.415
+  },
+  "machine": {
+    "python": "3.11.18",
+    "platform": "linux"
+  },
+  "tts_cps_after": {
+    "vi-VN-HoaiMyNeural": 11.052,
+    "vi-VN-NamMinhNeural": 10.683
+  },
+  "finished_at": "2026-11-22T14:31:10"
+}

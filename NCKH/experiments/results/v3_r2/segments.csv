@@ -1,0 +1,781 @@
+﻿run_id,video_id,category,variant,chunk_index,seq,t_orig,src_text,tgt_text,tgt_chars,t_tts_default,r_default,branch,applied_rate,n_resummarize,was_summarized,t_final,overrun,abs_delta,llm_calls,tts_calls
+v3_r2,lec01,CNTT,V4,0,1,2.78,"Hi, I'm Carrie-Anne and welcome to Crash Course Computer Science.","Chào bạn, mình là Carrie-Anne đây.",34,0.0,1.178,speedup,1.19,0,False,2.78,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,2,3.82,"Over the last few episodes we've talked a lot about the mechanics of how computers work,","Vài tập qua, ta đã bàn về cách máy tính vận hành,",49,0.0,1.022,speedup,1.03,0,False,3.82,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,3,4.68,how they use complex circuits to save and retrieve values from memory and perform operations,"dùng mạch phức tạp để lưu, xuất dữ liệu và tính toán,",53,0.0,0.877,pad,1.0,0,False,4.68,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,4,3.48,"on those values, like adding two numbers together. We've even briefly talked about",như cộng hai số. Ta cũng từng nói sơ về,39,0.0,1.281,speedup,1.29,0,False,3.48,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,5,1.88,"sequences of operations, which is a computer program.","chuỗi lệnh, tức phần mềm.",25,0.0,1.365,capped,1.3,0,False,1.974,0.094,0.094,0,0
+v3_r2,lec01,CNTT,V4,0,6,3.44,But what we haven't talked about is how a program gets into a computer.,Nhưng ta chưa nói làm sao nạp chương trình vào.,47,0.0,0.963,pad,1.0,0,False,3.44,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,7,3.98,You might remember in episodes 7 and 8 that we stepped through some simple example programs,"Ở tập 7 và 8, ta đã chạy thử vài chương trình mẫu",49,0.0,1.052,speedup,1.06,0,False,3.98,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,8,4.84,"for the CPU that we had created. For simplicity, we just waved our hands and said that the","cho CPU. Khi đó, ta đơn giản hóa và coi như",43,0.0,1.104,speedup,1.11,0,False,4.84,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,9,3.88,"program was already magically in memory. But in reality, programs have to be loaded into",chương trình đã có sẵn trên bộ nhớ.,35,0.0,0.752,pad,1.0,0,False,3.88,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,10,3.1,"a computer's memory. It's not magic, it's computer science!",Thực ra nó phải được nạp vào máy tính!,38,0.0,0.987,pad,1.0,0,False,3.1,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,11,4.16,The need to program machines existed way before the development of computers. The most famous,Nhu cầu lập trình máy móc đã có từ rất lâu rồi.,47,0.0,0.883,pad,1.0,0,False,4.16,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,12,4.34,"example of this was in textile manufacturing. If you just wanted to weave a big red tablecloth,",Ví dụ nổi tiếng nhất là trong ngành dệt may thời xưa.,53,0.0,0.871,pad,1.0,0,False,4.34,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,13,2.9,you could simply feed red thread into a loom and let it run.,"Nếu chỉ dệt khăn bàn đỏ thông thường,",37,0.0,1.029,speedup,1.04,0,False,2.9,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,14,3.56,"But what about if you wanted the cloth to have a pattern, like stripes or plaid?",bạn chỉ cần đưa chỉ đỏ vào máy dệt.,35,0.0,0.88,pad,1.0,0,False,3.56,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,15,4.1,Workers would have to periodically reconfigure the loom as dictated by the pattern.,Nhưng muốn có hoa văn như sọc caro thì sao?,43,0.0,0.843,pad,1.0,0,False,4.1,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,16,2.96,"But this was labor intensive, which made pattern fabrics expensive.",Thợ phải chỉnh lại máy liên tục.,32,0.0,0.9,pad,1.0,0,False,2.96,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,17,3.84,"In response, Joseph Marie Jacquard developed a programmable textile loom,",Việc này rất tốn công khiến vải đắt đỏ.,39,0.0,0.844,pad,1.0,0,False,3.84,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,18,2.06,which he first demonstrated in 1801.,Vì thế Jacquard đã tạo,22,0.0,1.247,summarize,1.26,1,True,2.06,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,19,2.96,The pattern for each row of the cloth was defined by a punched card.,máy dệt có thể lập trình năm 1801.,34,0.0,1.242,speedup,1.25,0,False,2.96,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,20,4.88,"The presence or absence of a hole in the card determined if a specific thread was held high or low in the loom,",Mẫu dệt mỗi hàng được điều khiển bằng một thẻ đục lỗ.,53,0.0,0.767,pad,1.0,0,False,4.88,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,21,3.66,"such that the cross thread, called the weft, passed above or below the thread.","Có lỗ hay không sẽ quyết định sợi nâng cao hay hạ thấp,",55,0.0,1.041,speedup,1.05,0,False,3.66,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,22,3.4,"To vary the pattern across rows, these punch cards were arranged in long chains,",giúp sợi ngang chui qua trên hoặc dưới.,39,0.0,0.868,pad,1.0,0,False,3.4,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,23,2.82,forming a sequence of commands for the loom. Sound familiar?,Các thẻ này được nối thành chuỗi lệnh.,38,0.0,1.019,speedup,1.03,0,False,2.82,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,24,3.32,Many considered Jacquard's loom to be one of the earliest forms of programming.,Nhiều người coi đây là dạng lập trình đầu tiên.,47,0.0,1.001,speedup,1.01,0,False,3.32,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,25,3.98,"Punched cards turned out to be a cheap, reliable, and fairly human-readable way to store data.","Thẻ đục lỗ rất rẻ, tin cậy và dễ đọc.",37,0.0,0.914,pad,1.0,0,False,3.98,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,26,3.98,"Nearly a century later, punch cards were used to help tabulate the 1890 US census,","Gần một thế kỷ sau, nó được dùng để điều tra dân số,",52,0.0,1.062,speedup,1.07,0,False,3.98,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,27,3.9,"which we talked about in episode 1. Each card held an individual person's data,","như ở tập 1. Mỗi thẻ lưu dữ liệu một người,",43,0.0,1.182,summarize,1.19,1,True,3.9,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,28,3.56,"Things like race, marital status, number of children, country of birth and so on.","như chủng tộc, hôn nhân, số con...",34,0.0,0.93,pad,1.0,0,False,3.56,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,29,4.58,"For each demographic question, a census worker would punch out a hole at the appropriate position.","Mỗi câu hỏi, nhân viên sẽ bấm lỗ ở vị trí tương ứng.",52,0.0,0.951,pad,1.0,0,False,4.58,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,30,6.06,"When a card was fed into the tabulating machine, a hole would cause the running total for that specific answer to be increased by one.","Khi đưa thẻ vào máy, mỗi lỗ sẽ làm tăng kết quả đếm thêm một đơn vị.",68,0.0,0.82,pad,1.0,0,False,6.06,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,31,6.4,"In this way, you could feed the entire county's worth of people, and at the end, you'd have running totals for all of the questions that you asked.","Cứ thế, bạn có thể xử lý cả quận và có tổng kết quả cho mọi câu hỏi.",68,0.0,0.827,pad,1.0,0,False,6.4,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,32,11.68,It important to note here that early tabulating machines were not truly computers as they could only do one thing tabulate Their operation was fixed and not programmable Punchcards stored data but not a program,"Cần lưu ý, máy thống kê đầu tiên chưa phải máy tính thực sự vì chỉ biết đếm. Thẻ đục lỗ lưu dữ liệu chứ không lưu chương trình.",127,0.0,0.73,pad,1.0,0,False,11.68,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,33,4.9,"Over the next 60 years, these business machines grew in capability, adding features to subtract,","60 năm sau, các máy này có thêm tính năng trừ,",46,0.0,0.808,pad,1.0,0,False,4.9,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,34,4.2,"multiply, divide, and even make simple decisions about when to perform certain operations. To","nhân, chia và đưa ra quyết định đơn giản.",41,0.0,0.831,pad,1.0,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,35,3.84,"trigger these functions appropriately so that different calculations could be performed,","Để điều khiển các hàm tính toán này,",36,0.0,0.75,pad,1.0,0,False,3.84,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,36,2.22,a programmer accessed a control panel.,lập trình viên dùng bảng điều khiển.,36,0.0,1.249,speedup,1.26,0,False,2.22,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,37,4.0,"This panel was full of little sockets, into which a programmer would plug cables to pass",Bảng này gồm nhiều ổ cắm để cắm dây dẫn,39,0.0,0.837,pad,1.0,0,False,4.0,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,38,2.82,values and signals between different parts of the machine.,truyền tín hiệu giữa các bộ phận.,33,0.0,0.97,pad,1.0,0,False,2.82,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,39,2.44,"For this reason, they were also called plug boards.",Nên nó được gọi là bảng cắm.,28,0.0,1.128,speedup,1.14,0,False,2.44,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,40,3.0,"Unfortunately, this meant having to rewire the machine each time a different program",Nhược điểm là phải cắm lại dây,30,0.0,0.936,pad,1.0,0,False,3.0,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,41,1.02,needed to be run.,khi đổi lệnh.,13,0.0,1.885,capped,1.3,0,False,1.479,0.459,0.459,0,0
+v3_r2,lec01,CNTT,V4,0,42,3.42,"And so, by the 1920s, these plug boards were made swappable.","Đến thập niên 1920, bảng cắm tháo rời được.",43,0.0,1.261,summarize,1.27,1,True,3.42,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,43,3.36,"This not only made programming a lot more comfortable, but also allowed for different","Nhờ đó, việc đổi chương trình",29,0.0,0.846,pad,1.0,0,False,3.36,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,44,1.9,programs to be plugged into a machine.,trở nên rất dễ dàng.,20,0.0,1.216,speedup,1.23,0,False,1.9,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,45,4.88,"For example, one board might be wired to calculate sales tax, while another helped with payroll.","Ví dụ, một bảng tính thuế, bảng khác lại tính lương.",52,0.0,0.885,pad,1.0,0,False,4.88,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,46,2.88,But plugboards were fiendishly complicated to program.,"Dù vậy, lập trình bảng cắm cực kỳ khó.",38,0.0,1.189,speedup,1.2,0,False,2.88,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,47,4.8,"This tangle of wires is a program for calculating a profit and loss summary, using an IBM 402","Rừng dây cắm này là chương trình tính lời lỗ trên máy IBM 402,",62,0.0,1.043,speedup,1.05,0,False,4.8,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,48,2.62,"accounting machine, which were popular in the 1940s.",Phổ biến từ thập niên 1940.,27,0.0,1.321,capped,1.3,1,True,2.663,0.043,0.043,0,0
+v3_r2,lec01,CNTT,V4,0,49,4.18,And this style of plugboard programming wasn't unique to electromechanical computers.,Kiểu lập trình này cũng xuất hiện trên máy điện tử.,51,0.0,0.835,pad,1.0,0,False,4.18,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,50,5.3,"The world's first general-purpose electronic computer, the ENIAC, completed in 1946, used",Máy tính điện tử ENIAC năm 1946 dùng rất nhiều bảng cắm.,56,0.0,1.024,speedup,1.03,0,False,5.3,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,51,1.24,a ton of them.,Thật đồ sộ!,11,0.0,1.563,capped,1.3,0,False,1.491,0.251,0.251,0,0
+v3_r2,lec01,CNTT,V4,0,52,4.58,"Even after a program had been completely figured out on paper, physically wiring up the ENIAC","Dù đã vẽ xong trên giấy, việc cắm dây cho ENIAC",47,0.0,1.003,speedup,1.01,0,False,4.58,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,53,3.46,and getting the program to run could take upwards of three weeks.,và chạy được máy có thể mất tới 3 tuần.,39,0.0,0.968,pad,1.0,0,False,3.46,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,54,4.26,"Given the enormous cost of these early computers, weeks of downtime simply to switch programs","Với máy tính đắt đỏ thời đó, nghỉ vài tuần chỉ để đổi lệnh",58,0.0,1.043,speedup,1.05,0,False,4.26,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,55,4.16,"was unacceptable, and a new, faster, more flexible way to program machines was badly",là không thể chấp nhận. Người ta cần cách mới,45,0.0,1.062,speedup,1.07,0,False,4.16,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,56,0.5,needed.,tốt hơn.,8,0.0,3.83,capped,1.3,0,False,1.473,0.973,0.973,0,0
+v3_r2,lec01,CNTT,V4,0,57,4.54,"Fortunately, by the late 1940s and into the 50s, electronic memory was becoming feasible.","May mắn là đến cuối thập niên 40, bộ nhớ điện tử ra đời.",56,0.0,1.023,speedup,1.03,0,False,4.54,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,58,1.98,"As costs fell, memory size grew.","Giá giảm, dung lượng tăng.",26,0.0,1.331,capped,1.3,0,False,2.027,0.047,0.047,0,0
+v3_r2,lec01,CNTT,V4,0,59,3.28,"Instead of storing a program as a physical plug board of wires, it became possible to","Thay vì dùng bảng cắm vật lý,",29,0.0,0.823,pad,1.0,0,False,3.28,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,60,3.94,"store a program entirely in a computer's memory, where it could be easily changed by","chương trình được nạp thẳng vào bộ nhớ,",39,0.0,0.74,pad,1.0,0,False,3.94,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,61,5.0,programmers and quickly accessed by the CPU. These machines were called stored program,giúp CPU truy cập nhanh. Đây là máy tính lưu chương trình.,58,0.0,1.034,speedup,1.04,0,False,5.0,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,62,2.9,"computers. With enough computer memory, you could store not only the program you wanted","Khi bộ nhớ đủ lớn, bạn lưu được cả",34,0.0,1.191,speedup,1.2,0,False,2.9,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,63,4.26,"to run, but also any data your program would need, including new values it created along",chương trình lẫn dữ liệu cần thiết.,35,0.0,0.634,pad,1.0,0,False,4.26,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,64,4.36,the way. Unifying the program and data into a single shared memory is called the Von Neumann,"Gộp chương trình và dữ liệu gọi là kiến trúc Von Neumann,",57,0.0,0.925,pad,1.0,0,False,4.36,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,65,3.68,"architecture, named after John Von Neumann, a prominent mathematician and physicist who","đặt theo tên nhà toán học John Von Neumann,",43,0.0,0.91,pad,1.0,0,False,3.68,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,66,4.44,"worked on the Manhattan Project and several early electronic computers, and once said,",người tham gia dự án Manhattan và từng nói:,43,0.0,0.827,pad,1.0,0,False,4.44,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,67,2.92,I am thinking about something much more important than BOMs.,"""Tôi đang nghĩ thứ quan trọng hơn bom.""",39,0.0,1.089,speedup,1.1,0,False,2.92,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,68,10.94,I thinking about computers The hallmarks of a von Neumann computer are a processing unit containing an arithmetic logic unit data registers an instruction register and instruction address register,"Đó là máy tính! Đặc trưng của nó là CPU có bộ tính toán ALU, các thanh ghi và bộ nhớ chung. Nghe quen thuộc đúng không?",119,0.0,0.915,pad,1.0,0,False,10.94,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,69,4.56,and finally a memory to store both data and instructions. Hopefully this sounds familiar,Vì ta đã dựng một máy như vậy ở tập 7.,38,0.0,0.774,pad,1.0,0,False,4.56,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,70,4.46,because we actually built a von Neumann computer in episode 7. The very first von Neumann architecture,Máy tính lưu chương trình đầu tiên,34,0.0,0.613,pad,1.0,0,False,4.46,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,71,5.5,"stored program computer was constructed in 1948 by the University of Manchester, nicknamed","được Đại học Manchester chế tạo năm 1948, tên là Baby.",54,0.0,0.995,pad,1.0,0,False,5.5,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,72,4.96,baby. And even the computer you're watching this video on right now uses the same architecture.,Ngay cả máy tính bạn đang dùng cũng chạy kiến trúc này.,55,0.0,0.748,pad,1.0,0,False,4.96,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,73,3.58,"Now, electronic computer memory is great and all, but you still have to load the program",Bộ nhớ rất tuyệt nhưng ta vẫn phải nạp dữ liệu vào.,51,0.0,1.091,speedup,1.1,0,False,3.58,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,74,3.9,"and data into the computer before it can run. And for this reason, punch cards were used.",Và thẻ đục lỗ chính là giải pháp.,33,0.0,0.748,pad,1.0,0,False,3.9,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,75,3.6,"Let's go to the Thought Bubble. Well into the 1980s, almost all computers had a punch","Đến Thought Bubble. Tới tận những năm 80,",41,0.0,1.233,summarize,1.24,1,True,3.6,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,76,4.08,"card reader, which could suck in a single punch card at a time and write the contents",máy tính vẫn dùng đầu đọc để nạp thẻ,36,0.0,0.776,pad,1.0,0,False,4.08,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,77,3.52,"of the card into the computer's memory. If you loaded in a stack of punch cards, the","vào bộ nhớ. Nếu đưa vào một chồng thẻ,",38,0.0,1.221,speedup,1.23,0,False,3.52,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,78,4.68,"reader would load them all into memory sequentially, as a big block. Once the program and data","máy sẽ đọc lần lượt từng thẻ một. Nạp xong,",43,0.0,0.923,pad,1.0,0,False,4.68,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,79,2.6,"where in memory, the computer would be told to execute it.",máy mới bắt đầu thực thi lệnh.,30,0.0,1.028,speedup,1.04,0,False,2.6,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,80,3.98,"Of course, even simple computer programs might have hundreds of instructions, which meant","Chương trình đơn giản cũng có hàng trăm lệnh,",45,0.0,0.778,pad,1.0,0,False,3.98,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,81,2.12,that programs were stored as stacks of punch cards.,Nên xếp thành chồng thẻ dày.,28,0.0,1.196,summarize,1.21,1,True,2.12,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,82,3.44,"So if you ever had the misfortune of accidentally dropping your program on the floor, it could","Nếu lỡ làm rơi chồng thẻ xuống sàn,",35,0.0,0.89,pad,1.0,0,False,3.44,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,83,3.56,"take you hours, days, or even weeks to put the code back in the right order.",bạn sẽ mất rất nhiều thời gian xếp lại.,39,0.0,0.89,pad,1.0,0,False,3.56,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,84,4.38,"A common trick was to draw a diagonal line on the side of the card stack called striping,","Mẹo nhỏ là vạch một đường chéo bên hông tập thẻ,",48,0.0,0.847,pad,1.0,0,False,4.38,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,85,3.7,so you'd have at least some clue how to get it back into the right order.,giúp bạn dễ dàng sắp xếp lại đúng vị trí.,41,0.0,0.905,pad,1.0,0,False,3.7,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,86,4.28,The largest program ever punched into punch cards was the US Air Force's SAGE Air Defense,"Bộ thẻ đục lỗ lớn nhất thuộc hệ thống phòng thủ SAGE,",53,0.0,0.993,pad,1.0,0,False,4.28,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,87,6.14,"system, completed in 1955. At its peak, the project is said to have employed 20% of the",hoàn thành năm 1955. Dự án từng thu hút 20% lập trình viên thế giới.,68,0.0,1.155,speedup,1.16,0,False,6.14,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,88,5.92,"world's programmers. Its main control program was stored on a whopping 62,500 punch cards,","Chương trình dùng 62.500 thẻ, tương đương 5 megabyte.",53,0.0,0.772,pad,1.0,0,False,5.92,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,89,5.14,which is equivalent to roughly 5 megabytes of data. Pretty underwhelming by today's standards.,Khá khiêm tốn so với chuẩn ngày nay.,36,0.0,0.581,pad,1.0,0,False,5.14,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,90,4.12,"And punch cards weren't only useful for getting data into computers, but also getting data","Thẻ đục lỗ không chỉ nạp dữ liệu vào,",37,0.0,0.76,pad,1.0,0,False,4.12,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,91,4.06,"out of them. At the end of a program, results could be written out of computer memory and",mà còn dùng để xuất dữ liệu ra ngoài.,37,0.0,0.771,pad,1.0,0,False,4.06,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,92,5.28,"onto punch cards by, well, punching cards. Then this data could be analyzed by humans",Kết quả được đục ra thẻ để con người đọc,40,0.0,0.6,pad,1.0,0,False,5.28,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,93,3.34,or loaded into a second program for additional computation.,hoặc đưa vào máy khác xử lý tiếp.,33,0.0,0.873,pad,1.0,0,False,3.34,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,94,4.18,"Thanks Thought Bubble! A close cousin to punch cards was punched paper tape, which was basically","Cảm ơn Thought Bubble! Băng giấy đục lỗ cũng tương tự,",54,0.0,1.174,speedup,1.18,0,False,4.18,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,95,4.46,"the same idea but continuous instead of being on individual cards. And of course, we haven't",nhưng ở dạng dải dài liền mạch. Chúng ta sẽ,43,0.0,0.993,pad,1.0,0,False,4.46,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,96,5.06,"talked about hard drives, CD-ROMs, DVDs, USB thumb drives and other similar goodies. We'll","nói về ổ cứng, CD, USB và các thiết bị lưu trữ khác",51,0.0,1.024,speedup,1.03,0,False,5.06,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,97,3.04,get to those more advanced types of data storage in a future episode.,trong các tập tiếp theo nhé.,28,0.0,0.793,pad,1.0,0,False,3.04,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,98,3.96,"Finally, in addition to plug boards and punched paper, there was another common way to program",Ngoài ra còn có cách lập trình bằng bảng công tắc.,50,0.0,0.864,pad,1.0,0,False,3.96,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,99,14.7,and control computers pre panel programming Rather than having to physically plug in cables to activate certain functions this could also be done with huge panels full of switches and buttons And there were indicator lights to display the status of various functions and values in memory,"Thay vì cắm dây, lập trình viên bật tắt các công tắc trên bảng điều khiển lớn, có đèn báo trạng thái. Máy tính thời đó trông rất hoành tráng.",141,0.0,0.615,pad,1.0,0,False,14.7,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,100,4.24,Computers of the 50s and 60s often featured huge control consoles that looked like this.,Máy tính thập niên 50 và 60 thường có bảng điều khiển lớn.,58,0.0,1.033,speedup,1.04,0,False,4.24,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,101,3.92,"Although it was rare to input a whole program using just switches, it was possible, and","Dù ít khi nhập cả chương trình bằng công tắc,",45,0.0,0.817,pad,1.0,0,False,3.92,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,102,3.84,"early home computers made for the hobbyist market used switches extensively, because","các máy tính cá nhân đời đầu vẫn dùng nó,",41,0.0,0.863,pad,1.0,0,False,3.84,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,103,3.78,most home users couldn't afford expensive peripherals like punch card readers.,vì người dùng không đủ tiền mua đầu đọc thẻ.,44,0.0,0.905,pad,1.0,0,False,3.78,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,104,5.42,"The first commercially successful home computer was the Altair 8800, which sold in two versions,",Altair 8800 là máy tính cá nhân thành công đầu tiên.,52,0.0,0.817,pad,1.0,0,False,5.42,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,105,4.12,"pre-assembled and as a kit. The kit, which was popular with amateur computing enthusiasts,","Bản tự lắp rất hút khách nhờ giá rẻ,",36,0.0,0.778,pad,1.0,0,False,4.12,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,106,6.4,"sold for the then unprecedented low price of around $400 in 1975, or about $2,000 in","chỉ tầm 400 đô thời đó, tương đương 2.000 đô năm 2017.",54,0.0,0.821,pad,1.0,0,False,6.4,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,107,4.16,"2017. To program the 8800, you'd literally toggle the switches on the front panel to","Để lập trình, bạn gạt công tắc để nhập mã nhị phân.",51,0.0,0.969,pad,1.0,0,False,4.16,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,108,3.78,"enter the binary opcodes for the instruction you wanted. Then, you'd press the deposit",Rồi bấm nút Deposit để lưu vào bộ nhớ.,38,0.0,0.933,pad,1.0,0,False,3.78,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,109,4.92,"button to write that value into memory. Then, in the next location in memory, you'd toggle",Sau đó gạt tiếp công tắc cho lệnh tiếp theo.,44,0.0,0.666,pad,1.0,0,False,4.92,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,110,3.62,"the switches again for your next instruction, deposit it, and so on.",Cứ thế cho đến hết chương trình.,32,0.0,0.736,pad,1.0,0,False,3.62,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,111,3.46,"When you'd finally entered your whole program into memory, you would toggle the switches","Nhập xong, bạn gạt về địa chỉ 0,",32,0.0,0.947,pad,1.0,0,False,3.46,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,112,3.84,"to move back to memory address zero, press the run button, and watch the little lights",nhấn Run và xem đèn nhấp nháy.,30,0.0,0.731,pad,1.0,0,False,3.84,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,113,3.44,blink. That was home computing in 1975. Wow.,Lập trình năm 1975 là vậy đó!,29,0.0,1.112,summarize,1.12,1,True,3.44,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,114,3.74,"Whether it was plug-boards, switches, or punched paper, programming these early computers was","Dù dùng dây cắm, công tắc hay thẻ đục lỗ,",41,0.0,0.963,pad,1.0,0,False,3.74,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,115,5.42,"the realm of experts, either professionals who did this for a living, or technology enthusiasts.",lập trình thời đó chỉ dành cho các chuyên gia và dân đam mê.,60,0.0,0.764,pad,1.0,0,False,5.42,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,116,4.18,"You needed intimate knowledge of the underlying hardware, so things like processor opcodes","Bạn phải hiểu rất sâu về phần cứng,",35,0.0,0.715,pad,1.0,0,False,4.18,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,117,1.7,and register widths to write programs.,như mã lệnh và thanh ghi.,25,0.0,1.49,capped,1.3,0,False,1.948,0.248,0.248,0,0
+v3_r2,lec01,CNTT,V4,0,118,4.38,"This meant programming was hard and tedious, and even professional engineers and scientists","Việc này vô cùng khó khăn, khiến ngay cả kỹ sư",46,0.0,0.896,pad,1.0,0,False,4.38,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,119,2.62,struggled to take full advantage of what computing could offer.,cũng gặp trở ngại lớn.,22,0.0,0.879,pad,1.0,0,False,2.62,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,120,4.62,"What was needed was a simpler way to tell computers what to do, a simpler way to write","Cần có một cách lập trình đơn giản hơn,",39,0.0,0.67,pad,1.0,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,121,1.0,programs.,dễ viết hơn.,12,0.0,1.934,capped,1.3,0,False,1.488,0.488,0.488,0,0
+v3_r2,lec01,CNTT,V4,0,122,4.2,"And that brings us to programming languages, which we'll talk about next episode.","Đó là ngôn ngữ lập trình, chủ đề của tập sau.",45,0.0,0.909,pad,1.0,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,123,1.36,See you next week.,Hẹn gặp lại tuần tới!,21,0.0,1.726,capped,1.3,0,False,1.806,0.446,0.446,0,0
+v3_r2,lec01,CNTT,V4,0,124,4.22,Crash Course Computer Science is produced in association with PBS Digital Studios.,Crash Course được hợp tác sản xuất với PBS.,43,0.0,0.836,pad,1.0,0,False,4.22,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,125,3.62,"At their channel you can check out a playlist of shows like Brain Craft, Coma Niddy and",Bạn có thể xem thêm các show như Brain Craft,44,0.0,0.975,pad,1.0,0,False,3.62,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,126,1.34,PBS Infinite Series.,trên kênh của họ.,17,0.0,1.489,capped,1.3,0,False,1.535,0.195,0.195,0,0
+v3_r2,lec01,CNTT,V4,0,127,4.54,"This episode was filmed at the Chad and Stacey Emma Gulch Studio in Indianapolis, Indiana","Tập này được quay tại studio ở Indianapolis,",44,0.0,0.872,pad,1.0,0,False,4.54,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,128,3.64,and it was made with the help of all these nice people and our wonderful graphics team,với sự hỗ trợ của ê-kíp và đồ họa,33,0.0,0.94,pad,1.0,0,False,3.64,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,129,0.8,Thought Cafe.,Thought Cafe.,13,0.0,2.421,capped,1.3,0,False,1.49,0.69,0.69,0,0
+v3_r2,lec01,CNTT,V4,0,130,2.44,"Thanks for the random access memories, I'll see you next time.","Cảm ơn, hẹn gặp lại lần sau!",28,0.0,1.239,summarize,1.25,1,True,2.44,0.0,0.0,0,0
+v3_r2,lec01,CNTT,V4,0,131,0.5,you,Tạm biệt!,9,0.0,3.778,capped,1.3,0,False,1.453,0.953,0.953,0,0
+v3_r2,lec02,CNTT,V4,0,1,1.62,This episode is supported by Hover.,Hover tài trợ tập này.,22,0.0,1.492,capped,1.3,0,False,1.859,0.239,0.239,0,0
+v3_r2,lec02,CNTT,V4,0,2,2.9,"Hi, I'm Carrie-Anne and welcome to Crash Course Computer Science.","Chào bạn, mình là Carrie-Anne.",30,0.0,1.029,speedup,1.04,0,False,2.9,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,3,2.74,Computers in the 40s and early 50s ran one program at a time.,Máy tính thập niên 40 chỉ chạy 1 bài toán.,42,0.0,1.331,capped,1.3,1,True,2.805,0.065,0.065,0,0
+v3_r2,lec02,CNTT,V4,0,4,2.9,"A programmer would write one at their desk, for example, on punch cards.",Lập trình viên viết mã trên đẻn lỗ.,35,0.0,1.07,speedup,1.08,0,False,2.9,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,5,2.88,"Then, they'd carry it to a room containing a room-sized computer",Họ mang đến phòng máy lớn,25,0.0,0.887,pad,1.0,0,False,2.88,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,6,1.98,and hand it to a dedicated computer operator.,giao cho vận hành viên.,23,0.0,1.144,speedup,1.16,0,False,1.98,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,7,3.94,That person would then feed the program into the computer when it was next available.,Người này nạp bài khi máy rảnh.,31,0.0,0.694,pad,1.0,0,False,3.94,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,8,2.74,"The computer would run it, spit out some output and haul.","Máy chạy, in kết quả rồi dừng.",30,0.0,1.16,speedup,1.17,0,False,2.74,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,9,4.72,"This very manual process worked okay back when computers were slow, and running a program",Quy trình thủ công này ổn khi máy chậm và việc chạy,51,0.0,0.778,pad,1.0,0,False,4.72,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,10,2.12,"often took hours, days or even weeks.",tốn nhiều giờ hoặc vài tuần.,28,0.0,1.177,speedup,1.19,0,False,2.12,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,11,5.1,"But as we discussed last episode, computers became faster and faster and faster, exponentially",Nhưng máy tính đã nhanh hơn rất nhiều theo cấp số nhân.,55,0.0,0.727,pad,1.0,0,False,5.1,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,12,0.5,so.,rất nhanh.,10,0.0,3.845,capped,1.3,0,False,1.479,0.979,0.979,0,0
+v3_r2,lec02,CNTT,V4,0,13,3.48,"Pretty soon, having humans run around inserting programs into readers was taking longer than",Nạp bài thủ công tốn thời gian hơn,34,0.0,0.89,pad,1.0,0,False,3.48,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,14,1.8,running the actual programs themselves.,chính thời gian máy chạy.,25,0.0,1.265,speedup,1.28,0,False,1.8,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,15,4.62,"We needed a way for computers to operate themselves, and so operating systems were born.","Cần để máy tự vận hành, hệ điều hành ra đời.",44,0.0,0.764,pad,1.0,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,16,4.88,"Operating systems, or OSs for short, are just programs, but special privileges on the hardware",Hệ điều hành là chương trình có quyền quản lý ứng dụng khác.,60,0.0,0.789,pad,1.0,0,False,4.88,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,17,3.88,let them run and manage other programs. They're typically the first one to start when a computer,"Nó khởi động đầu tiên khi bật máy,",34,0.0,0.761,pad,1.0,0,False,3.88,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,18,4.06,"is turned on, and all subsequent programs are launched by the OS. They got their start",rồi kích hoạt mọi phần mềm. Nó ra đời,37,0.0,1.032,speedup,1.04,0,False,4.06,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,19,5.02,in the 1950s as computers became more widespread and more powerful. The very first OSs augmented,từ thập niên 50 khi máy tính phổ biến hơn. HĐH đầu tiên,55,0.0,1.094,speedup,1.1,0,False,5.02,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,20,4.38,the mundane manual task of loading programs by hand. Instead of being given one program,"giảm bớt việc nạp thủ công. Thay vì chạy từng bài,",50,0.0,1.053,speedup,1.06,0,False,4.38,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,21,4.32,"at a time, computers could be given batches. When the computer was done with one, it would","máy xử lý theo lô. Chạy xong bài này,",37,0.0,0.983,pad,1.0,0,False,4.32,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,22,3.46,automatically and near instantly start the next. There was no downtime while someone,máy tự chuyển bài tiếp. Không còn chờ đợi,41,0.0,1.272,speedup,1.28,0,False,3.46,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,23,4.42,scurried around an office to find the next program to run. This was called batch processing.,tìm bài chạy tiếp. Đó là xử lý theo lô.,39,0.0,0.986,pad,1.0,0,False,4.42,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,24,3.82,"While computers got faster, they also got cheaper. So they were popping up all over",Máy tính ngày càng nhanh và rẻ hơn.,35,0.0,0.792,pad,1.0,0,False,3.82,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,25,5.56,"the world, especially in universities and government offices. Soon, people started sharing software.",Nên chúng xuất hiện khắp nơi và mọi người bắt đầu chia sẻ phần mềm.,67,0.0,0.803,pad,1.0,0,False,5.56,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,26,4.88,"But there was a problem. In the era of one-off computers, like the Harvard Mark 1 or ENIAC,","Tuy nhiên, thời máy tính đơn bản như ENIAC,",43,0.0,0.826,pad,1.0,0,False,4.88,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,27,4.48,only had to write code for that one single machine. The processor punch card readers,mã chỉ viết cho riêng cỗ máy đó.,32,0.0,0.659,pad,1.0,0,False,4.48,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,28,4.28,"and printers were known and unchanging, but as computers became more widespread, their","Cấu hình cố định, nhưng khi máy tính phổ biến,",46,0.0,0.858,pad,1.0,0,False,4.28,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,29,4.6,"configurations were not always identical, like computers might have the same CPU, but",cấu hình lại khác nhau như chung CPU,36,0.0,0.681,pad,1.0,0,False,4.6,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,30,3.66,not the same printer. This was a huge pain for programmers. Not only did they have to,nhưng khác máy in. Lập trình viên rất vất vả,44,0.0,1.263,speedup,1.27,0,False,3.66,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,31,3.5,"worry about writing their program, but also how to interface with each and every model",vì phải lo tương thích từng loại máy in,39,0.0,0.874,pad,1.0,0,False,3.5,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,32,4.84,"of printer, and all devices connected to a computer, what are called peripherals. Interfacing",và các thiết bị ngoại vi kết quả. Giao tiếp,43,0.0,0.93,pad,1.0,0,False,4.84,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,33,4.18,"with early peripherals was very low level, requiring programmers to know intimate hardware","thiết bị cũ rất sâu, đòi hỏi nắm rõ phần cứng.",46,0.0,0.939,pad,1.0,0,False,4.18,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,34,15.04,details about each device On top of that programmers rarely had access to every model of peripheral to test their code on So they had to write code as best they could often just by reading manuals and hope it worked when shared Things weren exactly plug and play back then more plug and pray,Họ ít khi có đủ thiết bị để thử nên phải tự đọc tài liệu rồi hi vọng phần mềm chạy được. Lúc đó chưa có cắm là chạy mà chỉ có cắm rồi cầu nguyện.,145,0.0,0.613,pad,1.0,0,False,15.04,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,35,4.92,"This was clearly terrible, so to make it easier for programmers, operating systems were implemented","Để đỡ vất vả hơn, hệ điều hành làm trung gian",45,0.0,0.783,pad,1.0,0,False,4.92,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,36,4.74,"as intermediaries between software programs and hardware peripherals. More specifically,",giữa phần mềm và phần cứng ngoại vi.,36,0.0,0.63,pad,1.0,0,False,4.74,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,37,4.62,they provided a software abstraction through APIs called device drivers. These allowed programmers,HĐH cung cấp trừu tượng hóa qua trình điều khiển.,49,0.0,0.818,pad,1.0,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,38,5.18,"to talk to common input and output hardware, or I.O. for short, using standardized mechanisms.",Giúp lập trình viên giao tiếp với phần cứng chuẩn hóa.,54,0.0,0.702,pad,1.0,0,False,5.18,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,39,3.72,"For example, programmers could call a function like print high score, and the OS would do","Chỉ cần gọi hàm in, HĐH sẽ lo phần xử lý",40,0.0,1.112,speedup,1.12,0,False,3.72,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,40,1.98,the heavy lifting to get it onto paper.,để in ra giấy.,14,0.0,1.024,speedup,1.04,0,False,1.98,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,41,3.82,"By the end of the 1950s, computers had gotten so fast they were often idle, waiting for","Cuối thập niên 50, máy tính quá nhanh nên thường rảnh",53,0.0,1.072,speedup,1.08,0,False,3.82,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,42,3.24,"slow mechanical things, like printers and punch card readers.",chờ các thiết bị cơ khí chậm chạp.,34,0.0,0.9,pad,1.0,0,False,3.24,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,43,3.8,"While programs were blocked on I.O., the expensive processor was just chilling.",Bộ vi xử lý đắt đỏ phải nằm chờ.,32,0.0,0.805,pad,1.0,0,False,3.8,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,44,1.7,"Not like a villain, you know, just relaxing.",Chỉ ngồi nghỉ ngơi.,19,0.0,1.175,speedup,1.21,0,False,1.7,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,45,4.2,"In the late 50s, the University of Manchester in the UK started work on a supercomputer called","Cuối thập niên 50, Đại học Manchester làm siêu máy tính",55,0.0,1.093,speedup,1.1,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,46,4.22,"Atlas, one of the first in the world. They knew it was going to be wicked fast, so they",Atlas. Họ muốn khai thác tối đa cỗ máy đắt đỏ này.,50,0.0,1.112,speedup,1.12,0,False,4.22,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,47,2.8,needed a way to make maximal use of the expensive machine.,Tối ưu hiệu suất máy tính.,26,0.0,0.9,pad,1.0,0,False,2.8,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,48,4.56,"Their solution was a program called the Atlas Supervisor, finished in 1962. This operating",Giải pháp là Atlas Supervisor năm 1962.,39,0.0,1.043,speedup,1.05,0,False,4.56,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,49,3.9,"system not only loaded programs automatically, like earlier batch systems, but could also","Nó vừa nạp bài tự động, vừa chạy",32,0.0,0.877,pad,1.0,0,False,3.9,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,50,4.62,run several at the same time on its single CPU. It did this through clever scheduling.,nhiều bài cùng lúc nhờ lập lịch thông minh.,43,0.0,0.67,pad,1.0,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,51,4.46,"Let's say we have a game program running on Atlas, and we call the function print highscore,","Giả sử game trên Atlas gọi hàm in điểm,",39,0.0,0.775,pad,1.0,0,False,4.46,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,52,4.22,which instructs Atlas to print the value of a variable named highscore onto paper to show,yêu cầu Atlas in giá trị biến lên giấy,38,0.0,0.836,pad,1.0,0,False,4.22,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,53,3.22,our friends that we're the ultimate champion of virtual tiddlywinks.,để khoe với bạn bè.,19,0.0,0.671,pad,1.0,0,False,3.22,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,54,4.34,"That function call is going to take a while, the equivalent of thousands of clock cycles,",Việc in mất nhiều thời gian vì máy in cơ,40,0.0,0.771,pad,1.0,0,False,4.34,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,55,4.04,because mechanical printers are slow in comparison to electronic CPUs.,rất chậm so với CPU điện tử.,28,0.0,0.757,pad,1.0,0,False,4.04,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,56,4.52,"So instead of waiting for the I.O. to finish, Atlas instead puts our program to sleep, then","Thay vì chờ, Atlas tạm dừng game",32,0.0,0.709,pad,1.0,0,False,4.52,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,57,2.4,selects and runs another program that's waiting and ready to run.,và chạy bài khác đang chờ.,26,0.0,1.077,speedup,1.09,0,False,2.4,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,58,2.68,"Eventually, the printer will report back to Atlas that it finished printing the value of","Khi máy in xong,",16,0.0,0.793,pad,1.0,0,False,2.68,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,59,0.76,high score.,điểm số.,8,0.0,2.547,capped,1.3,0,False,1.489,0.729,0.729,0,0
+v3_r2,lec02,CNTT,V4,0,60,3.5,"Atlas then marks our program as ready to go, and at some point, it'll be scheduled to",Atlas sẽ cấp quyền cho game chạy tiếp,37,0.0,0.843,pad,1.0,0,False,3.5,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,61,4.74,"run again on the CPU, and continue onto the next line of code following the print statement.",trên CPU ở dòng lệnh ngay sau lệnh in.,38,0.0,0.752,pad,1.0,0,False,4.74,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,62,4.22,"In this way, Atlas could have one program running calculations on the CPU, while another",Atlas vừa chạy tính toán vừa in dữ liệu,39,0.0,0.81,pad,1.0,0,False,4.22,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,63,3.64,"was printing out data, and yet another reading in data from a punch tape.",và đọc dữ liệu từ băng đĩa.,27,0.0,0.752,pad,1.0,0,False,3.64,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,64,4.24,Atlas's engineers doubled down on this idea and outfitted their computer with four paper,"Các kỹ sư trang bị cho máy bốn đầu đọc băng,",44,0.0,0.807,pad,1.0,0,False,4.24,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,65,3.92,"tape readers, four paper tape punches, and up to eight magnetic tape drives.",bốn máy đục lỗ và tám ổ băng từ.,32,0.0,0.808,pad,1.0,0,False,3.92,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,66,4.86,"This allowed many programs to be in progress all at once, sharing time on a single CPU.","Nhờ đó nhiều chương trình chạy cùng lúc, chia sẻ CPU.",53,0.0,0.881,pad,1.0,0,False,4.86,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,67,4.0,"This ability, enabled by the operating system, is called multitasking.",Khả năng này của hệ điều hành gọi là đa nhiệm.,46,0.0,0.864,pad,1.0,0,False,4.0,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,68,3.92,"There's one big catch to having many programs running simultaneously on a single computer,",Tuy nhiên chạy nhiều bài cùng lúc có một vấn đề.,48,0.0,0.872,pad,1.0,0,False,3.92,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,69,0.5,though.,Đó là,5,0.0,3.851,capped,1.3,0,False,1.481,0.981,0.981,0,0
+v3_r2,lec02,CNTT,V4,0,70,18.44,Each one is going to need some memory and we can lose that program data when we switch to another program The solution is to allocate each program its own block of memory So for example let say a computer has 10 memory locations in total Program A might get allocated memory addresses 0 through 999 and Program B might get 1,"Mỗi bài cần bộ nhớ riêng và dữ liệu dễ bị mất khi chuyển bài. Giải pháp là cấp cho mỗi bài một vùng nhớ riêng. Ví dụ máy có 10 vị trí nhớ, bài A nhận từ 0 đến 999, bài B nhận từ 1000 đến 1999.",192,0.0,0.89,pad,1.0,0,False,18.44,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,71,5.52,"through 1,999, and so on. If a program asks for more memory, the operating system decides","Nếu chương trình xin thêm, hệ điều hành sẽ quyết định",53,0.0,0.711,pad,1.0,0,False,5.52,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,72,4.72,"if it can grant that request, and if so, what memory block to allocate next. This flexibility",và cấp phát khối nhớ tiếp theo. Việc này,40,0.0,0.908,pad,1.0,0,False,4.72,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,73,4.72,"is great, but introduces a quirk. It means that Program A could end up being allocated",tạo ra một rắc rối. Bài A có thể nhận,37,0.0,0.923,pad,1.0,0,False,4.72,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,74,6.84,"non-sequential blocks of memory in, say, addresses 0 through 999 and 2000 through 2999. And this",các khối nhớ không liền nhau như 0 đến 999 và 2000 đến 2999.,60,0.0,0.932,pad,1.0,0,False,6.84,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,75,4.2,is just a simple example. A real program might be allocated dozens of blocks scattered all,Thực tế mã có thể nằm phân tán khắp nơi.,40,0.0,0.763,pad,1.0,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,76,3.54,"over memory. As you might imagine, this would get really confusing for programmers to keep",Lập trình viên rất khó theo dõi.,32,0.0,0.814,pad,1.0,0,False,3.54,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,77,3.94,track of. Maybe there's a long list of sales data in memory that a programmer has to total,Dữ liệu bán hàng cần tổng hợp lại nằm,37,0.0,0.813,pad,1.0,0,False,3.94,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,78,3.5,up at the end of the day. But this list is stored across a bunch of different blocks of,rải rác ở nhiều khối nhớ khác nhau.,35,0.0,0.843,pad,1.0,0,False,3.5,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,79,5.34,"memory. To hide this complexity, operating systems virtualize memory locations. With","Để xử lý, hệ điều hành dùng bộ nhớ ảo.",38,0.0,0.674,pad,1.0,0,False,5.34,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,80,3.68,"virtual memory, programs can assume their memory always starts at address zero, keeping","Chương trình luôn coi bộ nhớ bắt đầu từ 0,",42,0.0,0.92,pad,1.0,0,False,3.68,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,81,4.34,"things simple and consistent. However, the actual physical location in computer memory",còn địa chỉ thực tế do hệ điều hành quản lý.,44,0.0,0.771,pad,1.0,0,False,4.34,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,82,4.38,is hidden and abstracted by the operating system. Just a new level of abstraction.,Một tầng trừu tượng mới.,24,0.0,0.567,pad,1.0,0,False,4.38,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,83,3.88,"Let's take our example Program B, which has been allocated a block of memory from address",Bài B được cấp vùng nhớ từ 1000,31,0.0,0.807,pad,1.0,0,False,3.88,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,84,8.12,"1000 to 1999. As far as Program B can tell, this appears to be a block from 0 to 999.",đến 1999. Nhưng bài B chỉ thấy từ 0 đến 999.,44,0.0,0.838,pad,1.0,0,False,8.12,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,85,4.9,"The OS and CPU handle the virtual-to-physical memory remapping automatically, so if Program","Hệ điều hành tự ánh xạ địa chỉ, nếu bài B",41,0.0,0.793,pad,1.0,0,False,4.9,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,86,5.04,"B requests memory location 42, it really ends up reading address 1042.","gọi ô 42, nó sẽ đọc ô 1042 thực tế.",35,0.0,1.024,speedup,1.03,0,False,5.04,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,87,4.0,"This virtualization of memory addresses is even more useful for Program A, which in our",Bộ nhớ ảo rất hữu ích cho bài A,31,0.0,0.765,pad,1.0,0,False,4.0,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,88,3.86,"example has been allocated two blocks of memory that are separated from one another. This,",khi được cấp hai khối nhớ rời nhau.,35,0.0,0.774,pad,1.0,0,False,3.86,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,89,4.9,"This too is invisible to program A. As far as it can tell, it's been allocated a continuous",Bài A vẫn thấy một khối liên tục 2000 ô.,40,0.0,0.705,pad,1.0,0,False,4.9,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,90,6.14,"block of 2000 addresses. When program A reads memory address 999, that does coincidentally","Khi đọc ô 999, nó trùng với địa chỉ thực 999.",45,0.0,0.85,pad,1.0,0,False,6.14,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,91,5.34,map to physical memory address 999. But if program A reads the very next value in memory,"Nhưng đọc ô 1000, hệ thống sẽ ánh xạ sang ô 2000 thực tế.",57,0.0,0.897,pad,1.0,0,False,5.34,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,92,4.56,"at address 1000, that gets mapped behind the scenes to physical memory address 2000. This",Cơ chế cấp phát bộ nhớ động giúp,32,0.0,0.647,pad,1.0,0,False,4.56,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,93,4.84,"mechanism allows programs to have flexible memory sizes, called dynamic memory allocation,",mã nguồn thấy bộ nhớ luôn liền mạch.,36,0.0,0.602,pad,1.0,0,False,4.84,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,94,4.78,appear to be continuous to them. It simplifies everything and offers tremendous flexibility,Nó đơn giản hóa và linh hoạt cho hệ điều hành.,46,0.0,0.753,pad,1.0,0,False,4.78,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,95,3.76,to the operating system in running multiple programs simultaneously.,khi chạy nhiều chương trình cùng lúc.,37,0.0,0.718,pad,1.0,0,False,3.76,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,96,3.42,Another upside of allocating each program its own memory is that they're better isolated,Cấp bộ nhớ riêng giúp cô lập các bài.,37,0.0,0.874,pad,1.0,0,False,3.42,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,97,13.9,from one another So if a buggy program goes awry and starts writing gobbledygook it can only trash its own memory not that of other programs This feature is called memory protection This is also really useful in protecting against malicious software like viruses,"Nếu bài lỗi ghi đè dữ liệu, nó chỉ làm hỏng bộ nhớ của nó. Tính năng này gọi là bảo vệ bộ nhớ, giúp chống lại mã độc hay virus.",127,0.0,0.666,pad,1.0,0,False,13.9,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,98,3.72,"For example, we generally don't want other programs to have the ability to read or modify",Ví dụ ta không muốn phần mềm khác đọc,37,0.0,0.823,pad,1.0,0,False,3.72,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,99,1.8,"the memory of, let's say, our email.",bộ nhớ của email.,17,0.0,1.286,speedup,1.3,0,False,1.8,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,100,4.04,"With that kind of access, malware could send emails on your behalf and maybe steal personal",Mã độc có thể gửi thư giả mạo và trộm,37,0.0,0.811,pad,1.0,0,False,4.04,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,101,0.5,information.,dữ liệu.,8,0.0,3.874,capped,1.3,0,False,1.49,0.99,0.99,0,0
+v3_r2,lec02,CNTT,V4,0,102,1.0,Not good!,Rất nguy hiểm!,14,0.0,1.97,capped,1.3,0,False,1.515,0.515,0.515,0,0
+v3_r2,lec02,CNTT,V4,0,103,1.8,Atlas had both virtual and protected memory.,Atlas có cả bộ nhớ ảo và bảo vệ.,32,0.0,1.745,capped,1.3,0,False,2.416,0.616,0.616,0,0
+v3_r2,lec02,CNTT,V4,0,104,2.86,It was the first computer and OS to support these features.,Đây là HĐH đầu tiên hỗ trợ tính năng này.,41,0.0,1.251,speedup,1.26,0,False,2.86,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,105,3.54,"At the 1970s, computers were sufficiently fast and cheap.","Đến thập niên 70, máy tính đã rẻ và nhanh.",42,0.0,1.092,speedup,1.1,0,False,3.54,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,106,3.62,Institutions like a university could buy a computer and let students use it.,Trường học có thể mua cho sinh viên dùng.,41,0.0,0.815,pad,1.0,0,False,3.62,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,107,4.32,"It was not only fast enough to run several programs at once, but also give several users",Máy đủ nhanh để chạy nhiều bài và cho nhiều người,49,0.0,0.817,pad,1.0,0,False,4.32,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,108,2.02,simultaneous interactive access.,dùng cùng lúc.,14,0.0,0.945,pad,1.0,0,False,2.02,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,109,3.2,"This was done through a terminal, which is a keyboard and screen that connects to a big","Qua màn hình và bàn phím kết nối máy trung tâm,",47,0.0,1.07,speedup,1.08,0,False,3.2,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,110,2.88,"computer, but doesn't contain any processing power itself.",bản thân nó không có bộ xử lý.,30,0.0,0.975,pad,1.0,0,False,2.88,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,111,5.6,"A refrigerator-sized computer might have 50 terminals connected to it, allowing up to 50 users.",Một cỗ máy lớn có thể nối 50 màn hình cho 50 người.,51,0.0,0.733,pad,1.0,0,False,5.6,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,112,4.9,"Now operating systems had to handle not just multiple programs, but also multiple users.",Hệ điều hành phải quản lý nhiều người dùng.,43,0.0,0.632,pad,1.0,0,False,4.9,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,113,3.76,"So that no one person could gobble up all of a computer's resources, operating systems","Để không ai chiếm hết tài nguyên,",33,0.0,0.718,pad,1.0,0,False,3.76,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,114,1.62,were developed that offered timesharing.,hệ điều hành chia sẻ thời gian.,31,0.0,1.649,capped,1.3,0,False,2.055,0.435,0.435,0,0
+v3_r2,lec02,CNTT,V4,0,115,4.4,"With timesharing, each individual user was only allowed to utilize a small fraction of",Mỗi người dùng chỉ được dùng một phần nhỏ,41,0.0,0.728,pad,1.0,0,False,4.4,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,116,2.5,"the computer's processor, memory and so on.",tài nguyên xử lý và bộ nhớ.,27,0.0,1.098,speedup,1.11,0,False,2.5,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,117,4.26,"Because computers are so fast, even getting just 1 50th of its resources was enough for",Máy rất nhanh nên 1/50 tài nguyên là đủ,39,0.0,0.913,pad,1.0,0,False,4.26,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,118,1.3,individuals to complete many tasks.,để làm việc.,12,0.0,1.479,capped,1.3,0,False,1.479,0.179,0.179,0,0
+v3_r2,lec02,CNTT,V4,0,119,4.24,"The most influential of early timesharing operating systems was Multics, or Multiplex",HĐH chia sẻ thời gian nổi tiếng là Multics,42,0.0,0.841,pad,1.0,0,False,4.24,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,120,5.56,"Information and Computing Service, released in 1969. Multics was the first major operating",ra mắt năm 1969. Multics là HĐH đầu tiên,40,0.0,1.154,speedup,1.16,0,False,5.56,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,121,4.2,system designed to be secure from the outset. Developers didn't want mischievous users,được thiết kế bảo mật ngay từ đầu.,34,0.0,0.669,pad,1.0,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,122,3.98,"accessing data they shouldn't, like students attempting to access their final exam on their",Tránh việc sinh viên truy cập đề thi của giáo sư.,49,0.0,0.859,pad,1.0,0,False,3.98,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,123,0.78,professor's account.,trên máy.,9,0.0,2.45,capped,1.3,0,False,1.47,0.69,0.69,0,0
+v3_r2,lec02,CNTT,V4,0,124,4.16,"Features like this meant Multics was really complicated for its time, using around 1 megabit","Tính năng này khiến Multics phức tạp,",37,0.0,0.675,pad,1.0,0,False,4.16,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,125,4.2,"of memory, which was a lot back then. That might be half of a computer's memory just","ngốn 1MB bộ nhớ, chiếm nửa bộ nhớ máy",37,0.0,0.986,pad,1.0,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,126,1.02,to run the OS.,chỉ để chạy HĐH.,16,0.0,2.369,capped,1.3,0,False,1.859,0.839,0.839,0,0
+v3_r2,lec02,CNTT,V4,0,127,3.2,"Dennis Ritchie, one of the researchers working on Multics, once said,",Dennis Ritchie từng nói:,24,0.0,0.855,pad,1.0,0,False,3.2,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,128,3.84,One of the obvious things that went wrong with MULTIX as a commercial success was just,Multics thất bại thương mại vì nó,33,0.0,0.797,pad,1.0,0,False,3.84,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,129,3.64,"that it was sort of over-engineered, in a sense. There was just too much in it. This","bị thiết kế quá đà, chứa quá nhiều thứ.",39,0.0,0.989,pad,1.0,0,False,3.64,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,130,3.52,"led Dennis and another MULTIX researcher, Ken Thompson, to strike out on their own and",Dennis và Ken Thompson đã tự phát triển,39,0.0,1.021,speedup,1.03,0,False,3.52,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,131,5.3,build a new lean operating system called UNIX. They wanted to separate the OS into two parts.,hệ điều hành tinh gọn Unix. Họ chia HĐH làm hai phần.,53,0.0,1.004,speedup,1.01,0,False,5.3,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,132,4.62,"First was the core functionality of the OS, things like memory management, multitasking,","Phần lõi quản lý bộ nhớ, đa nhiệm và I/O",40,0.0,0.958,pad,1.0,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,133,4.0,"and dealing with I.O., which is called the kernel. The second part was a wide array of",gọi là nhân kernel. Phần hai là các công cụ,43,0.0,1.182,speedup,1.19,0,False,4.0,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,134,4.08,"useful tools that came bundled with, but not part of the kernel, things like programs and",đi kèm nhân như chương trình và thư viện.,41,0.0,0.776,pad,1.0,0,False,4.08,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,135,0.98,libraries.,tiện ích.,9,0.0,1.947,capped,1.3,0,False,1.468,0.488,0.488,0,0
+v3_r2,lec02,CNTT,V4,0,136,3.24,Building a compact lean kernel meant intentionally leaving some functionality out.,Nhân gọn nhẹ đồng nghĩa bỏ bớt tính năng.,41,0.0,1.02,speedup,1.03,0,False,3.24,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,137,2.32,"Tom Van Vleck, another Multics developer, recalled,",Tom Van Vleck nhớ lại:,22,0.0,1.077,speedup,1.09,0,False,2.32,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,0,138,3.92,I remarked to Dennis that easily half of the code I was writing in Multics was error,Tôi nói với Dennis là một nửa mã Multics là để bắt lỗi,54,0.0,1.143,speedup,1.15,0,False,3.92,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,139,4.96,"recovery code. He said, we left all that stuff out of Unix. If there's an error, we have","mã phục hồi. Ông nói, Unix đã bỏ hết những thứ đó.",50,0.0,1.094,speedup,1.1,0,False,4.96,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,140,4.14,this routine called panic. And when it is called the machine crashes and you holler down the,"Nếu lỗi, ta có một hàm gọi là panic.",36,0.0,0.87,pad,1.0,0,False,4.14,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,141,4.2,"hall, hey, reboot it, you might have heard of kernel panics. This is where the term came","Khi hàm chạy, máy sập và bạn gọi lớn: khởi động lại đi.",55,0.0,1.073,speedup,1.08,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,142,4.52,"from. It's literally when the kernel crashes, has no recourse to recover, and so calls a",Bạn có thể từng nghe thuật ngữ kernel panic.,44,0.0,0.741,pad,1.0,0,False,4.52,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,143,4.18,"function called panic. Originally, all it did was print the word panic and then enter","Nó bắt nguồn từ đây, khi nhân sập và hết cách xử lý.",52,0.0,1.033,speedup,1.04,0,False,4.18,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,144,3.84,an infinite loop. This simplicity meant that Unix could be run on cheaper and more diverse,"Nó sẽ gọi hàm panic, ban đầu chỉ in chữ panic",45,0.0,1.082,summarize,1.09,1,True,3.84,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,145,4.8,"hardware, making it popular inside Bell Labs where Dennis and Ken worked. As more developers",rồi vào vòng lặp vô tận. Sự đơn giản giúp Unix,46,0.0,1.023,speedup,1.03,0,False,4.8,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,146,3.68,"started using Unix to build and run their own programs, the number of contributed tools",chạy được trên phần cứng rẻ và đa dạng hơn.,43,0.0,0.92,pad,1.0,0,False,3.68,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,147,4.82,"grew. Soon after its release in 1971, it gained compilers for different programming languages","Điều này giúp nó phổ biến ở Bell Labs, nơi Dennis và Ken làm việc.",66,0.0,0.978,pad,1.0,0,False,4.82,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,148,4.62,"and even a word processor, quickly making it one of the most popular OSs of the 1970s","Khi thêm nhiều lập trình viên dùng Unix để chạy ứng dụng,",57,0.0,0.849,pad,1.0,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,149,4.66,"and 80s. At the same time, by the early 1980s, the cost of a basic computer had fallen to",số lượng công cụ đóng góp ngày càng tăng lên.,45,0.0,0.718,pad,1.0,0,False,4.66,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,150,4.28,"the point where individual people could afford one, called a personal or home computer. These","Năm 1971, nó có thêm trình biên dịch cho nhiều ngôn ngữ",55,0.0,1.223,speedup,1.23,0,False,4.28,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,151,4.68,"These were much simpler than the big mainframes found at universities, corporations and governments,","và cả trình xử lý văn bản. Nhờ đó, nó nhanh chóng",49,0.0,1.123,speedup,1.13,0,False,4.68,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,152,2.46,so their operating systems had to be equally simple.,thành HĐH phổ biến năm 80.,26,0.0,1.277,summarize,1.29,1,True,2.46,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,153,5.5,"For example, Microsoft's Disk Operating System, or MS-DOS, was just 160 kilobytes,","Đầu thập niên 80, giá máy tính giảm mạnh,",41,0.0,0.674,pad,1.0,0,False,5.5,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,154,2.82,"allowing it to fit, as the name suggests, onto a single disk.",đến mức cá nhân cũng mua được máy tính riêng.,45,0.0,1.099,speedup,1.11,0,False,2.82,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,155,4.42,"First released in 1981, it became the most popular OS for early home computers, even","Các máy này đơn giản hơn nhiều so với máy chủ lớn,",50,0.0,0.823,pad,1.0,0,False,4.42,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,156,3.34,though it lacked features like multitasking and protected memory.,nên hệ điều hành của chúng cũng phải đơn giản.,46,0.0,1.041,speedup,1.05,0,False,3.34,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,157,3.76,"This meant that programs could, and would, regularly crash the system.","Như MS-DOS Microsoft chỉ nặng 160 kilobyte,",43,0.0,1.264,summarize,1.27,1,True,3.76,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,158,3.78,"While annoying, it was an acceptable trade-off, as users could just turn their own computers",chỉ vừa gọn trong một chiếc đĩa mềm.,36,0.0,0.733,pad,1.0,0,False,3.78,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,159,0.88,off and on again.,"Ra mắt năm 1981, nó thành HĐH phổ biến nhất,",44,0.0,5.696,capped,1.3,0,False,3.856,2.976,2.976,0,0
+v3_r2,lec02,CNTT,V4,1,160,4.36,"Even early versions of Windows, first released by Microsoft in 1985, and which dominated",dù thiếu đa nhiệm và bảo vệ bộ nhớ.,35,0.0,0.735,pad,1.0,0,False,4.36,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,161,3.94,"the OS scene throughout the 1990s, lacked strong memory protection.",Nghĩa là các chương trình có thể làm sập hệ thống.,50,0.0,0.895,pad,1.0,0,False,3.94,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,162,4.06,"When programs misbehave, you could get the blue screen of death, a sign that a program","Dù phiền, nhưng người dùng chấp nhận đánh đổi",45,0.0,0.896,pad,1.0,0,False,4.06,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,163,12.36,had crashed so badly that it took down the whole operating system Luckily newer versions of Windows have better protections and usually don crash that often Today computers run modern operating systems like Mac OS X Windows 10,vì họ chỉ cần tắt máy đi rồi bật lại.,37,0.0,0.262,pad,1.0,0,False,12.36,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,164,4.24,"Linux, iOS and Android. Even though the computers we own are most often used by just a single","Ngay cả các bản Windows đầu tiên ra mắt năm 1985,",49,0.0,1.193,speedup,1.2,0,False,4.24,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,165,4.94,person – you – their OS's all have multitasking and virtual and protected memory. So they,"vốn thống trị thập niên 90, cũng thiếu bảo vệ bộ nhớ.",53,0.0,0.896,pad,1.0,0,False,4.94,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,166,4.44,"can run many programs at once. You can watch YouTube in your web browser, edit a photo","Khi phần mềm lỗi, bạn sẽ gặp màn hình xanh chết chóc.",53,0.0,0.892,pad,1.0,0,False,4.44,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,167,5.32,"in Photoshop, play music in Spotify and sync Dropbox all at the same time. This wouldn't","Lỗi chương trình kéo cả HĐH. Giờ ta dùng HĐH hiện đại như Windows 10,",69,0.0,1.245,summarize,1.25,1,True,5.32,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,168,4.1,"be possible without those decades of research and development on operating systems, and","Linux, iOS, Android. Dù máy chỉ một người",41,0.0,1.273,summarize,1.28,1,True,4.1,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,169,4.26,"of course the proper memory to store those programs, which we'll get to next week.","sử dụng, HĐH vẫn có đa nhiệm và bộ nhớ ảo.",42,0.0,1.023,speedup,1.03,0,False,4.26,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,170,3.84,I'd like to thank Hover for sponsoring this episode. Hover is a service that helps you,"Nhờ đó, máy có thể chạy nhiều ứng dụng cùng lúc.",48,0.0,0.975,pad,1.0,0,False,3.84,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,171,4.44,buy and manage domain names. Hover has over 400 domain extensions to enter your domain,"Bạn vừa xem YouTube, vừa sửa ảnh bằng Photoshop,",48,0.0,0.9,pad,1.0,0,False,4.44,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,172,4.38,"with, including .com and .net. You can also get unique domains that are more professional",nghe nhạc Spotify và đồng bộ Dropbox cùng lúc.,46,0.0,0.871,pad,1.0,0,False,4.38,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,173,4.88,"than a generic address. Here at Crash Course, we get the domain name mongols.fans, but I","Điều này có được là nhờ hàng thập kỷ nghiên cứu HĐH,",52,0.0,0.789,pad,1.0,0,False,4.88,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,174,4.34,"think you know that already. Once you have your domain, you can set up your custom email",và cả bộ nhớ phù hợp để lưu trữ chương trình.,45,0.0,0.821,pad,1.0,0,False,4.34,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,175,3.66,"to forward to your existing email address, including Outlook or Gmail or whatever you",Cảm ơn Hover đã tài trợ cho tập phim này.,41,0.0,0.915,pad,1.0,0,False,3.66,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,176,5.38,"already use. With Hover, you can get a custom domain and email address for 10% off. Go to",Hover giúp bạn mua và quản lý các tên miền.,43,0.0,0.629,pad,1.0,0,False,5.38,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,177,4.68,hover.com slash crashcourse today to create your custom domain and help support our show.,Hover có hơn 400 phần mở rộng tên miền như .com hay .net.,57,0.0,1.003,speedup,1.01,0,False,4.68,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,178,4.22,Crash Course Computer Science is produced in association with PBS Digital Studios. At,Bạn cũng có thể có tên miền độc đáo chuyên nghiệp hơn.,54,0.0,0.827,pad,1.0,0,False,4.22,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,179,4.1,"At their channel you can check out a playlist of shows like BrainCraft, Coma Niddy and PBS","Tại Crash Course, chúng tôi dùng tên miền mongols.fans.",55,0.0,1.203,speedup,1.21,0,False,4.1,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,180,0.88,Infinite Series.,"Có tên miền rồi, bạn có thể tạo email chuyển tiếp",49,0.0,4.26,capped,1.3,0,False,2.884,2.004,2.004,0,0
+v3_r2,lec02,CNTT,V4,1,181,4.52,"This episode was filmed at the Chad and Stacey Emmergoltz studio in Indianapolis, Indiana",đến email hiện tại như Outlook hay Gmail.,41,0.0,0.733,pad,1.0,0,False,4.52,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,182,3.64,and it was made with the help of all these nice people and our wonderful graphics team,"Với Hover, bạn được giảm 10% cho tên miền và email.",51,0.0,1.231,speedup,1.24,0,False,3.64,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,183,0.8,Thought Cafe.,Hãy truy cập hover.com/crashcourse ngay hôm nay.,48,0.0,5.088,capped,1.3,0,False,3.131,2.331,2.331,0,0
+v3_r2,lec02,CNTT,V4,1,184,2.52,"Thanks for the Random Access Memories, I'll see you next time.",Crash Course Máy tính cùng PBS.,31,0.0,1.147,summarize,1.16,1,True,2.52,0.0,0.0,0,0
+v3_r2,lec02,CNTT,V4,1,185,0.98,Thank you.,"Trên kênh của họ, bạn có thể xem các show như BrainCraft.",57,0.0,4.201,capped,1.3,0,False,3.167,2.187,2.187,0,0
+v3_r2,lec03,KyNangMem,V4,0,1,2.82,"Hi, I'm Carrie-Anne and welcome to Crash Course Computer Science.","Tôi là Carrie-Anne, chào Crash Course.",38,0.0,1.2,summarize,1.21,1,True,2.82,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,2,4.7,"As we talked about last episode, your computer is connected to a large distributed network called the Internet.","Như tập trước đã nói, máy tính bạn kết nối vào mạng lớn là Internet.",68,0.0,1.054,speedup,1.06,0,False,4.7,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,3,4.08,I know this because you're watching a YouTube video which is being streamed over that very Internet.,Tôi biết vì bạn đang xem video YouTube phát qua Internet đó.,60,0.0,1.093,speedup,1.1,0,False,4.08,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,4,2.5,It's arranged as an ever-enlarging web of interconnected devices.,Nó được xếp như mạng lưới thiết bị.,35,0.0,1.158,speedup,1.17,0,False,2.5,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,5,4.56,"For your computer to get this video, the first connection is to your local area network, or LAN,","Đầu tiên, máy tính kết nối với mạng cục bộ, gọi là LAN,",55,0.0,1.023,speedup,1.03,0,False,4.56,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,6,2.68,which might be every device in your house that's connected to your Wi-Fi router.,gồm các thiết bị nối Wi-Fi nhà bạn.,35,0.0,1.168,speedup,1.18,0,False,2.68,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,7,5.04,"router. This then connects to a wide area network or WAN, which is likely to be a router","LAN nối vào mạng diện rộng WAN, thường là một router",52,0.0,0.814,pad,1.0,0,False,5.04,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,8,5.62,"run by your internet service provider or ISP, companies like Comcast, AT&T or Verizon.","cung cấp bởi nhà mạng ISP như Comcast, AT&T hay Verizon.",56,0.0,0.954,pad,1.0,0,False,5.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,9,3.6,"At first, this will be a regional router, like one for your neighbourhood, and then that","Đó là router vùng, như ở khu phố bạn,",37,0.0,1.031,speedup,1.04,0,False,3.6,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,10,3.92,"router connects to an even bigger WAN, maybe one for your whole city or town. There might",rồi nối tới WAN lớn hơn ở cấp thành phố. Qua vài,48,0.0,1.234,speedup,1.24,0,False,3.92,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,11,3.88,"be a couple more hops, but ultimately you'll connect to the backbone of the internet, made","bước nữa, gói tin sẽ tới đường trục Internet,",45,0.0,0.984,pad,1.0,0,False,3.88,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,12,4.06,up of gigantic routers with super high bandwidth connections running between them. To request,tạo bởi các router khổng lồ có băng thông siêu cao. Để lấy,58,0.0,1.272,speedup,1.28,0,False,4.06,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,13,4.2,"this video file from YouTube, a packet had to work its way up to the backbone, travel","video YouTube, gói tin đi lên đường trục, chạy trên đó",54,0.0,1.043,speedup,1.05,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,14,3.5,"along that for a bit, and then work its way back down to a YouTube server that had the",rồi đi xuống máy chủ YouTube chứa tệp.,38,0.0,0.874,pad,1.0,0,False,3.5,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,15,4.58,"file. That might be four hops up, two hops across the backbone, and four hops down, for","Nó qua 4 chặng lên, 2 chặng trên đường trục, 4 chặng xuống,",59,0.0,0.99,pad,1.0,0,False,4.58,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,16,1.3,a total of ten hops.,tổng là 10 chặng.,17,0.0,1.587,capped,1.3,0,False,1.587,0.287,0.287,0,0
+v3_r2,lec03,KyNangMem,V4,0,17,3.68,"If you're running Windows, Mac OS or Linux, you can see the route data takes to different","Dùng Windows, Mac hay Linux, bạn có thể xem tuyến đi",52,0.0,1.232,speedup,1.24,0,False,3.68,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,18,4.18,places on the internet by using the TraceRoute program on your computer. Instructions are,của dữ liệu qua chương trình TraceRoute. Hướng dẫn có,53,0.0,1.153,speedup,1.16,0,False,4.18,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,19,0.86,in the doobly-doo.,ở mô tả dưới.,13,0.0,2.302,capped,1.3,0,False,1.523,0.663,0.663,0,0
+v3_r2,lec03,KyNangMem,V4,0,20,4.74,"For us here at the Chad and Stacey Ebergold studio in Indianapolis, the route to the DFTBA","Tới studio Chad và Stacey Ebergold ở Indianapolis, đi DFTBA",59,0.0,1.284,summarize,1.29,1,True,4.74,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,21,2.58,in California goes through 11 stops.,ở California mất 11 chặng.,26,0.0,1.16,speedup,1.17,0,False,2.58,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,22,2.9,We start at 192.168.0.1.,Bắt đầu 192.168.0.1,19,0.0,1.443,capped,1.3,1,True,3.22,0.32,0.32,0,0
+v3_r2,lec03,KyNangMem,V4,0,23,2.5,That's the IP address for my computer on our LAN.,Đây là IP máy tôi trong LAN.,28,0.0,1.158,summarize,1.17,1,True,2.5,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,24,3.82,"Then there's the Wi-Fi router here at the studio, then a series of regional routers,","Tiếp đến là router Wi-Fi studio, qua các router vùng,",53,0.0,1.213,speedup,1.22,0,False,3.82,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,25,1.52,and then we get onto the backbone.,rồi tới đường trục.,19,0.0,1.357,capped,1.3,0,False,1.587,0.067,0.067,0,0
+v3_r2,lec03,KyNangMem,V4,0,26,4.38,"And then we start working back down to the computer hosting DFTBA.com, which has the","Sau đó đi xuống máy chủ chứa trang DFTBA.com,",45,0.0,0.986,pad,1.0,0,False,4.38,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,27,3.5,IP address 104.24.109.186.,là 104.24.109.186,17,0.0,1.39,capped,1.3,1,True,3.741,0.241,0.241,0,0
+v3_r2,lec03,KyNangMem,V4,0,28,2.16,But how does a packet actually get there?,Gói tin tới đó thế nào?,23,0.0,1.107,speedup,1.12,0,False,2.16,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,29,2.46,What happens if a packet gets lost along the way?,Nếu bị mất trên đường thì sao?,30,0.0,1.067,speedup,1.08,0,False,2.46,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,30,5.1,"If I type dftba.com into my web browser, how does it know the server's address?","Khi gõ dftba.com vào trình duyệt, làm sao nó biết địa chỉ máy chủ?",66,0.0,1.014,speedup,1.02,0,False,5.1,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,31,1.4,These are our topics for today.,Đó là chủ đề hôm nay.,21,0.0,1.726,capped,1.3,0,False,1.859,0.459,0.459,0,0
+v3_r2,lec03,KyNangMem,V4,0,32,3.92,"As we discussed last episode, the Internet is a huge distributed network that sends data","Tập trước đã nói, Internet là mạng phân tán gửi dữ liệu",55,0.0,1.143,speedup,1.15,0,False,3.92,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,33,1.36,around as little packets.,thành các gói nhỏ.,18,0.0,1.566,capped,1.3,0,False,1.638,0.278,0.278,0,0
+v3_r2,lec03,KyNangMem,V4,0,34,3.74,"If your data is big enough, like an email attachment, it might get broken up into many",Dữ liệu lớn như tệp đính kèm sẽ chia làm nhiều,46,0.0,0.963,pad,1.0,0,False,3.74,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,35,1.0,packets.,gói tin.,8,0.0,1.892,capped,1.3,0,False,1.455,0.455,0.455,0,0
+v3_r2,lec03,KyNangMem,V4,0,36,4.82,"For example, this video stream is arriving to your computer right now as a series of","Ví dụ, luồng video này tới máy bạn theo từng chuỗi",50,0.0,0.896,pad,1.0,0,False,4.82,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,37,2.02,"packets, and not one gigantic file.","gói tin, không phải tệp.",24,0.0,1.256,summarize,1.27,1,True,2.02,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,38,14.04,Internet packets have to conform to a standard called the Internet Protocol or IP It a lot like sending physical mail through the postal system Every letter needs a unique and legible address written on it and there are limits to the size and weight of packages Violate this and your letter,"Gói IP tuân theo Giao thức Internet. Giống gửi thư qua bưu điện, mỗi thư cần địa chỉ rõ ràng, đúng quy định kích thước. Vi phạm thì thư không đi được. Gói IP cũng vậy.",167,0.0,0.944,pad,1.0,0,False,14.04,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,39,5.52,"won't get through. IP packets are very similar. However, IP is very low-level protocol. There","Tuy nhiên, IP là giao thức cấp thấp. Tiêu đề chỉ chứa địa chỉ đích,",67,0.0,1.034,speedup,1.04,0,False,5.52,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,40,3.56,"isn't much more than a destination address in a packet's header, which is the metadata",vốn là siêu dữ liệu đặt trước tải,33,0.0,0.839,pad,1.0,0,False,3.56,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,41,3.62,that's stored in front of the data payload. This means that a packet can show up at a,"dữ liệu. Do đó, khi gói tin tới máy tính,",41,0.0,1.252,speedup,1.26,0,False,3.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,42,4.44,"computer, but the computer may not know which application to give the data to, Skype or Call","máy có thể không biết giao cho ứng dụng nào, Skype hay Call of Duty.",68,0.0,1.114,speedup,1.12,0,False,4.44,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,43,4.62,"of Duty. For this reason, more advanced protocols were developed that sit on top of IP. One","Vì vậy, các giao thức cao hơn ra đời trên nền IP. Một",53,0.0,1.144,speedup,1.15,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,44,5.52,"of the simplest and most common is the User Datagram Protocol, or UDP. UDP has its own",trong những giao thức đơn giản nhất là UDP. UDP có tiêu đề riêng,64,0.0,1.105,speedup,1.11,0,False,5.52,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,45,4.3,"header, which sits inside the data payload. Inside of the UDP header is some useful extra",nằm trong tải dữ liệu. Tiêu đề chứa thêm thông tin,50,0.0,1.093,speedup,1.1,0,False,4.3,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,46,3.62,information. One of them is a port number. Every program wanting to access the Internet,hữu ích như cổng. Mỗi ứng dụng vào Internet,43,0.0,1.262,summarize,1.27,1,True,3.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,47,4.34,"will ask its host computer's operating system to be given a unique port, like Skype might","sẽ xin hệ điều hành một cổng riêng, như Skype",45,0.0,0.896,pad,1.0,0,False,4.34,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,48,6.32,"ask for the port number 3478. When a packet arrives to the computer, the operating system","xin cổng 3478. Khi gói tin tới, hệ điều hành",44,0.0,0.94,pad,1.0,0,False,6.32,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,49,4.62,"will look inside the UDP header and read the port number. Then, if it sees, for example,",đọc số cổng trong tiêu đề UDP. Nếu thấy,39,0.0,1.003,speedup,1.01,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,50,4.12,"3478, it will give the packet to Skype. So, to review, IP gets the packet to the right",3478 gửi gói cho Skype. IP đưa đúng,35,0.0,1.348,capped,1.3,1,True,4.271,0.151,0.151,0,0
+v3_r2,lec03,KyNangMem,V4,0,51,3.68,"computer, but UDP gets the packet to the right program running on that computer.","máy, còn UDP chuyển đến đúng ứng dụng.",38,0.0,1.031,speedup,1.04,0,False,3.68,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,52,3.98,"UDP headers also include something called a checksum, which allows the data to be verified","Tiêu đề UDP có checksum để kiểm tra dữ liệu,",44,0.0,0.992,pad,1.0,0,False,3.98,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,53,4.24,"for correctness, as the name suggests it does this by checking the sum of the data.",bằng cách tính tổng dữ liệu.,28,0.0,0.603,pad,1.0,0,False,4.24,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,54,5.26,Here's a simplified version of how this works. Let's imagine the raw data in our UDP packet,Cách hoạt động như sau: Giả sử dữ liệu thô trong gói UDP,56,0.0,0.883,pad,1.0,0,False,5.26,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,55,6.26,"is 89, 111, 33, 32, 58 and 41. Before the packet is sent, the transmitting computer","là 89, 111, 33, 32, 58, 41. Trước khi gửi",41,0.0,1.302,summarize,1.3,1,True,6.268,0.008,0.008,0,0
+v3_r2,lec03,KyNangMem,V4,0,56,5.76,calculates the checksum by adding all the data together. 89 plus 111 plus 33 and so on.,tính checksum bằng cách cộng các dữ liệu lại. 89 cộng 111 cộng 33...,68,0.0,1.155,speedup,1.16,0,False,5.76,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,57,5.58,"In our example, this adds up to a checksum of 364. In UDP, the checksum value is stored",Tổng checksum là 364. Giá trị này lưu trong 16 bit.,51,0.0,1.024,speedup,1.03,0,False,5.58,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,58,5.04,"in 16 bits. If the sum exceeds the maximum possible value, the uppermost bits overflow","Nếu tổng vượt giới hạn, các bit cao sẽ bị tràn",46,0.0,0.779,pad,1.0,0,False,5.04,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,59,1.56,and only the lower bits are used.,và chỉ dùng bit thấp.,21,0.0,1.365,capped,1.3,0,False,1.638,0.078,0.078,0,0
+v3_r2,lec03,KyNangMem,V4,0,60,3.76,"Now, when the receiving computer gets this packet, it repeats the process, adding up all","Khi nhận gói tin, máy nhận cộng lại dữ liệu:",44,0.0,0.996,pad,1.0,0,False,3.76,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,61,6.1,the data. 89 plus 111 plus 33 and so on. If that sum is the same as the checksum sent,"89 cộng 111 cộng 33... Nếu tổng bằng checksum trong tiêu đề,",60,0.0,1.035,speedup,1.04,0,False,6.1,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,62,1.32,"in the header, all is well.",gói tin ổn định.,16,0.0,1.511,capped,1.3,0,False,1.534,0.214,0.214,0,0
+v3_r2,lec03,KyNangMem,V4,0,63,3.42,"But, if the numbers don't match, you know that the data got corrupted at some point","Nếu sai lệch, dữ liệu đã bị lỗi trên đường đi,",46,0.0,1.11,speedup,1.12,0,False,3.42,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,64,3.34,"in transit, maybe because of a power fluctuation or faulty cable.",do nhiễu điện hay cáp hỏng.,27,0.0,0.765,pad,1.0,0,False,3.34,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,65,5.1,"Unfortunately, UDP doesn't offer any mechanisms to fix the data, or request a new copy.",UDP không có cơ chế sửa lỗi hay xin lại gói tin.,48,0.0,0.805,pad,1.0,0,False,5.1,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,66,3.92,"Receiving programs are alerted to the corruption, but typically just discard the packet.",Ứng dụng nhận biết dữ liệu hỏng sẽ hủy gói tin.,47,0.0,0.9,pad,1.0,0,False,3.92,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,67,3.48,"Also, UDP provides no mechanisms to know if packets are getting through.",UDP cũng không biết gói tin có tới nơi hay không.,49,0.0,1.091,speedup,1.1,0,False,3.48,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,68,12.94,A sending computer shoots the UDP packet off but has no confirmation it ever gets to its destination successfully Both of these properties sound pretty catastrophic but some applications are okay with this because UDP is also really simple and fast,"Máy phát gửi gói UDP đi nhưng không có xác nhận đã tới đích. Nghe có vẻ rủi ro, nhưng một số ứng dụng vẫn dùng vì UDP rất đơn giản và nhanh.",140,0.0,0.79,pad,1.0,0,False,12.94,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,69,4.62,"Skype, for example, which uses UDP for video chat, can handle corrupt or missing packets.","Như Skype dùng UDP cho video chat, chấp nhận mất gói.",53,0.0,1.003,speedup,1.01,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,70,3.52,"That's why sometimes if you're on a bad internet connection, Skype gets all glitchy,","Nên khi mạng yếu, Skype bị giật lag",35,0.0,0.941,pad,1.0,0,False,3.52,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,71,2.54,only some of the UDP packets are making it to your computer.,vì ít gói UDP tới máy.,22,0.0,1.149,summarize,1.16,1,True,2.54,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,72,3.12,But this approach doesn't work for many other types of data transmission.,Nhưng cách này không hợp với dữ liệu khác.,42,0.0,1.02,speedup,1.03,0,False,3.12,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,73,3.7,"Like, it doesn't really work if you send an email and it shows up with the middle missing.",Như gửi email mà mất phần giữa thì không được.,46,0.0,0.954,pad,1.0,0,False,3.7,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,74,2.28,The whole message really needs to get there correctly.,"Nội dung cần đủ, chính xác.",27,0.0,1.238,summarize,1.25,1,True,2.28,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,75,4.48,"When it absolutely, positively needs to get there, programs use the Transmission Control","Khi cần chính xác tuyệt đối, người ta dùng Giao thức",52,0.0,0.836,pad,1.0,0,False,4.48,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,76,5.44,"Protocol, or TCP, which like UDP, rides inside the data payload of IP packets.","Điều khiển Truyền tải TCP, chạy bên trong tải dữ liệu IP.",57,0.0,0.88,pad,1.0,0,False,5.44,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,77,4.42,"For this reason, people refer to this combination of protocols as TCP IP.","Do đó, bộ đôi này được gọi chung là TCP/IP.",43,0.0,1.063,speedup,1.07,0,False,4.42,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,78,5.24,"Like UDP, the TCP header contains a destination port and checksum, but it also contains fancier","Giống UDP, tiêu đề TCP có cổng đích và checksum, nhưng thêm tính năng",69,0.0,1.125,speedup,1.13,0,False,5.24,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,79,1.92,"features, and we'll focus on the key ones.",nâng cao khác.,14,0.0,0.994,pad,1.0,0,False,1.92,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,80,4.24,"First off, TCP packets are given sequential numbers, so packet 15 is followed by packet","Đầu tiên, gói TCP có số thứ tự, như gói 15 đến gói",50,0.0,1.264,speedup,1.27,0,False,4.24,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,81,3.78,"16, which is followed by 17, and so on for potentially millions of packets sent during","16, 17 và tiếp tục cho hàng triệu gói",37,0.0,1.042,speedup,1.05,0,False,3.78,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,82,0.82,that session.,trong phiên.,12,0.0,2.332,capped,1.3,0,False,1.471,0.651,0.651,0,0
+v3_r2,lec03,KyNangMem,V4,0,83,3.96,"These sequence numbers allow a receiving computer to put the packets into the correct order,","Số thứ tự giúp máy nhận ghép gói tin đúng trình tự,",51,0.0,0.964,pad,1.0,0,False,3.96,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,84,1.94,even if they arrive at different times across the network.,dù chúng tới khác thời điểm.,28,0.0,1.283,speedup,1.3,0,False,1.94,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,85,4.66,"So if an email comes in all scrambled, the TCP implementation in your computer's operating","Nếu email tới bị xáo trộn, bộ TCP trong hệ điều hành",52,0.0,1.033,speedup,1.04,0,False,4.66,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,86,1.8,system will piece it all together correctly.,sẽ xếp lại chính xác.,21,0.0,1.245,speedup,1.26,0,False,1.8,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,87,4.24,"Second, TCP requires that once a computer has correctly received a packet, and the data","Thứ hai, khi máy nhận trơn tru và đúng checksum,",48,0.0,0.925,pad,1.0,0,False,4.24,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,88,4.56,"passes the checksum, then it sends back an acknowledgement, or ACK, as the cool kids say,",nó gửi lại phản hồi ACK cho máy gửi.,36,0.0,0.797,pad,1.0,0,False,4.56,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,89,1.24,to the sending computer.,để xác nhận.,12,0.0,1.541,capped,1.3,0,False,1.47,0.23,0.23,0,0
+v3_r2,lec03,KyNangMem,V4,0,90,3.58,"Knowing the packet made it successfully, the sender can now transmit the next packet.","Biết gói tin đã tới, máy gửi mới truyền gói tiếp.",49,0.0,1.101,speedup,1.11,0,False,3.58,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,91,3.76,"But this time, let's say it waits and doesn't get an acknowledgement packet back.","Nhưng nếu chờ lâu không thấy ACK gửi về,",40,0.0,0.986,pad,1.0,0,False,3.76,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,92,1.08,Something must be wrong.,hẳn đã có lỗi.,14,0.0,1.867,capped,1.3,0,False,1.551,0.471,0.471,0,0
+v3_r2,lec03,KyNangMem,V4,0,93,3.98,"If enough time elapses, the sender will go ahead and just retransmit the same packet.","Quá thời hạn, máy gửi sẽ phát lại gói tin đó.",45,0.0,0.977,pad,1.0,0,False,3.98,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,94,3.44,"It's worth noting here that the original packet might have actually gotten there, but the","Có thể gói gốc đã tới nhưng ACK bị chậm,",40,0.0,1.101,speedup,1.11,0,False,3.44,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,95,2.04,acknowledgement is just really delayed.,hoặc ACK bị mất.,16,0.0,1.184,summarize,1.2,1,True,2.04,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,96,2.36,Or perhaps it was the acknowledgement that was lost.,"Không sao nhờ số thứ tự,",24,0.0,1.088,summarize,1.1,1,True,2.36,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,97,4.5,"Anyway, it doesn't matter, because the receiver has those sequence numbers, and if a duplicate",máy nhận sẽ bỏ gói bị trùng.,28,0.0,0.608,pad,1.0,0,False,4.5,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,98,2.0,"packet arrives, it can be discarded.",TCP không chỉ gửi 1 gói.,24,0.0,1.461,capped,1.3,1,True,2.248,0.248,0.248,0,0
+v3_r2,lec03,KyNangMem,V4,0,99,2.96,"Also, TCP isn't limited to a back and forth conversation.",Nó gửi nhiều gói cùng lúc để tăng băng thông,44,0.0,1.12,summarize,1.13,1,True,2.96,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,100,4.62,"It can send many packets and have many outstanding acts, which increases bandwidth significantly,",vì không mất thời gian chờ phản hồi từng gói.,45,0.0,0.732,pad,1.0,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,101,3.08,since you aren't wasting time waiting for acknowledgement packets to return.,Tỷ lệ ACK thành công và thời gian khứ hồi,41,0.0,1.231,speedup,1.24,0,False,3.08,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,102,3.26,"Interestingly, the success rate of acts, and also the round-trip time between sending and",giúp nhận biết mạng có bị tắc nghẽn hay không.,46,0.0,0.99,pad,1.0,0,False,3.26,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,103,2.34,"acknowledging, can be used to infer network congestion.",TCP dựa vào đó chỉnh tốc độ,27,0.0,1.342,capped,1.3,1,True,2.416,0.076,0.076,0,0
+v3_r2,lec03,KyNangMem,V4,0,104,5.62,"TCP uses this information to adjust how aggressively it sends packets, a mechanism for congestion",gọi là kiểm soát tắc nghẽn.,27,0.0,0.461,pad,1.0,0,False,5.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,105,0.5,control.,điều khiển.,11,0.0,3.872,capped,1.3,0,False,1.489,0.989,0.989,0,0
+v3_r2,lec03,KyNangMem,V4,0,106,4.32,"So, basically, TCP can handle out-of-order packet delivery, dropped packets including","TCP xử lý được gói xáo trộn, gói bị mất,",40,0.0,0.933,pad,1.0,0,False,4.32,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,107,3.98,"retransmission, and even throttle its transmission rate according to available bandwidth.",và tự chỉnh tốc độ theo băng thông.,35,0.0,0.742,pad,1.0,0,False,3.98,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,108,13.44,Pretty awesome You might wonder why anyone would use UDP when TCP has all those nifty features The single biggest downside are all those acknowledgement packets It doubles the number of messages on the network and yet you not transmitting any more data,Rất tuyệt! Bạn sẽ thắc mắc sao lại dùng UDP khi TCP có nhiều tính năng hay vậy? Nhược điểm lớn nhất là các gói ACK làm tăng gấp đôi lượng tin nhắn mà không tăng dữ liệu gửi.,173,0.0,0.929,pad,1.0,0,False,13.44,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,109,5.22,"That overhead, including associated delays, is sometimes not worth the improved robustness,","Chi phí độ trễ đó đôi khi không đáng để đổi lấy sự tin cậy,",59,0.0,0.821,pad,1.0,0,False,5.22,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,110,4.08,especially for time-critical applications like multiplayer first-person shooters.,nhất là với game bắn súng nhiều người chơi.,43,0.0,0.794,pad,1.0,0,False,4.08,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,111,3.04,"And if it's you getting lagfragged, you'll definitely agree.","Nếu bị lag và thua, bạn sẽ hiểu ngay.",37,0.0,1.15,speedup,1.16,0,False,3.04,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,112,3.38,"When your computer wants to make a connection to a website, you need two things.","Muốn kết nối trang web, bạn cần hai thứ:",40,0.0,1.011,speedup,1.02,0,False,3.38,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,113,6.08,"an IP address and a port, like port 80, at 172.217.7.238.","IP và cổng, như cổng 80 tại 172.217.7.238.",42,0.0,1.075,speedup,1.08,0,False,6.08,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,114,3.0,This example is the IP address and port for the Google web server.,Đây là IP và cổng của máy chủ Google.,37,0.0,1.179,speedup,1.19,0,False,3.0,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,115,3.74,"In fact, you can enter this into your browser's address bar like so, and you'll end up on","Gõ dãi này vào trình duyệt, bạn sẽ tới",38,0.0,0.924,pad,1.0,0,False,3.74,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,116,0.88,the Google homepage.,trang Google.,13,0.0,2.201,capped,1.3,0,False,1.49,0.61,0.61,0,0
+v3_r2,lec03,KyNangMem,V4,0,117,3.74,"This gets you to the right destination, but remembering that long string of digits would","Nó đưa bạn đến đúng nơi, nhưng nhớ dãy số đó",44,0.0,1.042,speedup,1.05,0,False,3.74,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,118,0.84,be really annoying.,rất phiền.,10,0.0,2.28,capped,1.3,0,False,1.473,0.633,0.633,0,0
+v3_r2,lec03,KyNangMem,V4,0,119,2.3,It's much easier to remember Google.com.,Nhớ Google.com dễ hơn.,22,0.0,1.206,summarize,1.22,1,True,2.3,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,120,4.3,So the Internet has a special service that maps these domain names to addresses.,Internet có dịch vụ ánh xạ tên miền thành IP.,45,0.0,0.896,pad,1.0,0,False,4.3,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,121,3.66,"It's like the phone book for the internet, and it's called the Domain Name System, or","Nó như bạ điện thoại, gọi là Hệ thống Tên miền,",47,0.0,1.072,speedup,1.08,0,False,3.66,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,122,0.84,DNS for short.,tắt là DNS.,11,0.0,2.617,capped,1.3,0,False,1.691,0.851,0.851,0,0
+v3_r2,lec03,KyNangMem,V4,0,123,1.64,You can probably guess how it works.,Bạn có thể đoán cách hoạt động.,31,0.0,1.629,capped,1.3,0,False,2.055,0.415,0.415,0,0
+v3_r2,lec03,KyNangMem,V4,0,124,5.36,"When you type something like youtube.com into your web browser, it goes and asks a DNS server,","Khi gõ youtube.com, trình duyệt sẽ hỏi máy chủ DNS",50,0.0,0.86,pad,1.0,0,False,5.36,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,125,3.1,"usually one provided by your ISP, to look up the address.",của nhà mạng để tra địa chỉ.,28,0.0,0.883,pad,1.0,0,False,3.1,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,126,4.92,"DNS consults its huge registry and replies with the address, if one exists.",DNS tra cơ sở dữ liệu và trả về địa chỉ IP.,43,0.0,0.885,pad,1.0,0,False,4.92,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,127,4.54,"In fact, if you try mashing your keyboard, adding .com, and then hit enter in your browser,","Nếu gõ bừa bàn phím rồi thêm .com,",34,0.0,0.73,pad,1.0,0,False,4.54,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,128,3.2,you'll likely be presented with an error that says DNS failed.,bạn sẽ thấy lỗi DNS thất bại.,29,0.0,0.979,pad,1.0,0,False,3.2,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,129,4.34,"That's because the site doesn't exist, so DNS couldn't give your browser an address.",Vì trang không tồn tại nên DNS không trả về địa chỉ.,52,0.0,0.954,pad,1.0,0,False,4.34,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,130,4.4,"But if DNS returns a valid address, which it should for YouTube.com, then your browser","Nếu DNS trả địa chỉ hợp lệ cho YouTube.com,",43,0.0,0.916,pad,1.0,0,False,4.4,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,131,2.78,shoots off a request over TCP for the website's data.,trình duyệt sẽ gửi yêu cầu qua TCP.,35,0.0,1.189,speedup,1.2,0,False,2.78,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,132,4.6,"There's over 300 million registered domain names, so to make our DNS look up a little","Có hơn 300 triệu tên miền, nên để dễ tra cứu,",45,0.0,0.9,pad,1.0,0,False,4.6,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,133,4.92,"bit more manageable, it's not stored as one gigantically long list, but rather in a tree",DNS phân cấp theo cấu trúc cây chứ không dùng danh sách,55,0.0,0.79,pad,1.0,0,False,4.92,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,134,0.62,data structure.,dài.,4,0.0,3.124,capped,1.3,0,False,1.49,0.87,0.87,0,0
+v3_r2,lec03,KyNangMem,V4,0,135,4.22,"What are called top-level domains, or TLDs, are at the very top.","Tên miền cao nhất TLD nằm ở đỉnh Cây,",37,0.0,0.879,pad,1.0,0,False,4.22,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,136,2.66,These are huge categories like .com and .gov.,như .com hay .gov.,18,0.0,1.058,speedup,1.07,0,False,2.66,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,137,4.36,"Then there are lower level domains that sit below that, called second level domains. Examples","Dưới đó là tên miền cấp hai, như google.com",43,0.0,0.941,pad,1.0,0,False,4.36,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,138,4.8,under .com include google.com and dftba.com. Then there are even lower level domains called,"hay dftba.com. Thấp hơn nữa là tên miền phụ,",44,0.0,1.043,speedup,1.05,0,False,4.8,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,139,6.84,"subdomains, like images.google.com and store.dftba.com. And this tree is absolutely huge! Like I said,",như images.google.com hay store.dftba.com. Cấu trúc cây này cực lớn! Có hơn,75,0.0,1.225,speedup,1.23,0,False,6.84,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,140,4.34,"more than 300 million domain names, and that's just second level domain names, not all the",300 triệu tên miền cấp hai. Nên dữ liệu được phân tán,53,0.0,1.194,summarize,1.2,1,True,4.34,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,141,4.98,"subdomains. For this reason, the data is distributed across many DNS servers, which are authorities",trên nhiều máy chủ DNS quản lý các nhánh.,41,0.0,0.701,pad,1.0,0,False,4.98,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,142,1.5,with different parts of the tree.,với các phần khác nhau của cái cây.,35,0.0,1.948,capped,1.3,0,False,2.248,0.748,0.748,0,0
+v3_r2,lec03,KyNangMem,V4,0,143,4.32,"Okay, I know you've been waiting for it. We've reached a new level of abstraction.",Chúng ta vừa nâng lên một mức trừu tượng mới.,45,0.0,0.767,pad,1.0,0,False,4.32,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,0,144,2.2,"Over the past two episodes, we've worked out from","Hai tập qua, ta đi từ",21,0.0,1.245,summarize,1.26,1,True,2.2,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,145,4.08,"electrical signals on wires, or radio signals transmitted through the air, in the case of","tín hiệu điện trên dây hoặc vô tuyến, như ở",43,0.0,0.891,pad,1.0,0,False,4.08,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,146,4.74,"wireless networks. This is called the physical layer. MAC addresses, collision detection,","mạng không dây là tầng vật lý. Đ/chỉ MAC, va chạm,",50,0.0,1.174,summarize,1.18,1,True,4.74,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,147,3.64,"exponential back-off, and similar low-level protocols that mediate access to the physical",thụt lùi mũ và các giao thức cấp thấp điều phối tầng vật lý,59,0.0,1.141,speedup,1.15,0,False,3.64,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,148,3.9,"layer are part of the data link layer. Above this is the network layer, which is where","thuộc tầng liên kết dữ liệu. Trên là tầng mạng,",47,0.0,1.132,summarize,1.14,1,True,3.9,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,149,3.08,all the switching and routing technologies that we discussed operate.,"các công nghệ chuyển mạch, định tuyến hoạt động.",48,0.0,1.07,speedup,1.08,0,False,3.08,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,150,4.94,"And today, we've mostly covered the transport layer, protocols like UDP and TCP, which are","Hôm nay, ta đã học tầng giao vận với giao thức UDP và TCP,",58,0.0,1.084,speedup,1.09,0,False,4.94,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,151,4.24,"responsible for point-to-point data transfer between computers, and also things like error","giúp truyền dữ liệu điểm-điểm giữa các máy tính, phát hiện",58,0.0,0.942,pad,1.0,0,False,4.24,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,152,1.62,detection and recovery when possible.,và sửa lỗi nếu có.,18,0.0,1.428,capped,1.3,0,False,1.78,0.16,0.16,0,0
+v3_r2,lec03,KyNangMem,V4,1,153,4.44,"We've also grazed the session layer, where protocols like TCP and UDP are used to open","Ta cũng lướt qua tầng phiên, nơi dùng TCP và UDP để mở",54,0.0,1.193,speedup,1.2,0,False,4.44,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,154,4.2,"a connection, pass information back and forth, and then close the connection when finished,","kết nối, truyền dữ liệu rồi đóng lại khi xong,",46,0.0,0.891,pad,1.0,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,155,1.48,what's called a session.,gọi là một phiên.,17,0.0,1.439,capped,1.3,0,False,1.638,0.158,0.158,0,0
+v3_r2,lec03,KyNangMem,V4,1,156,4.68,"This is exactly what happens when you, for example, do a DNS lookup or request a webpage.",Đó là cách hoạt động khi tra cứu DNS hay tải trang web.,55,0.0,0.892,pad,1.0,0,False,4.68,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,157,4.62,"These are the bottom five layers of the Open System Interconnection OSI model, a conceptual","Đây là 5 tầng dưới của mô hình OSI, một khung lý thuyết",55,0.0,0.982,pad,1.0,0,False,4.62,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,158,3.9,framework for compartmentalizing all these different network processes.,dùng phân chia các tiến trình mạng.,35,0.0,0.702,pad,1.0,0,False,3.9,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,159,3.72,"Each level has different things to worry about and solve, and it would be impossible to build","Mỗi tầng giải quyết các vấn đề riêng, không thể xây",51,0.0,1.042,speedup,1.05,0,False,3.72,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,160,1.42,one huge networking implementation.,một hệ thống khổng lồ.,22,0.0,1.606,capped,1.3,0,False,1.754,0.334,0.334,0,0
+v3_r2,lec03,KyNangMem,V4,1,161,4.0,"As we've talked about all series, abstraction allows computer scientists and engineers to","Như đã nói, sự trừu tượng hóa giúp các kỹ sư",44,0.0,0.981,pad,1.0,0,False,4.0,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,162,4.32,"be improving all these different levels of the stack simultaneously, without being overwhelmed",cải tiến đồng thời các tầng mà không bị ngợp,44,0.0,0.758,pad,1.0,0,False,4.32,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,163,1.26,by the full complexity.,bởi sự phức tạp.,16,0.0,1.571,capped,1.3,0,False,1.523,0.263,0.263,0,0
+v3_r2,lec03,KyNangMem,V4,1,164,2.14,"And amazingly, we're not quite done yet.",Và tuyệt vời là vẫn chưa hết.,29,0.0,1.266,speedup,1.28,0,False,2.14,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,165,5.16,"The OSI model has two more layers, the presentation layer and the application layer, which include","Mô hình OSI còn 2 tầng nữa là tầng trình diễn và tầng ứng dụng,",63,0.0,0.928,pad,1.0,0,False,5.16,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,166,1.52,"things like web browsers, Skype,","gồm trình duyệt, Skype,",23,0.0,1.666,capped,1.3,0,False,1.948,0.428,0.428,0,0
+v3_r2,lec03,KyNangMem,V4,1,167,2.18,"HTML decoding, streaming movies and more,",giải mã HTML/phim,17,0.0,1.425,capped,1.3,1,True,2.39,0.21,0.21,0,0
+v3_r2,lec03,KyNangMem,V4,1,168,1.3,which we'll talk about next week.,sẽ học vào tuần sau.,20,0.0,1.806,capped,1.3,0,False,1.806,0.506,0.506,0,0
+v3_r2,lec03,KyNangMem,V4,1,169,0.48,See you then.,Hẹn gặp lại.,12,0.0,3.979,capped,1.3,0,False,1.469,0.989,0.989,0,0
+v3_r2,lec03,KyNangMem,V4,1,170,1.18,Crash Course Computer Science,Crash Course Khoa học Máy tính,30,0.0,2.146,capped,1.3,0,False,1.948,0.768,0.768,0,0
+v3_r2,lec03,KyNangMem,V4,1,171,2.66,is produced in association with PBS Digital Studios.,đồng sản xuất với PBS Digital.,30,0.0,1.249,summarize,1.26,1,True,2.66,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,172,1.28,"At their channel, you can check out","Trên kênh của họ,",17,0.0,1.575,capped,1.3,0,False,1.551,0.271,0.271,0,0
+v3_r2,lec03,KyNangMem,V4,1,173,1.62,"a playlist of shows like Physics Girl,","bạn có thể xem Physics Girl,",28,0.0,1.719,capped,1.3,0,False,2.142,0.522,0.522,0,0
+v3_r2,lec03,KyNangMem,V4,1,174,1.52,Deep Look and PBS FaceTime.,Deep Look và FaceTime.,22,0.0,1.545,capped,1.3,0,False,1.806,0.286,0.286,0,0
+v3_r2,lec03,KyNangMem,V4,1,175,1.76,This episode was filmed at the Chad and Stacey,Tập này quay tại studio,23,0.0,1.556,capped,1.3,0,False,2.106,0.346,0.346,0,0
+v3_r2,lec03,KyNangMem,V4,1,176,2.18,"Evergoltz studio in Indianapolis, Indiana",Chad & Stacey E.,16,0.0,1.096,summarize,1.11,1,True,2.18,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,177,1.88,and it was made with the help of all these nice people,với sự giúp đỡ của ekip,23,0.0,1.384,capped,1.3,0,False,2.001,0.121,0.121,0,0
+v3_r2,lec03,KyNangMem,V4,1,178,1.74,"and our wonderful graphics team, Thought Cafe.",và đồ họa Thought Cafe.,23,0.0,1.535,capped,1.3,0,False,2.055,0.315,0.315,0,0
+v3_r2,lec03,KyNangMem,V4,1,179,2.0,That's where we're going to have to halt and catch fire.,Giờ ta phải dừng lại đây.,25,0.0,1.269,speedup,1.28,0,False,2.0,0.0,0.0,0,0
+v3_r2,lec03,KyNangMem,V4,1,180,0.68,See you next week.,Hẹn tuần sau.,13,0.0,2.799,capped,1.3,0,False,1.464,0.784,0.784,0,0
+v3_r2,lec03,KyNangMem,V4,1,181,8.56,Thank you.,Cảm ơn các bạn.,15,0.0,0.24,pad,1.0,0,False,8.56,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,1,3.96,This presentation is delivered by the Stanford Center for Professional Development.,Bài giảng do Trung tâm Phát triển Chuyên môn Stanford cung cấp.,63,0.0,1.012,speedup,1.02,0,False,3.96,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,2,0.84,"Okay, good morning.",Chào buổi sáng.,15,0.0,2.329,capped,1.3,0,False,1.505,0.665,0.665,0,0
+v3_r2,lec04,KyNangMem,V4,0,3,2.0,"Welcome to CS229, the machine learning class.",Chào CS229.,11,0.0,1.496,capped,1.3,1,True,2.301,0.301,0.301,0,0
+v3_r2,lec04,KyNangMem,V4,0,4,5.06,"class. So, what I want to do today is just go over, spend a lot of time going over the","Hôm nay tôi muốn dành thời gian phổ biến quy định môn học,",58,0.0,0.733,pad,1.0,0,False,5.06,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,5,4.68,logistics of the class and then we'll start to talk a bit about machine learning.,sau đó chúng ta sẽ bắt đầu nói đôi chút về học máy.,51,0.0,0.8,pad,1.0,0,False,4.68,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,6,5.16,"Um, by way of introduction, my name is Andrew Ng and I'll be the instructor for this class.","Tôi xin giới thiệu, tôi là Andrew Ng, giảng viên môn này.",57,0.0,0.935,pad,1.0,0,False,5.16,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,7,4.98,"And um, so I personally work in machine learning and I've worked on it for about 15 years now.",Bản thân tôi làm về học máy tính đến nay đã khoảng 15 năm.,58,0.0,0.81,pad,1.0,0,False,4.98,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,8,3.82,"And I actually think that machine learning is sort of, you know, the most exciting field",Tôi nghĩ học máy là ngành thú vị nhất,37,0.0,0.782,pad,1.0,0,False,3.82,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,9,3.5,"of all of computer science. So, so, so I'm actually always excited about teaching this",trong khoa học máy tính nên tôi rất hào hứng dạy.,49,0.0,0.987,summarize,1.0,1,True,3.5,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,10,5.48,class. Sometimes I actually think that machine learning is not only the most exciting thing,"Đôi khi tôi nghĩ học máy không chỉ thú vị nhất Khoa học máy tính,",65,0.0,0.742,pad,1.0,0,False,5.48,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,11,3.94,"in computer science, but the most exciting thing in all of human endeavors, so maybe","mà còn trong mọi nỗ lực của con người, dù có chút định kiến.",60,0.0,1.102,speedup,1.11,0,False,3.94,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,12,5.72,a little bias there. I also want to introduce the TAs who are all graduate students doing,"Tôi muốn giới thiệu các trợ giảng, họ là học viên cao học làm nghiên cứu",72,0.0,0.837,pad,1.0,0,False,5.72,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,13,4.22,research in or related to machine learning and all experts in machine learning. Paul,về học máy và đều là chuyên gia. Paul Baumstock,47,0.0,1.112,speedup,1.12,0,False,4.22,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,14,6.64,Baumstock works in machine learning and computer vision. Katie Chang is actually a neuroscientist,làm về học máy và thị giác máy tính. Katie Chang là nhà thần kinh học,69,0.0,0.884,pad,1.0,0,False,6.64,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,15,4.64,who applies machine learning algorithms to try to understand the human brain.,dùng học máy để hiểu bộ não người.,34,0.0,0.621,pad,1.0,0,False,4.64,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,16,5.6,"Tom Doe is another PhD student, works in computational biology and in the basic fundamentals of",Tom Doe là nghiên cứu sinh sinh học tính toán và nền tảng học máy.,66,0.0,0.804,pad,1.0,0,False,5.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,17,0.82,machine learning.,Viko Kulter,11,0.0,2.459,capped,1.3,0,False,1.551,0.731,0.731,0,0
+v3_r2,lec04,KyNangMem,V4,0,18,2.28,Viko Kulter is the head TA.,là trợ giảng trưởng.,20,0.0,1.016,speedup,1.03,0,False,2.28,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,19,1.5,He's head TA two years in a row now.,Cậu ấy làm trợ giảng 2 năm liền.,32,0.0,1.902,capped,1.3,0,False,2.195,0.695,0.695,0,0
+v3_r2,lec04,KyNangMem,V4,0,20,3.6,He works on machine learning and applies them to a bunch of robots.,Cậu ấy nghiên cứu học máy và ứng dụng cho robot.,48,0.0,1.0,pad,1.0,0,False,3.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,21,5.98,"And Daniel Ramich is, I guess he's not here, Daniel applies learning algorithms to problems","Daniel Ramich vắng mặt, cậu ấy dùng thuật toán học cho xử lý ngôn ngữ tự nhiên.",79,0.0,0.933,pad,1.0,0,False,5.98,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,22,1.8,in natural language processing.,Các bạn sẽ hiểu rõ hơn,22,0.0,1.324,capped,1.3,0,False,1.833,0.033,0.033,0,0
+v3_r2,lec04,KyNangMem,V4,0,23,4.08,"So you get to know the TAs and me much better throughout this quarter, but just from, you","về tôi và trợ giảng qua kỳ này, nhưng qua công việc họ làm,",59,0.0,1.062,speedup,1.07,0,False,4.08,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,24,3.6,"know, the sorts of things the TAs do, I hope you can already tell that machine learning","hy vọng bạn thấy học máy là ngành liên ngành,",45,0.0,0.88,pad,1.0,0,False,3.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,25,7.2,is a highly interdisciplinary topic in which just the TAs are applying learning algorithms,"nơi trợ giảng áp dụng thuật toán học vào thị giác máy tính, sinh học, robot, ngôn ngữ.",86,0.0,0.905,pad,1.0,0,False,7.2,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,26,3.8,"to problems in computer vision, in biology, in robots, in language.",Học máy tác động lớn đến nhiều ứng dụng.,40,0.0,0.834,pad,1.0,0,False,3.8,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,27,5.48,And machine learning is one of those things that has had and is having a large impact on,"Trong công việc hàng ngày,",26,0.0,0.414,pad,1.0,0,False,5.48,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,28,0.62,many applications.,tôi thường,10,0.0,3.072,capped,1.3,0,False,1.465,0.845,0.845,0,0
+v3_r2,lec04,KyNangMem,V4,0,29,2.1,"So just in my own daily work,","trao đổi với phi công,",22,0.0,1.086,speedup,1.1,0,False,2.1,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,30,12.2,I actually frequently end up talking to people like helicopter pilots to biologists to people in computer systems or databases to economists and there sort of also an unending stream of people from,"nhà sinh học, người làm hệ thống, cơ sở dữ liệu, nhà kinh tế và liên tục có người từ doanh nghiệp đến Stanford tìm cách áp dụng học máy vào bài toán của họ.",156,0.0,0.785,pad,1.0,0,False,12.2,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,31,6.74,industry coming to Stanford interested in applying machine learning methods to their,Nên môn này rất vui.,20,0.0,0.353,pad,1.0,0,False,6.74,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,32,2.0,own problems.,"Vài tuần trước,",15,0.0,0.954,pad,1.0,0,False,2.0,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,33,2.3,"So yeah, this is fun.",một sinh viên gửi tôi bài báo,29,0.0,1.227,speedup,1.24,0,False,2.3,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,34,4.5,"A couple of weeks ago, a student actually forwarded to me an article in Computer World",về 12 kỹ năng IT nhà tuyển dụng không thể từ chối.,50,0.0,0.88,pad,1.0,0,False,4.5,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,35,6.04,"about the 12 IT skills that employees, that employers can't say no to.","Tức là 12 kỹ năng đáng khao khát nhất ngành CNTT,",49,0.0,0.715,pad,1.0,0,False,6.04,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,36,4.6,"So about the, you know, so the 12 most desirable skills in all of IT",và đứng đầu danh sách chính là học máy.,39,0.0,0.665,pad,1.0,0,False,4.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,37,1.34,"and all of information technology,",Nên đây là lúc thích hợp,24,0.0,1.855,capped,1.3,0,False,1.912,0.572,0.572,0,0
+v3_r2,lec04,KyNangMem,V4,0,38,1.88,and topping the list was actually machine learning.,để học kiến thức này.,21,0.0,1.173,speedup,1.19,0,False,1.88,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,39,2.98,"So I think this is a good time to be learning this stuff,",Thuật toán học có ảnh hưởng lớn,31,0.0,0.882,pad,1.0,0,False,2.98,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,40,2.04,and learning algorithms are having a large impact,"đến nhiều ngành khoa học, công nghiệp.",38,0.0,1.416,capped,1.3,1,True,2.222,0.182,0.182,0,0
+v3_r2,lec04,KyNangMem,V4,0,41,2.48,on many segments of science and industry.,Tôi tò mò muốn biết,19,0.0,0.915,pad,1.0,0,False,2.48,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,42,1.34,I'm actually curious about something.,thuật toán học,14,0.0,1.416,capped,1.3,0,False,1.46,0.12,0.12,0,0
+v3_r2,lec04,KyNangMem,V4,0,43,0.7,learning algorithms,là một trong những thứ,22,0.0,3.354,capped,1.3,0,False,1.806,1.106,1.106,0,0
+v3_r2,lec04,KyNangMem,V4,0,44,0.5,is one of the things,chạm đến nhiều lĩnh vực,23,0.0,4.56,capped,1.3,0,False,1.754,1.254,1.254,0,0
+v3_r2,lec04,KyNangMem,V4,0,45,1.26,that touches many areas,khoa học và công nghiệp.,24,0.0,1.745,capped,1.3,0,False,1.691,0.431,0.431,0,0
+v3_r2,lec04,KyNangMem,V4,0,46,1.56,of science and industries.,Tôi khá tò mò,13,0.0,1.387,capped,1.3,0,False,1.665,0.105,0.105,0,0
+v3_r2,lec04,KyNangMem,V4,0,47,0.42,I'm actually kind of curious,có bao nhiêu bạn,16,0.0,4.912,capped,1.3,0,False,1.587,1.167,1.167,0,0
+v3_r2,lec04,KyNangMem,V4,0,48,0.66,how many people here,chuyên ngành khoa học máy tính,30,0.0,3.662,capped,1.3,0,False,1.859,1.199,1.199,0,0
+v3_r2,lec04,KyNangMem,V4,0,49,1.08,are computer science majors,hoặc thuộc khoa KHMT?,21,0.0,2.504,capped,1.3,0,False,2.08,1.0,1.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,50,1.06,or in the computer science department?,Khoảng một nửa.,15,0.0,1.83,capped,1.3,0,False,1.492,0.432,0.432,0,0
+v3_r2,lec04,KyNangMem,V4,0,51,1.12,"Okay, about half of you.",Bao nhiêu bạn từ khoa Điện?,27,0.0,2.219,capped,1.3,0,False,1.912,0.792,0.792,0,0
+v3_r2,lec04,KyNangMem,V4,0,52,1.1,How many people are from EE?,"À, ồ.",5,0.0,1.722,capped,1.3,0,False,1.457,0.357,0.357,0,0
+v3_r2,lec04,KyNangMem,V4,0,53,0.64,"Oh, okay.",Khoảng một phần năm.,20,0.0,3.094,capped,1.3,0,False,1.523,0.883,0.883,0,0
+v3_r2,lec04,KyNangMem,V4,0,54,0.8,Maybe about a fifth.,Có bao nhiêu nhà sinh học ở đây?,32,0.0,3.339,capped,1.3,0,False,2.055,1.255,1.255,0,0
+v3_r2,lec04,KyNangMem,V4,0,55,1.46,How many biologists are there here?,Chỉ một vài người.,18,0.0,1.339,capped,1.3,0,False,1.504,0.044,0.044,0,0
+v3_r2,lec04,KyNangMem,V4,0,56,0.86,"Wow, just a few.",Không nhiều.,12,0.0,2.221,capped,1.3,0,False,1.469,0.609,0.609,0,0
+v3_r2,lec04,KyNangMem,V4,0,57,0.28,Not many.,Tôi bất ngờ đấy.,16,0.0,7.368,capped,1.3,0,False,1.587,1.307,1.307,0,0
+v3_r2,lec04,KyNangMem,V4,0,58,0.42,I'm surprised.,Có ai từ khoa Thống kê không?,29,0.0,6.11,capped,1.3,0,False,1.974,1.554,1.554,0,0
+v3_r2,lec04,KyNangMem,V4,0,59,0.96,Anyone from statistics?,Vài người.,10,0.0,2.006,capped,1.3,0,False,1.481,0.521,0.521,0,0
+v3_r2,lec04,KyNangMem,V4,0,60,0.62,"Okay, a few.",Các bạn còn lại đến từ đâu?,27,0.0,4.085,capped,1.3,0,False,1.948,1.328,1.328,0,0
+v3_r2,lec04,KyNangMem,V4,0,61,1.68,So where are the rest of you from?,ICME.,5,0.0,1.142,speedup,1.14,0,False,1.683,0.003,0.003,0,0
+v3_r2,lec04,KyNangMem,V4,0,62,1.34,ICME.,Nói lại xem?,12,0.0,1.429,capped,1.3,0,False,1.473,0.133,0.133,0,0
+v3_r2,lec04,KyNangMem,V4,0,63,0.94,Say again?,ICME.,5,0.0,2.009,capped,1.3,0,False,1.453,0.513,0.513,0,0
+v3_r2,lec04,KyNangMem,V4,0,64,0.5,ICME.,"ICME, tuyệt.",12,0.0,4.766,capped,1.3,0,False,1.833,1.333,1.333,0,0
+v3_r2,lec04,KyNangMem,V4,0,65,0.94,"ICME, cool.",CIVI và gì nữa?,15,0.0,2.644,capped,1.3,0,False,1.912,0.972,0.972,0,0
+v3_r2,lec04,KyNangMem,V4,0,66,1.6,CIVI and what else?,"SymSys, Hệ thống tính toán, tuyệt.",34,0.0,2.186,capped,1.3,0,False,2.69,1.09,1.09,0,0
+v3_r2,lec04,KyNangMem,V4,0,67,3.0,"Symsys, Convice Systems, yeah, cool.",CHEME.,6,0.0,0.72,pad,1.0,0,False,3.0,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,68,0.34,CHEME.,"CHEME, tuyệt.",13,0.0,7.651,capped,1.3,0,False,2.001,1.661,1.661,0,0
+v3_r2,lec04,KyNangMem,V4,0,69,0.84,"CHEME, cool.","Aero-Astro, đúng rồi.",21,0.0,2.959,capped,1.3,0,False,1.912,1.072,1.072,0,0
+v3_r2,lec04,KyNangMem,V4,0,70,1.52,"ERA-Astrel, yes, right.","Được rồi, tuyệt.",16,0.0,1.357,capped,1.3,0,False,1.587,0.067,0.067,0,0
+v3_r2,lec04,KyNangMem,V4,0,71,1.4,"Yeah, okay, cool.",Còn ai nữa?,11,0.0,1.384,capped,1.3,0,False,1.49,0.09,0.09,0,0
+v3_r2,lec04,KyNangMem,V4,0,72,0.08,Anyone else?,MSNE.,5,0.0,26.198,capped,1.3,0,False,1.612,1.532,1.532,0,0
+v3_r2,lec04,KyNangMem,V4,0,73,0.16,MSNE.,Gì cơ? MSNE.,12,0.0,22.361,capped,1.3,0,False,2.752,2.592,2.592,0,0
+v3_r2,lec04,KyNangMem,V4,0,74,0.68,Pardon? MSNE.,"Được rồi, tuyệt.",16,0.0,3.034,capped,1.3,0,False,1.587,0.907,0.907,0,0
+v3_r2,lec04,KyNangMem,V4,0,75,1.74,"Alright, cool, yeah.",Doanh nghiệp.,13,0.0,1.109,speedup,1.1,0,False,1.754,0.014,0.014,0,0
+v3_r2,lec04,KyNangMem,V4,0,76,1.0,Endorship.,Gì cơ?,6,0.0,1.934,capped,1.3,0,False,1.488,0.488,0.488,0,0
+v3_r2,lec04,KyNangMem,V4,0,77,0.96,Pardon?,Doanh nghiệp.,13,0.0,1.977,capped,1.3,0,False,1.46,0.5,0.5,0,0
+v3_r2,lec04,KyNangMem,V4,0,78,0.5,Endorship.,Doanh nghiệp.,13,0.0,3.812,capped,1.3,0,False,1.466,0.966,0.966,0,0
+v3_r2,lec04,KyNangMem,V4,0,79,1.0,Endorship.,Đi làm rồi.,11,0.0,1.933,capped,1.3,0,False,1.487,0.487,0.487,0,0
+v3_r2,lec04,KyNangMem,V4,0,80,0.34,Industry.,"À, tôi hiểu rồi.",16,0.0,6.706,capped,1.3,0,False,1.754,1.414,1.414,0,0
+v3_r2,lec04,KyNangMem,V4,0,81,0.62,"Oh, I see. Industry.",Tuyệt vời.,10,0.0,3.101,capped,1.3,0,False,1.479,0.859,0.859,0,0
+v3_r2,lec04,KyNangMem,V4,0,82,0.78,"Okay, cool. Great.","Như các bạn thấy từ sự đa dạng này,",35,0.0,3.835,capped,1.3,0,False,2.301,1.521,1.521,0,0
+v3_r2,lec04,KyNangMem,V4,0,83,3.06,"So as you can tell, from the cross-section of this class,","chúng ta có một khán phòng rất đa dạng,",39,0.0,1.0,pad,1.0,0,False,3.06,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,84,2.86,"I think we're a very diverse audience in this room,","và đó là điều khiến lớp học này thú vị,",39,0.0,1.089,speedup,1.1,0,False,2.86,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,85,2.94,and that's one of the things that makes this class fun to teach,tôi nghĩ vậy.,13,0.0,0.649,pad,1.0,0,False,2.94,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,86,1.0,"and fun to be in, I think.",Môn này truyền tải nguyên lý và công cụ,39,0.0,3.244,capped,1.3,0,False,2.495,1.495,1.495,0,0
+v3_r2,lec04,KyNangMem,V4,0,87,3.16,"So in this class, we try to convey to you a broad set of principles",hữu ích cho nhiều việc.,23,0.0,0.672,pad,1.0,0,False,3.16,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,88,3.0,"and tools that will be useful for doing many, many things.","Mỗi lần dạy môn này,",20,0.0,0.78,pad,1.0,0,False,3.0,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,89,2.0,"And every time I teach this class,",tôi tự tin nói rằng,19,0.0,1.156,speedup,1.17,0,False,2.0,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,90,2.0,I can actually very confidently say that,"sau tháng 12,",13,0.0,1.024,speedup,1.04,0,False,2.0,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,91,0.72,"after December,",dù bạn làm gì,13,0.0,2.911,capped,1.3,0,False,1.612,0.892,0.892,0,0
+v3_r2,lec04,KyNangMem,V4,0,92,1.06,no matter what you're going to do,sau tháng 12,12,0.0,1.946,capped,1.3,0,False,1.587,0.527,0.527,0,0
+v3_r2,lec04,KyNangMem,V4,0,93,1.08,after this December,"khi hoàn thành môn học,",23,0.0,2.079,capped,1.3,0,False,1.727,0.647,0.647,0,0
+v3_r2,lec04,KyNangMem,V4,0,94,2.06,"when you've completed this class,",bạn sẽ thấy,11,0.0,0.926,pad,1.0,0,False,2.06,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,95,0.88,you'll find the things,"kiến thức này rất hữu ích cho tương lai. Tôi sẽ phổ biến thêm quy định sau,",75,0.0,6.519,capped,1.3,0,False,4.413,3.533,3.533,0,0
+v3_r2,lec04,KyNangMem,V4,0,96,12.16,you learn in this class very useful And these things will be useful pretty much no matter what you end up doing later in your life So I have more logistics to go over later,nhưng hãy nói thêm về học máy.,30,0.0,0.222,pad,1.0,0,False,12.16,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,97,2.12,but let's say a few more words about machine learning.,"Học máy phát triển từ AI,",25,0.0,1.257,summarize,1.27,1,True,2.12,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,98,3.28,"A few of the machine learning grew out of early work in AI,","và trong khoảng 15 đến 20 năm qua,",34,0.0,1.0,speedup,1.01,0,False,3.28,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,99,4.0,"early work in artificial intelligence, and over the last, I want to say,",nó được xem là năng lực mới của máy tính.,41,0.0,0.873,pad,1.0,0,False,4.0,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,100,3.76,"last 15, over the last 20 years or so, it's been viewed as",Có nhiều ứng dụng không thể lập trình thủ công.,47,0.0,0.852,pad,1.0,0,False,3.76,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,101,4.2,a growing new capability for computers.,"Ví dụ, muốn máy tính đọc chữ viết tay,",38,0.0,0.797,pad,1.0,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,102,2.04,"And in particular, it turns out that there are many programs,","đọc chữ số viết tay,",20,0.0,1.076,speedup,1.09,0,False,2.04,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,103,2.6,there are many applications that you can't program by hand.,rất khó để viết phần mềm,24,0.0,0.928,pad,1.0,0,False,2.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,104,4.26,"For example, if you want to get a computer to read handwritten characters,",xử lý ảnh chữ viết,18,0.0,0.532,pad,1.0,0,False,4.26,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,105,1.26,"to read handwritten digits,","để nhận diện nó,",16,0.0,1.663,capped,1.3,0,False,1.612,0.352,0.352,0,0
+v3_r2,lec04,KyNangMem,V4,0,106,1.84,it actually turns out to be amazingly difficult,chuyển chữ viết tay,19,0.0,1.082,speedup,1.1,0,False,1.84,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,107,1.92,to write a piece of software,thành ký tự.,12,0.0,0.994,pad,1.0,0,False,1.92,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,108,3.12,to take this input and image of something that I wrote,Và những việc khác.,19,0.0,0.669,pad,1.0,0,False,3.12,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,109,1.84,"and to figure out just what it is,",Tôi và sinh viên làm về,23,0.0,1.376,capped,1.3,0,False,1.948,0.108,0.108,0,0
+v3_r2,lec04,KyNangMem,V4,0,110,2.2,to translate my cursive handwriting,bay tự hành.,12,0.0,0.867,pad,1.0,0,False,2.2,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,111,3.94,to extract the characters,Cực kỳ khó để viết phần mềm,27,0.0,0.649,pad,1.0,0,False,3.94,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,112,1.64,that I wrote out in longhand.,điều khiển trực thăng.,22,0.0,1.298,speedup,1.3,0,False,1.64,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,113,1.02,And other things.,"Ngược lại,",10,0.0,1.858,capped,1.3,0,False,1.458,0.438,0.438,0,0
+v3_r2,lec04,KyNangMem,V4,0,114,1.22,One thing that my students and I do,"nếu muốn làm vậy,",17,0.0,1.745,capped,1.3,0,False,1.638,0.418,0.418,0,0
+v3_r2,lec04,KyNangMem,V4,0,115,0.84,is autonomous flights.,để máy bay trực thăng,21,0.0,2.673,capped,1.3,0,False,1.727,0.887,0.887,0,0
+v3_r2,lec04,KyNangMem,V4,0,116,1.62,It turns out to be extremely difficult,"hay đọc chữ số viết tay,",24,0.0,1.408,capped,1.3,0,False,1.754,0.134,0.134,0,0
+v3_r2,lec04,KyNangMem,V4,0,117,2.04,to sit down and write a program,tốt nhất là dùng thuật toán tự học.,35,0.0,1.433,capped,1.3,1,True,2.248,0.208,0.208,0,0
+v3_r2,lec04,KyNangMem,V4,0,118,0.86,to fly a helicopter.,"Với chữ số viết tay, đây là cách duy nhất hiệu quả.",51,0.0,4.733,capped,1.3,0,False,3.131,2.271,2.271,0,0
+v3_r2,lec04,KyNangMem,V4,0,119,0.62,"In contrast,",Đó là ứng dụng khó lập trình thủ công.,38,0.0,4.879,capped,1.3,0,False,2.327,1.707,1.707,0,0
+v3_r2,lec04,KyNangMem,V4,0,120,1.24,"if you want to do things like these,",Thuật toán học cũng tiến xa trong khai phá dữ liệu.,51,0.0,2.847,capped,1.3,0,False,2.716,1.476,1.476,0,0
+v3_r2,lec04,KyNangMem,V4,0,121,1.38,to get software to fly a helicopter,"Ví dụ, bệnh viện lưu trữ hồ sơ bệnh án,",39,0.0,2.692,capped,1.3,0,False,2.858,1.478,1.478,0,0
+v3_r2,lec04,KyNangMem,V4,0,122,1.38,or have software recognized,tiền sử bệnh và kết quả điều trị.,33,0.0,2.118,capped,1.3,0,False,2.248,0.868,0.868,0,0
+v3_r2,lec04,KyNangMem,V4,0,123,5.86,"Hamilton digits, one very successful approach is to use a learning algorithm and have a","Áp dụng thuật toán học vào hồ sơ số hóa 15 năm qua,",51,0.0,0.713,pad,1.0,0,False,5.86,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,124,3.78,"computer learn by itself how to, say, recognize your handwriting.","chuyển dữ liệu thô thành tri thức y khoa,",41,0.0,0.81,pad,1.0,0,False,3.78,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,125,4.1,"And in fact, Hamilton digit recognition, this is pretty much the only approach that works",phát hiện xu hướng và thay đổi phương pháp điều trị.,52,0.0,0.869,pad,1.0,0,False,4.1,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,126,0.5,well.,Các bạn có thể dùng thuật toán học nhiều lần mỗi ngày mà không biết.,68,0.0,8.073,capped,1.3,0,False,3.105,2.605,2.605,0,0
+v3_r2,lec04,KyNangMem,V4,0,127,4.08,These are sort of applications that are hard to program by hand.,"Ví dụ, khi gửi thư qua bưu điện Mỹ,",35,0.0,0.838,pad,1.0,0,False,4.08,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,128,5.34,"Learning algorithms has also made, I guess, significant inroads in what's sometimes called",có thuật toán tự động đọc mã bưu chính bạn viết.,48,0.0,0.634,pad,1.0,0,False,5.34,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,129,0.88,database mining.,Đó là thuật toán học.,21,0.0,2.498,capped,1.3,0,False,1.691,0.811,0.811,0,0
+v3_r2,lec04,KyNangMem,V4,0,130,5.38,"So, for example, with the growth of IT and computers, increasingly many hospitals are","Khi bạn ký séc,",15,0.0,0.388,pad,1.0,0,False,5.38,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,131,4.44,"keeping around medical records of what sort of patients, what problems they had, what their","phần lớn séc được xử lý bởi thuật toán học đọc chữ số,",54,0.0,0.892,pad,1.0,0,False,4.44,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,132,1.38,"probabilities were, what the outcome was.",để đọc số tiền bạn viết.,24,0.0,1.751,capped,1.3,0,False,1.859,0.479,0.479,0,0
+v3_r2,lec04,KyNangMem,V4,0,133,5.76,"And taking all of these medical records, which started to be digitized only about 15 years","Mỗi lần ký séc,",15,0.0,0.375,pad,1.0,0,False,5.76,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,134,4.5,"ago, applying learning algorithms to them, we can turn raw medical records into what",bạn đang dùng thuật toán học mà không hề hay biết.,50,0.0,0.768,pad,1.0,0,False,4.5,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,135,3.58,"I might loosely call medical knowledge, in which we start to detect trends in medical","Dùng thẻ tín dụng hay giao dịch trên eBay,",42,0.0,0.905,pad,1.0,0,False,3.58,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,136,5.74,practice and even start to alter medical practice as a result of medical knowledge that's derived,thường có thuật toán kiểm tra thẻ bị trộm hay gian lận.,55,0.0,0.646,pad,1.0,0,False,5.74,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,137,11.26,by applying learning algorithms to the source of medical records that hospitals have just been building up over the last 15 20 years in electronic format,Nếu bạn dùng Amazon hay Netflix,31,0.0,0.291,pad,1.0,0,False,11.26,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,138,4.1,"It turns out that most of you probably use learning algorithms, I don't know, I think",để gợi ý sách,13,0.0,0.492,pad,1.0,0,False,4.1,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,139,5.24,"half a dozen times a day or maybe a dozen times a day or more, and often without knowing","hay phim,",9,0.0,0.364,pad,1.0,0,False,5.24,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,140,0.32,it.,đó là thuật toán học,20,0.0,6.87,capped,1.3,0,False,1.691,1.371,1.371,0,0
+v3_r2,lec04,KyNangMem,V4,0,141,6.8,"So for example, every time you send mail via the U.S. postal system, it turns out there's",đã tìm hiểu sở thích của bạn,28,0.0,0.392,pad,1.0,0,False,6.8,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,142,6.14,"algorithm that tries to automatically read the zip code you wrote on your envelope, and",để đưa ra gợi ý phù hợp.,24,0.0,0.405,pad,1.0,0,False,6.14,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,143,3.64,"that's done by our learning algorithm. So every time you send US mail, you're using","Tuần trước,",11,0.0,0.524,pad,1.0,0,False,3.64,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,144,6.16,"a learning algorithm, perhaps without even being aware of it. Similarly, every time you","tôi đi bảo dưỡng xe,",20,0.0,0.38,pad,1.0,0,False,6.16,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,145,3.92,"write a check, I actually don't know the number for this, but a significant fraction of checks",thợ sửa xe giải thích,21,0.0,0.56,pad,1.0,0,False,3.92,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,146,5.54,"that you write are processed by a learning algorithm that's learned to read the digits,",thuật toán học trong xe,23,0.0,0.416,pad,1.0,0,False,5.54,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,147,3.4,"so the dollar amount that you wrote down on your check. So every time you write a check,",giúp tối ưu hiệu suất lái.,26,0.0,0.773,pad,1.0,0,False,3.4,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,148,3.48,another little learning algorithm that you're probably using without even being aware of,Chúng ta dùng thuật toán học,28,0.0,0.693,pad,1.0,0,False,3.48,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,149,5.62,"it. If you use a credit card, or I know at least one phone company was doing this, and",nhiều lần mỗi ngày,18,0.0,0.365,pad,1.0,0,False,5.62,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,150,4.84,"lots of companies like eBay as well that do electronic transactions, there's a good chance",mà không hề hay biết.,21,0.0,0.483,pad,1.0,0,False,4.84,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,151,3.18,"that there's a learning algorithm in the back end trying to figure out if, say, your credit",Học máy cũng giúp hiểu rõ hơn về hệ gen người.,46,0.0,1.07,speedup,1.08,0,False,3.18,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,152,5.68,card's been stolen or if someone's engaging in a fraudulent transaction. If you use the,"Nếu tìm ra phương pháp chữa ung thư,",36,0.0,0.558,pad,1.0,0,False,5.68,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,153,2.26,like Amazon and Netflix,học máy sẽ đóng vai trò lớn.,28,0.0,1.199,speedup,1.21,0,False,2.26,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,154,1.6,that often recommend,Đó là công việc Tom đang làm.,29,0.0,1.604,capped,1.3,0,False,1.974,0.374,0.374,0,0
+v3_r2,lec04,KyNangMem,V4,0,155,1.0,books for you to buy,"Dạy môn này,",12,0.0,1.934,capped,1.3,0,False,1.488,0.488,0.488,0,0
+v3_r2,lec04,KyNangMem,V4,0,156,1.32,or movies for you to rent or whatever.,tôi có ba mục tiêu.,19,0.0,1.701,capped,1.3,0,False,1.727,0.407,0.407,0,0
+v3_r2,lec04,KyNangMem,V4,0,157,2.2,These are other examples of learning algorithms,Một là truyền sự hứng khởi,26,0.0,1.225,speedup,1.24,0,False,2.2,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,158,1.9,that have learned what sorts of things,về học máy cho các bạn.,23,0.0,1.29,speedup,1.3,0,False,1.9,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,159,1.36,"you like to buy, what sorts of movies","Hai là sau khóa học, tôi hy vọng...",35,0.0,2.259,capped,1.3,0,False,2.363,1.003,1.003,0,0
+v3_r2,lec04,KyNangMem,V4,0,160,1.64,"you like to watch, and can therefore",các bạn áp dụng được học máy.,29,0.0,1.607,capped,1.3,0,False,2.027,0.387,0.387,0,0
+v3_r2,lec04,KyNangMem,V4,0,161,1.74,give customized recommendations to you.,Mục tiêu thứ ba là biến các bạn thành chuyên gia.,49,0.0,2.076,capped,1.3,0,False,2.778,1.038,1.038,0,0
+v3_r2,lec04,KyNangMem,V4,0,162,1.06,"Just about a week ago,","Tuần trước,",11,0.0,1.814,capped,1.3,0,False,1.479,0.419,0.419,0,0
+v3_r2,lec04,KyNangMem,V4,0,163,1.0,"I had my car service,","tôi bảo dưỡng xe,",17,0.0,2.198,capped,1.3,0,False,1.691,0.691,0.691,0,0
+v3_r2,lec04,KyNangMem,V4,0,164,2.12,"and even there, my car mechanic",thợ giải thích cho tôi,22,0.0,1.036,speedup,1.05,0,False,2.12,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,165,0.94,was trying to explain to me,về thuật toán học,17,0.0,2.195,capped,1.3,0,False,1.587,0.647,0.647,0,0
+v3_r2,lec04,KyNangMem,V4,0,166,2.6,some learning algorithm and the innards of my car,đang tối ưu,11,0.0,0.734,pad,1.0,0,False,2.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,167,1.6,"that's doing its best, optimize",hiệu suất nhiên liệu của xe.,28,0.0,1.553,capped,1.3,0,False,1.912,0.312,0.312,0,0
+v3_r2,lec04,KyNangMem,V4,0,168,2.36,my driving performance of fuel efficiency or something.,Chúng ta dùng thuật toán học,28,0.0,1.007,speedup,1.02,0,False,2.36,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,169,1.2,"So I think most of us learn,",rất nhiều lần,13,0.0,1.589,capped,1.3,0,False,1.467,0.267,0.267,0,0
+v3_r2,lec04,KyNangMem,V4,0,170,1.6,"most of us use learning algorithms,","trong ngày,",11,0.0,1.207,speedup,1.19,0,False,1.623,0.023,0.023,0,0
+v3_r2,lec04,KyNangMem,V4,0,171,1.32,"you know, half a dozen, a dozen,",nhiều lần mà không hay biết.,28,0.0,1.831,capped,1.3,0,False,1.859,0.539,0.539,0,0
+v3_r2,lec04,KyNangMem,V4,0,172,2.46,maybe dozens of times without even knowing it.,Chúng cũng giúp ta,18,0.0,0.834,pad,1.0,0,False,2.46,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,173,2.14,"And of course, learning algorithms also doing things",hiểu về hệ gen người.,21,0.0,1.095,speedup,1.11,0,False,2.14,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,174,1.98,like giving us a growing understanding,"Nếu chữa được ung thư,",22,0.0,1.255,speedup,1.27,0,False,1.98,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,175,0.82,of the human genome.,học máy,7,0.0,2.357,capped,1.3,0,False,1.487,0.667,0.667,0,0
+v3_r2,lec04,KyNangMem,V4,0,176,2.58,"So if someday we ever find a cure for cancer,",sẽ đóng vai trò rất lớn.,24,0.0,0.977,pad,1.0,0,False,2.58,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,177,0.84,I'll bet learning algorithms,Đó là việc Tom đang làm.,24,0.0,2.837,capped,1.3,0,False,1.833,0.993,0.993,0,0
+v3_r2,lec04,KyNangMem,V4,0,178,1.54,will have had a large role in that.,"Khi dạy môn này,",16,0.0,1.34,capped,1.3,0,False,1.587,0.047,0.047,0,0
+v3_r2,lec04,KyNangMem,V4,0,179,1.54,That's the sort of thing that Tom works on.,tôi có ba mục tiêu.,19,0.0,1.458,capped,1.3,0,False,1.727,0.187,0.187,0,0
+v3_r2,lec04,KyNangMem,V4,0,180,1.76,"So in teaching this class,",Đầu tiên là truyền sự hứng khởi,31,0.0,1.621,capped,1.3,0,False,2.195,0.435,0.435,0,0
+v3_r2,lec04,KyNangMem,V4,0,181,2.04,I sort of have three goals.,về học máy.,11,0.0,0.971,pad,1.0,0,False,2.04,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,182,3.18,One of them is just to help convey some of my own excitement,"Thứ hai, khi kết thúc khóa học, tôi hy vọng...",46,0.0,1.191,speedup,1.2,0,False,3.18,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,0,183,1.44,about machine learning to you.,bạn có thể tự áp dụng nó.,25,0.0,1.83,capped,1.3,0,False,2.027,0.587,0.587,0,0
+v3_r2,lec04,KyNangMem,V4,0,184,3.68,"The second goal is, by the end of this class, I hope...",Và mục tiêu thứ ba là biến bạn thành chuyên gia.,48,0.0,0.959,pad,1.0,0,False,3.68,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,185,4.18,all of you will be able to apply state-of-the-art machine learning algorithms,Tất cả các bạn sẽ áp dụng được máy học hiện đại,47,0.0,0.87,pad,1.0,0,False,4.18,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,186,1.72,to whatever problems you're interested in.,vào mọi bài toán.,17,0.0,1.305,speedup,1.3,0,False,1.727,0.007,0.007,0,0
+v3_r2,lec04,KyNangMem,V4,1,187,3.4,"And if you ever need to build a system for reading zip codes,","Và nếu cần dựng hệ thống đọc mã bưu chính,",42,0.0,0.985,pad,1.0,0,False,3.4,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,188,2.1,you know how to do that by the end of this class.,bạn sẽ biết làm sau khóa học.,29,0.0,1.274,speedup,1.29,0,False,2.1,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,189,3.4,"And lastly, by the end of this class,","Và cuối cùng, sau môn học này,",30,0.0,0.879,pad,1.0,0,False,3.4,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,190,4.38,"I realize that only a subset of you are interested in doing research and machine learning,","dù chỉ một số bạn muốn nghiên cứu chuyên sâu máy học,",53,0.0,0.822,pad,1.0,0,False,4.38,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,191,1.52,"but by the conclusion of this class,","nhưng sau môn này,",18,0.0,1.379,capped,1.3,0,False,1.612,0.092,0.092,0,0
+v3_r2,lec04,KyNangMem,V4,1,192,3.28,I hope that all of you will actually be well qualified,tôi hy vọng tất cả sẽ đủ năng lực,33,0.0,0.878,pad,1.0,0,False,3.28,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,193,2.28,to start doing research in machine learning.,để làm nghiên cứu máy học.,26,0.0,1.056,speedup,1.07,0,False,2.28,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,194,1.56,So let's say a few words about logistics.,Giờ hãy nói về giáo trình.,26,0.0,1.593,capped,1.3,0,False,1.912,0.352,0.352,0,0
+v3_r2,lec04,KyNangMem,V4,1,195,1.7,The prerequisites of this class,Điều kiện của môn này,21,0.0,1.321,capped,1.3,0,False,1.727,0.027,0.027,0,0
+v3_r2,lec04,KyNangMem,V4,1,196,2.9,I've written on one of the handouts,tôi đã ghi trong tài liệu,25,0.0,0.857,pad,1.0,0,False,2.9,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,197,1.0,are as follows.,như sau.,8,0.0,1.934,capped,1.3,0,False,1.488,0.488,0.488,0,0
+v3_r2,lec04,KyNangMem,V4,1,198,1.22,"In this class, I'm going to assume","Ở lớp này, tôi coi như",22,0.0,2.216,capped,1.3,0,False,2.08,0.86,0.86,0,0
+v3_r2,lec04,KyNangMem,V4,1,199,2.6,that all of you have sort of basic knowledge,các bạn đều có kiến thức cơ bản,31,0.0,1.078,speedup,1.09,0,False,2.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,200,1.12,of computer science,về khoa học máy tính,20,0.0,2.066,capped,1.3,0,False,1.78,0.66,0.66,0,0
+v3_r2,lec04,KyNangMem,V4,1,201,2.9,and basic knowledge of the basic computer skills,"và các kỹ năng, nguyên lý cơ bản",32,0.0,1.13,speedup,1.14,0,False,2.9,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,202,0.48,and principles.,của nó.,7,0.0,4.019,capped,1.3,0,False,1.484,1.004,1.004,0,0
+v3_r2,lec04,KyNangMem,V4,1,203,2.42,"So I assume all of you know what big O notation is,","Coi như bạn đã biết ký hiệu O lớn,",34,0.0,1.266,summarize,1.28,1,True,2.42,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,204,1.0,that all of you know about,biết các khái niệm,18,0.0,2.063,capped,1.3,0,False,1.587,0.587,0.587,0,0
+v3_r2,lec04,KyNangMem,V4,1,205,0.72,sort of data structures,về cấu trúc dữ liệu,19,0.0,3.31,capped,1.3,0,False,1.833,1.113,1.113,0,0
+v3_r2,lec04,KyNangMem,V4,1,206,1.56,"like queues, stacks, binary trees","như hàng đợi, ngăn xếp, cây nhị phân",36,0.0,2.382,capped,1.3,0,False,2.858,1.298,1.298,0,0
+v3_r2,lec04,KyNangMem,V4,1,207,0.64,and that all of you know,và các bạn đều có,17,0.0,3.563,capped,1.3,0,False,1.754,1.114,1.114,0,0
+v3_r2,lec04,KyNangMem,V4,1,208,1.04,enough programming skills,kỹ năng lập trình,17,0.0,1.904,capped,1.3,0,False,1.523,0.483,0.483,0,0
+v3_r2,lec04,KyNangMem,V4,1,209,0.74,"to write, you know,","đủ để viết,",11,0.0,2.616,capped,1.3,0,False,1.489,0.749,0.749,0,0
+v3_r2,lec04,KyNangMem,V4,1,210,1.2,write a simple computer program.,viết phần mềm đơn giản.,23,0.0,2.014,capped,1.3,0,False,1.859,0.659,0.659,0,0
+v3_r2,lec04,KyNangMem,V4,1,211,0.92,And it turns out that,Và thực tế là,13,0.0,2.183,capped,1.3,0,False,1.545,0.625,0.625,0,0
+v3_r2,lec04,KyNangMem,V4,1,212,13.08,most of this class will not be very programming intensive although we will do some programming mostly in either math lab or Octave I see a bit more about that later I also assume familiarity with basic probability and statistics,"hầu hết môn này không nặng lập trình dù ta sẽ viết code bằng MATLAB hoặc Octave, tôi sẽ nói sau, tôi cũng yêu cầu bạn nắm chắc xác suất thống kê.",145,0.0,0.694,pad,1.0,0,False,13.08,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,213,2.54,"So most undergraduate statistics class,","Kiến thức thống kê đại học,",27,0.0,0.921,pad,1.0,0,False,2.54,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,214,1.78,"like Stat 116 taught here at Stanford,","như Stat 116 ở Stanford,",24,0.0,1.869,capped,1.3,0,False,2.559,0.779,0.779,0,0
+v3_r2,lec04,KyNangMem,V4,1,215,1.02,will be more than enough.,là quá đủ.,10,0.0,1.923,capped,1.3,0,False,1.509,0.489,0.489,0,0
+v3_r2,lec04,KyNangMem,V4,1,216,1.0,I'm going to assume that all of you know,Tôi coi như các bạn biết,24,0.0,2.383,capped,1.3,0,False,1.833,0.833,0.833,0,0
+v3_r2,lec04,KyNangMem,V4,1,217,1.04,"what random variables are,","biến ngẫu nhiên là gì,",22,0.0,2.114,capped,1.3,0,False,1.691,0.651,0.651,0,0
+v3_r2,lec04,KyNangMem,V4,1,218,1.82,"that all of you know what expectation is,","hiểu kỳ vọng là gì,",19,0.0,1.253,speedup,1.27,0,False,1.82,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,219,1.6,what the variance of a random variable is.,và phương sai của biến ngẫu nhiên.,34,0.0,1.711,capped,1.3,0,False,2.106,0.506,0.506,0,0
+v3_r2,lec04,KyNangMem,V4,1,220,1.48,"And in case of some of you,",Nếu một số bạn,14,0.0,1.485,capped,1.3,0,False,1.691,0.211,0.211,0,0
+v3_r2,lec04,KyNangMem,V4,1,221,1.88,"it's been a while since you've seen some of this material,","đã lâu không ôn lại bài,",24,0.0,1.285,speedup,1.3,0,False,1.88,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,222,2.22,"at some of the discussion sections,","ở các buổi thảo luận,",21,0.0,0.995,speedup,1.01,0,False,2.22,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,223,2.94,"we'll actually go over some of the prerequisites,","chúng ta sẽ ôn lại các điều kiện tiên quyết,",44,0.0,1.06,speedup,1.07,0,False,2.94,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,224,2.36,sort of as a refresher course on the prerequisite class.,như một khóa bổ túc ngắn.,25,0.0,1.088,speedup,1.1,0,False,2.36,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,225,1.74,I'll say a bit more about that later as well.,Tôi sẽ nói rõ hơn về sau.,25,0.0,1.554,capped,1.3,0,False,2.08,0.34,0.34,0,0
+v3_r2,lec04,KyNangMem,V4,1,226,3.78,"Lastly, I also assume familiarity with basic linear algebra.","Sau cùng, bạn cần nắm cơ bản đại số tuyến tính.",47,0.0,1.012,speedup,1.02,0,False,3.78,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,227,4.2,"And again, most undergraduate linear algebra classes are more than enough.",Đại số tuyến tính đại học là thừa đủ.,37,0.0,0.746,pad,1.0,0,False,4.2,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,228,5.42,"So if you've taken classes like Math 51, 103, Math 113,","Nếu đã học các môn như Math 51, 103, Math 113,",46,0.0,1.034,speedup,1.04,0,False,5.42,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,229,1.6,"or CS205 at Stanford,","hoặc CS205 ở Stanford,",22,0.0,2.099,capped,1.3,0,False,2.584,0.984,0.984,0,0
+v3_r2,lec04,KyNangMem,V4,1,230,1.0,that would be more than enough.,thì quá tốt.,12,0.0,1.912,capped,1.3,0,False,1.471,0.471,0.471,0,0
+v3_r2,lec04,KyNangMem,V4,1,231,0.82,"Basically, I'm going to assume","Về cơ bản, tôi giả định",23,0.0,3.48,capped,1.3,0,False,2.195,1.375,1.375,0,0
+v3_r2,lec04,KyNangMem,V4,1,232,0.64,that a lot of you know,nhiều bạn biết,14,0.0,2.97,capped,1.3,0,False,1.462,0.822,0.822,0,0
+v3_r2,lec04,KyNangMem,V4,1,233,1.3,"what matrices and vectors are,","ma trận và vectơ,",17,0.0,1.638,capped,1.3,0,False,1.638,0.338,0.338,0,0
+v3_r2,lec04,KyNangMem,V4,1,234,1.28,that you know how to multiply,biết phép nhân,14,0.0,1.514,capped,1.3,0,False,1.491,0.211,0.211,0,0
+v3_r2,lec04,KyNangMem,V4,1,235,0.66,matrices and vectors,vectơ với ma trận,17,0.0,3.279,capped,1.3,0,False,1.665,1.005,1.005,0,0
+v3_r2,lec04,KyNangMem,V4,1,236,1.22,and multiply matrices and matrices.,và nhân hai ma trận.,20,0.0,1.953,capped,1.3,0,False,1.833,0.613,0.613,0,0
+v3_r2,lec04,KyNangMem,V4,1,237,1.72,Do you know what a matrix inverse is?,Bạn biết ma trận nghịch đảo chứ?,32,0.0,1.532,capped,1.3,0,False,2.027,0.307,0.307,0,0
+v3_r2,lec04,KyNangMem,V4,1,238,2.0,"If you know what an eigenvector of a matrix is,","Nếu biết vectơ riêng nữa,",25,0.0,1.207,speedup,1.22,0,False,2.0,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,239,5.72,that be even better but if you don quite know if you not quite sure that fine too We go over it in the review sections,"thì càng tốt nhưng chưa rõ cũng không sao, ta sẽ ôn lại ở lớp phụ đạo.",70,0.0,0.894,pad,1.0,0,False,5.72,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,240,3.86,"There's one more, there are a couple more logistical things I should deal with in this",Có thêm vài vấn đề hành chính cần bàn trong môn này.,52,0.0,0.914,pad,1.0,0,False,3.86,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,241,8.2,"class. One is that, as most of you know, CS229 is a televised class. In fact, I guess","Một là, CS229 được phát sóng. Nhờ đó, tôi đoán",46,0.0,0.773,pad,1.0,0,False,8.2,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,242,3.78,"Many of you are probably watching this, you know, at home on TV.",nhiều bạn đang xem video này tại nhà.,37,0.0,0.848,pad,1.0,0,False,3.78,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,243,1.38,So I'm going to say hi to our home viewers.,Chào khán giả xem tại nhà nhé.,30,0.0,2.043,capped,1.3,0,False,2.169,0.789,0.789,0,0
+v3_r2,lec04,KyNangMem,V4,1,244,4.7,"So earlier this year, I approached SCPD, which televises these clauses,","Đầu năm, tôi đề xuất với bên SCPD phát hình,",44,0.0,0.843,pad,1.0,0,False,4.7,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,245,3.74,"about trying to make a small number of Stanford clauses publicly available,","để đăng một số lớp của Stanford công khai,",42,0.0,0.953,pad,1.0,0,False,3.74,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,246,1.46,posting the videos on the web.,đưa các video lên mạng.,23,0.0,1.702,capped,1.3,0,False,1.912,0.452,0.452,0,0
+v3_r2,lec04,KyNangMem,V4,1,247,4.14,"And so this year, Stanford is actually starting a small pilot program","Năm nay Stanford thử nghiệm chương trình mới,",45,0.0,0.852,pad,1.0,0,False,4.14,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,248,2.98,"in which we'll post videos of a small number of clauses online,","đăng tải bài giảng một số môn lên internet,",43,0.0,1.14,speedup,1.15,0,False,2.98,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,249,3.6,on the internet in a way that makes it publicly accessible to everyone.,giúp cho tất cả mọi người truy cập tự do.,41,0.0,0.89,pad,1.0,0,False,3.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,250,3.28,I'm very excited about that because machine learning is cool.,Tôi rất hào hứng vì máy học rất thú vị.,39,0.0,0.955,pad,1.0,0,False,3.28,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,251,0.9,Let's get the word out there.,Hãy lan tỏa nó.,15,0.0,2.266,capped,1.3,0,False,1.569,0.669,0.669,0,0
+v3_r2,lec04,KyNangMem,V4,1,252,5.98,"One of the consequences of this is that, let's see, so videos or pictures of the students","Một lưu ý là, video hay hình ảnh sinh viên",42,0.0,0.662,pad,1.0,0,False,5.98,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,253,1.88,in this classroom will not be posted online.,ở đây sẽ không đăng mạng.,25,0.0,1.263,speedup,1.28,0,False,1.88,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,254,14.32,So your images so don worry about being surprised by seeing your own face appear on YouTube one day But the microphones may pick up your voices So I guess the consequence of that is that you know,"Nên đừng lo bị lộ mặt trên YouTube nhé. Nhưng micro có thể thu tiếng các bạn. Vậy nên,",86,0.0,0.546,pad,1.0,0,False,14.32,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,255,1.68,"because microphones may pick up your voices,","vì micro thu được tiếng,",24,0.0,1.48,capped,1.3,0,False,1.912,0.232,0.232,0,0
+v3_r2,lec04,KyNangMem,V4,1,256,3.88,"no matter how irritated you are at me, don't yell out swear words in the middle of class.","dù giận tôi đến đâu, xin đừng nói bậy trong giờ.",48,0.0,0.974,pad,1.0,0,False,3.88,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,257,3.6,"But because there won't be video, you can safely sit there and make faces at me,","Vì không có hình, bạn cứ thoải mái nhăn nhó với tôi,",52,0.0,1.072,speedup,1.08,0,False,3.6,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,258,0.68,and that will be shown.,không ai thấy đâu.,18,0.0,2.912,capped,1.3,0,False,1.523,0.843,0.843,0,0
+v3_r2,lec04,KyNangMem,V4,1,259,0.48,Let's see.,Xem nào.,8,0.0,4.006,capped,1.3,0,False,1.479,0.999,0.999,0,0
+v3_r2,lec04,KyNangMem,V4,1,260,1.3,"I also handed out this,","Tôi cũng đã phát,",17,0.0,1.534,capped,1.3,0,False,1.534,0.234,0.234,0,0
+v3_r2,lec04,KyNangMem,V4,1,261,1.04,there were two handouts,có hai tờ tài liệu,18,0.0,2.225,capped,1.3,0,False,1.78,0.74,0.74,0,0
+v3_r2,lec04,KyNangMem,V4,1,262,1.3,I hope most of you have.,hy vọng các bạn có đủ.,22,0.0,1.833,capped,1.3,0,False,1.833,0.533,0.533,0,0
+v3_r2,lec04,KyNangMem,V4,1,263,1.24,Course information handout.,Tờ thông tin môn học.,21,0.0,1.811,capped,1.3,0,False,1.727,0.487,0.487,0,0
+v3_r2,lec04,KyNangMem,V4,1,264,1.1,So let me just say a few words,Tôi xin nói vài lời,19,0.0,1.998,capped,1.3,0,False,1.691,0.591,0.591,0,0
+v3_r2,lec04,KyNangMem,V4,1,265,1.0,about parts of these.,về nội dung này.,16,0.0,2.063,capped,1.3,0,False,1.587,0.587,0.587,0,0
+v3_r2,lec04,KyNangMem,V4,1,266,1.12,"On the third page,","Tại trang số ba,",16,0.0,1.777,capped,1.3,0,False,1.531,0.411,0.411,0,0
+v3_r2,lec04,KyNangMem,V4,1,267,1.1,there's a section that says,có một phần ghi là,18,0.0,1.936,capped,1.3,0,False,1.638,0.538,0.538,0,0
+v3_r2,lec04,KyNangMem,V4,1,268,0.78,online resources.,tài nguyên mạng.,16,0.0,2.525,capped,1.3,0,False,1.515,0.735,0.735,0,0
+v3_r2,lec04,KyNangMem,V4,1,269,0.14,Yeah.,Đúng.,5,0.0,13.817,capped,1.3,0,False,1.488,1.348,1.348,0,0
+v3_r2,lec04,KyNangMem,V4,1,270,0.34,"Oh, okay.","À, rồi.",7,0.0,5.682,capped,1.3,0,False,1.486,1.146,1.146,0,0
+v3_r2,lec04,KyNangMem,V4,1,271,0.38,"Oh, louder?",Nói to hơn?,11,0.0,5.097,capped,1.3,0,False,1.49,1.11,1.11,0,0
+v3_r2,lec04,KyNangMem,V4,1,272,0.24,Yeah.,Vâng.,5,0.0,7.865,capped,1.3,0,False,1.452,1.212,1.212,0,0
+v3_r2,lec04,KyNangMem,V4,1,273,1.38,"Okay, actually, could you turn up the volume?","Được rồi, phiền bạn tăng âm lượng lên?",38,0.0,2.3,capped,1.3,0,False,2.442,1.062,1.062,0,0
+v3_r2,lec04,KyNangMem,V4,1,274,0.52,"Testing, is this better?","Alo, rõ hơn chưa?",17,0.0,5.003,capped,1.3,0,False,2.001,1.481,1.481,0,0
+v3_r2,lec04,KyNangMem,V4,1,275,0.96,"Testing, testing.","Alo, alo.",9,0.0,2.218,capped,1.3,0,False,1.638,0.678,0.678,0,0
+v3_r2,lec04,KyNangMem,V4,1,276,0.2,"Okay, cool.",Tốt rồi.,8,0.0,9.574,capped,1.3,0,False,1.473,1.273,1.273,0,0
+v3_r2,lec04,KyNangMem,V4,1,277,0.28,Thanks.,Cảm ơn.,7,0.0,6.871,capped,1.3,0,False,1.48,1.2,1.2,0,0
+v3_r2,lec04,KyNangMem,V4,1,278,3.32,"So, right, online resources.","Được rồi, về tài nguyên trực tuyến.",35,0.0,0.922,pad,1.0,0,False,3.32,0.0,0.0,0,0
+v3_r2,lec04,KyNangMem,V4,1,279,0.98,The course is a homepage.,Trang chủ môn học.,18,0.0,2.138,capped,1.3,0,False,1.612,0.632,0.632,0,0
+v3_r2,lec04,KyNangMem,V4,1,280,0.76,"It's written on the handout,","Có trong tài liệu,",18,0.0,2.583,capped,1.3,0,False,1.51,0.75,0.75,0,0
+v3_r2,lec04,KyNangMem,V4,1,281,1.8,so I won't write on the chalkboard.,nên tôi không ghi bảng nữa.,27,0.0,1.464,capped,1.3,0,False,2.027,0.227,0.227,0,0
+v3_r2,lec04,KyNangMem,V4,1,282,1.5,HTTPcs229.stanford.edu.,HTTPcs229.stanford.edu.,23,0.0,2.714,capped,1.3,0,False,3.131,1.631,1.631,0,0
+v3_r2,lec04,KyNangMem,V4,1,283,3.06,"And so when there are homework assignments,","Và khi có bài tập về nhà,",25,0.0,0.847,pad,1.0,0,False,3.06,0.0,0.0,0,0
