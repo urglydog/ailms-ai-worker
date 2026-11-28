@@ -16,7 +16,8 @@ Bon quy tac tuyet doi khong duoc lam sai:
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.services import tutor_service
+from app.services import tutor_service, tutor_suggestions
+from app.providers.base import ProviderInvalidResponse
 
 router = APIRouter(prefix="/api/v1/tutor", tags=["tutor"])
 
@@ -123,3 +124,75 @@ async def title(request: TutorTitleRequest) -> TutorTitleResponse:
     tự đặt tên cuộc trò chuyện (giống ChatGPT/Gemini) thay vì luôn rút gọn câu hỏi đầu."""
     generated = await tutor_service.generate_title(request.question, request.answer)
     return TutorTitleResponse(title=generated)
+
+
+# ── Gia sư AI mở rộng (26/11/2026) — câu hỏi gợi ý theo bài + Insight cho giảng viên ──
+
+
+class TutorSuggestionsRequest(BaseModel):
+    lesson_title: str = Field(min_length=1, max_length=255)
+    chapter_title: str = Field(default="", max_length=255)
+    description: str = Field(default="", max_length=5000)
+    transcript_excerpt: str = Field(default="", max_length=8000)
+    count: int = Field(default=6, ge=1, le=6)
+
+
+class TutorSuggestionsResponse(BaseModel):
+    questions: list[str]
+
+
+@router.post("/suggestions", response_model=TutorSuggestionsResponse, status_code=status.HTTP_200_OK)
+async def suggestions(request: TutorSuggestionsRequest) -> TutorSuggestionsResponse:
+    """be/ gọi từ job nền (không phải từ request của học viên) rồi cache theo bài."""
+    try:
+        questions = await tutor_suggestions.generate_questions(
+            request.lesson_title, request.chapter_title, request.description,
+            request.transcript_excerpt, request.count,
+        )
+    except ProviderInvalidResponse as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return TutorSuggestionsResponse(questions=questions)
+
+
+class InsightTopic(BaseModel):
+    label: str
+    learner_count: int
+
+
+class InsightLesson(BaseModel):
+    lesson_title: str
+    question_count: int
+    unusual: bool = False
+    poor_count: int = 0
+    topics: list[InsightTopic] = Field(default_factory=list)
+
+
+class InsightPoorTopic(BaseModel):
+    lesson_title: str
+    label: str
+    reason: str
+    learner_count: int
+
+
+class TutorInsightSummaryRequest(BaseModel):
+    course_title: str = Field(min_length=1, max_length=255)
+    window_days: int = 90
+    total_questions: int = 0
+    learner_count: int = 0
+    lessons: list[InsightLesson] = Field(default_factory=list, max_length=500)
+    poor_topics: list[InsightPoorTopic] = Field(default_factory=list, max_length=50)
+
+
+class TutorInsightSummaryResponse(BaseModel):
+    summary: str
+    actions: list[str]
+
+
+@router.post("/insight-summary", response_model=TutorInsightSummaryResponse, status_code=status.HTTP_200_OK)
+async def insight_summary(request: TutorInsightSummaryRequest) -> TutorInsightSummaryResponse:
+    """Chỉ nhận số liệu đã gộp — be/ không gửi câu hỏi nguyên văn hay danh tính học viên."""
+    try:
+        summary, actions = await tutor_suggestions.generate_insight_summary(request.model_dump())
+    except ProviderInvalidResponse as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return TutorInsightSummaryResponse(summary=summary, actions=actions)
